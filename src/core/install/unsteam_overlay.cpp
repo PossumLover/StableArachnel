@@ -9,6 +9,7 @@
 #include <QFileInfo>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QVector>
 
 #if defined(Q_OS_LINUX)
 #include <signal.h>
@@ -23,6 +24,8 @@ constexpr auto kDisabledSuffix = ".arachnel-off";
 constexpr auto kProxyName = "winmm.dll";
 constexpr auto kPayloadName = "unsteam.dll";
 constexpr auto kIniName = "unsteam.ini";
+constexpr auto kLoaderName = "unsteam_loader64.exe";
+constexpr auto kLoaderName32 = "unsteam_loader.exe";
 
 QString g_payloadDirOverride;
 
@@ -80,7 +83,8 @@ bool dirHasUnsteam(const QDir& dir, bool* activeOut)
                                              + QLatin1String(kDisabledSuffix));
     if (activeOut)
         *activeOut = activeProxy;
-    return activeProxy || disabledProxy || dir.exists(QLatin1String(kIniName));
+    return activeProxy || disabledProxy || dir.exists(QLatin1String(kIniName))
+        || dir.exists(QLatin1String(kLoaderName)) || dir.exists(QLatin1String(kLoaderName32));
 }
 
 bool renameIfPresent(const QDir& dir, const QString& from, const QString& to)
@@ -198,8 +202,12 @@ UnsteamOverlayState detectUnsteamOverlay(const QString& installPath)
         state.overlayDir = path;
         state.iniPath = dir.exists(QLatin1String(kIniName)) ? dir.filePath(QLatin1String(kIniName))
                                                             : QString();
-        state.enabled = active;
-        if (active)
+        const bool loader = dir.exists(QLatin1String(kLoaderName))
+                            || dir.exists(QLatin1String(kLoaderName32));
+        state.method = loader ? UnsteamMethod::Loader : UnsteamMethod::Proxy;
+        // Loader mode has no winmm proxy to rename, so its payload alone means enabled.
+        state.enabled = loader ? (dir.exists(QLatin1String(kPayloadName))) : active;
+        if (state.enabled)
             break;  // an active overlay wins over a disabled one further down
     }
     return state;
@@ -259,8 +267,22 @@ bool setUnsteamOverlayEnabled(const QString& installPath, bool enabled, QString*
     return true;
 }
 
+QString unsteamLoaderExecutable(const QString& installPath)
+{
+    const UnsteamOverlayState state = detectUnsteamOverlay(installPath);
+    if (!state.enabled || state.method != UnsteamMethod::Loader || state.overlayDir.isEmpty())
+        return {};
+    const QDir dir(state.overlayDir);
+    for (const char* name : {kLoaderName, kLoaderName32}) {
+        if (dir.exists(QLatin1String(name)))
+            return dir.filePath(QLatin1String(name));
+    }
+    return {};
+}
+
 bool installUnsteamOverlay(const QString& installPath, const QString& executablePath,
-                           const QString& realAppId, const QString& playerName, QString* error)
+                           const QString& realAppId, const QString& playerName,
+                           UnsteamMethod method, QString* error)
 {
     const QString payloadRoot = unsteamPayloadDir();
     if (payloadRoot.isEmpty()) {
@@ -288,9 +310,28 @@ bool installUnsteamOverlay(const QString& installPath, const QString& executable
     const QString sourceProxy =
         source.filePath(use64 ? QStringLiteral("winmm64.dll") : QStringLiteral("winmm.dll"));
 
+    const QString sourceLoader =
+        source.filePath(use64 ? QLatin1String(kLoaderName) : QLatin1String(kLoaderName32));
+
+    // Unsteam must never carry both entry paths at once, so each method installs only
+    // its own: the loader injects into the game it starts, the proxy rides the game's
+    // winmm import. Installing one clears the other's files.
+    QVector<std::pair<QString, QString>> files{{sourcePayload, QLatin1String(kPayloadName)}};
+    if (method == UnsteamMethod::Loader)
+        files.append({sourceLoader, use64 ? QLatin1String(kLoaderName) : QLatin1String(kLoaderName32)});
+    else
+        files.append({sourceProxy, QLatin1String(kProxyName)});
+
     const QDir dir(target);
-    for (const auto& pair : {std::pair<QString, QString>{sourcePayload, QLatin1String(kPayloadName)},
-                             std::pair<QString, QString>{sourceProxy, QLatin1String(kProxyName)}}) {
+    if (method == UnsteamMethod::Loader) {
+        QFile::remove(dir.filePath(QLatin1String(kProxyName)));
+        QFile::remove(dir.filePath(QLatin1String(kProxyName) + QLatin1String(kDisabledSuffix)));
+    } else {
+        for (const char* name : {kLoaderName, kLoaderName32})
+            QFile::remove(dir.filePath(QLatin1String(name)));
+    }
+
+    for (const auto& pair : files) {
         if (!QFileInfo::exists(pair.first)) {
             if (error) {
                 *error = QCoreApplication::translate("Core", "Unsteam payload is incomplete: %1")

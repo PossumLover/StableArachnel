@@ -16,11 +16,21 @@ namespace arachnel::core {
  * Only one layer may be active for a game at a time: both proxy the same entry points,
  * so enabling either turns the other off.
  */
+/**
+ * Unsteam ships two mutually exclusive ways in: a winmm.dll proxy the game loads through
+ * its own import table, or unsteam_loader64.exe, which starts the game and injects
+ * unsteam.dll into it. Its own documentation is emphatic that they must never both be
+ * installed. The proxy is simpler; the loader works where the proxy loads but fails to
+ * take over.
+ */
+enum class UnsteamMethod { Proxy, Loader };
+
 struct UnsteamOverlayState {
     bool present = false;  // payload found in the game, active or renamed off
     bool enabled = false;  // proxy DLL active (not renamed *.arachnel-off)
     QString overlayDir;
     QString iniPath;
+    UnsteamMethod method = UnsteamMethod::Proxy;
 };
 
 UnsteamOverlayState detectUnsteamOverlay(const QString& installPath);
@@ -38,7 +48,15 @@ bool setUnsteamOverlayEnabled(const QString& installPath, bool enabled, QString*
  */
 bool installUnsteamOverlay(const QString& installPath, const QString& executablePath,
                            const QString& realAppId, const QString& playerName,
+                           UnsteamMethod method = UnsteamMethod::Loader,
                            QString* error = nullptr);
+
+/**
+ * Absolute path of the loader to run in place of the game, or empty when this game is
+ * not set up for the loader method. The loader reads unsteam.ini's [loader] section to
+ * find the game, so the game's own executable is never launched directly.
+ */
+QString unsteamLoaderExecutable(const QString& installPath);
 
 /** Remove an installed Unsteam overlay (payload + ini) from a game. */
 bool removeUnsteamOverlay(const QString& installPath, QString* error = nullptr);

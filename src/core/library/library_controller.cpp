@@ -379,7 +379,10 @@ void LibraryController::setGameUnsteamEnabled(const QString& entryId, bool enabl
             // owned by every Steam account, so it is never in the way.
             const QString realAppId = QStringLiteral("480");
             const QString exe = findGameExecutableInTree(existing->installPath, existing->title);
-            if (!installUnsteamOverlay(existing->installPath, exe, realAppId, QString(), &error)) {
+            // Loader by default: the winmm proxy loads on these games but never takes
+            // over the Steam API, so the game keeps talking to the real client.
+            if (!installUnsteamOverlay(existing->installPath, exe, realAppId, QString(),
+                                       UnsteamMethod::Loader, &error)) {
                 if (m_hooks.notice && !error.isEmpty())
                     m_hooks.notice(error);
                 return;
