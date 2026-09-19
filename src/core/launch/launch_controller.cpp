@@ -5,6 +5,7 @@
 #include "launch_resolver.h"
 #include "install_heuristics.h"
 #include "online_fix_overlay.h"
+#include "unsteam_overlay.h"
 #include "plugin_host.h"
 #include "plugin_interface.h"
 #include "process_launcher.h"
@@ -905,6 +906,7 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
             }
         }
         applyOnlineFixLaunchInfo(gameCopy.installPath, &info);
+        applyUnsteamLaunchInfo(gameCopy.installPath, &info);
         {
             const OnlineFixOverlayState overlay = detectOnlineFixOverlay(gameCopy.installPath);
 #if defined(Q_OS_LINUX)

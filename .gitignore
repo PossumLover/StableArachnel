@@ -64,3 +64,6 @@ __pycache__/
 # local debug scratch (depot tools, sdks)
 .tmp-smb/
 
+
+# Third-party Unsteam payload: provisioned locally, never redistributed.
+resources/unsteam/

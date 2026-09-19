@@ -448,6 +448,12 @@ void CoreController::setGameProtonId(const QString& entryId, const QString& prot
     syncLibraryFromStore();
 }
 
+void CoreController::setGameUnsteamEnabled(const QString& entryId, bool enabled)
+{
+    if (m_libraryController)
+        m_libraryController->setGameUnsteamEnabled(entryId, enabled);
+}
+
 void CoreController::setGameOnlineFixEnabled(const QString& entryId, bool enabled)
 {
     if (m_libraryController)

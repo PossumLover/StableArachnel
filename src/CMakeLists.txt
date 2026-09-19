@@ -53,6 +53,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/install/install_analysis.cpp
     src/core/install/install_heuristics.cpp
     src/core/install/online_fix_overlay.cpp
+    src/core/install/unsteam_overlay.cpp
     src/core/install/steam_api_provision.cpp
     src/core/install/install_marker.cpp
     src/core/install/install_analyzer.cpp

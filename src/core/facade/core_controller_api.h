@@ -49,6 +49,8 @@
     Q_INVOKABLE void setGameExecutableOverride(const QString&, const QString&);
     Q_INVOKABLE void setGameProtonId(const QString&, const QString&);
     Q_INVOKABLE void setGameOnlineFixEnabled(const QString&, bool);
+    /** Unsteam: second Steam compatibility layer; installs its payload on first use. */
+    Q_INVOKABLE void setGameUnsteamEnabled(const QString&, bool);
     Q_INVOKABLE void setGameAddonEnabled(const QString& entryId, const QString& addonId, bool enabled);
     Q_INVOKABLE void healInstalledAddons(const QString& entryId);
     Q_INVOKABLE void createGameDesktopShortcut(const QString& gameId);

@@ -13,6 +13,8 @@
 #include "job_store.h"
 #include "library_store.h"
 #include "online_fix_overlay.h"
+#include "unsteam_overlay.h"
+#include <QRegularExpression>
 #include "plugin_host.h"
 #include "plugin_interface.h"
 #include "settings_store.h"
@@ -215,6 +217,10 @@ QVariantMap LibraryController::entryDetails(const QString& entryId) const
     info.insert(QStringLiteral("onlineFixRelevant"),
                 fixInfo.value(QStringLiteral("onlineFixPresent")).toBool() || catalogWantsFix);
 
+    const QVariantMap unsteamInfo = unsteamOverlayInfo(installPath);
+    for (auto it = unsteamInfo.constBegin(); it != unsteamInfo.constEnd(); ++it)
+        info.insert(it.key(), it.value());
+
     const QVariantMap steamlessInfo = SteamlessService::installInfo(installPath);
     for (auto it = steamlessInfo.constBegin(); it != steamlessInfo.constEnd(); ++it)
         info.insert(it.key(), it.value());
@@ -349,12 +355,66 @@ void LibraryController::setGameProtonId(const QString& entryId, const QString& p
     sync();
 }
 
+void LibraryController::setGameUnsteamEnabled(const QString& entryId, bool enabled)
+{
+    const LibraryGame* existing = m_store->gameById(entryId);
+    if (!existing || existing->installPath.isEmpty())
+        return;
+
+    QString error;
+    if (enabled) {
+        // Both layers proxy the same entry points, so they cannot both be live.
+        if (detectOnlineFixOverlay(existing->installPath).enabled) {
+            QString fixError;
+            setOnlineFixOverlayEnabled(existing->installPath, false, &fixError);
+            if (m_hooks.notice) {
+                m_hooks.notice(QCoreApplication::translate(
+                    "Core", "Turned Online Fix off - only one Steam compatibility layer "
+                            "can run at a time."));
+            }
+        }
+        if (!detectUnsteamOverlay(existing->installPath).present) {
+            // Unsteam shows the game its real Steam AppId while Steam only sees the fake
+            // one - which is exactly what titles that check their own AppId need.
+            QString realAppId = existing->steamAppId.trimmed();
+            if (realAppId.isEmpty()) {
+                static const QRegularExpression steamId(QStringLiteral("^steam-(\\d+)$"));
+                const QRegularExpressionMatch match = steamId.match(entryId);
+                if (match.hasMatch())
+                    realAppId = match.captured(1);
+            }
+            const QString exe = findGameExecutableInTree(existing->installPath, existing->title);
+            if (!installUnsteamOverlay(existing->installPath, exe, realAppId, QString(), &error)) {
+                if (m_hooks.notice && !error.isEmpty())
+                    m_hooks.notice(error);
+                return;
+            }
+        }
+    }
+
+    if (!setUnsteamOverlayEnabled(existing->installPath, enabled, &error)) {
+        if (m_hooks.notice && !error.isEmpty())
+            m_hooks.notice(error);
+        return;
+    }
+    sync();
+}
+
 void LibraryController::setGameOnlineFixEnabled(const QString& entryId, bool enabled)
 {
     const LibraryGame* existing = m_store->gameById(entryId);
     if (!existing || existing->installPath.isEmpty())
         return;
     QString error;
+    if (enabled && detectUnsteamOverlay(existing->installPath).enabled) {
+        QString unsteamError;
+        setUnsteamOverlayEnabled(existing->installPath, false, &unsteamError);
+        if (m_hooks.notice) {
+            m_hooks.notice(QCoreApplication::translate(
+                "Core", "Turned Unsteam off - only one Steam compatibility layer can run "
+                        "at a time."));
+        }
+    }
     if (!setOnlineFixOverlayEnabled(existing->installPath, enabled, &error)) {
         if (m_hooks.notice && !error.isEmpty())
             m_hooks.notice(error);
