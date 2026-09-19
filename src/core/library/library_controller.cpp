@@ -14,7 +14,6 @@
 #include "library_store.h"
 #include "online_fix_overlay.h"
 #include "unsteam_overlay.h"
-#include <QRegularExpression>
 #include "plugin_host.h"
 #include "plugin_interface.h"
 #include "settings_store.h"
@@ -374,15 +373,11 @@ void LibraryController::setGameUnsteamEnabled(const QString& entryId, bool enabl
             }
         }
         if (!detectUnsteamOverlay(existing->installPath).present) {
-            // Unsteam shows the game its real Steam AppId while Steam only sees the fake
-            // one - which is exactly what titles that check their own AppId need.
-            QString realAppId = existing->steamAppId.trimmed();
-            if (realAppId.isEmpty()) {
-                static const QRegularExpression steamId(QStringLiteral("^steam-(\\d+)$"));
-                const QRegularExpressionMatch match = steamId.match(entryId);
-                if (match.hasMatch())
-                    realAppId = match.captured(1);
-            }
+            // Both ids stay Spacewar (480). Writing the game's own AppId here made Steam
+            // report two titles at once (Spacewar and the game), and it means every game
+            // needs its id juggled by hand when testing against another account. 480 is
+            // owned by every Steam account, so it is never in the way.
+            const QString realAppId = QStringLiteral("480");
             const QString exe = findGameExecutableInTree(existing->installPath, existing->title);
             if (!installUnsteamOverlay(existing->installPath, exe, realAppId, QString(), &error)) {
                 if (m_hooks.notice && !error.isEmpty())
