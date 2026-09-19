@@ -319,6 +319,17 @@ bool winmmBelongsToUnsteam(const QDir& dir)
         || dir.exists(QStringLiteral("unsteam.dll.arachnel-off"));
 }
 
+/**
+ * True when Unsteam is the live layer in this directory. Only one layer runs at a time,
+ * so Online Fix must not also report itself enabled here - and it otherwise would:
+ * repacks ship SteamFix.ini/OnlineFix.ini next to steam_appid.txt, which is all the
+ * fakeAppIdMode heuristic below needs, and those files never go away.
+ */
+bool unsteamIsLiveIn(const QDir& dir)
+{
+    return dir.exists(QStringLiteral("unsteam.dll")) && dir.exists(QStringLiteral("winmm.dll"));
+}
+
 bool dirHasActiveOverlay(const QDir& dir)
 {
     for (const QString& name : overlayDllNames()) {
@@ -659,7 +670,7 @@ OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath)
                 && (dir.exists(QStringLiteral("SteamFix.ini"))
                     || dir.exists(QStringLiteral("OnlineFix.ini"))
                     || dir.exists(QStringLiteral("winmm.txt")));
-            if (hasActiveDll || (fakeAppIdMode && !hasDisabled)) {
+            if ((hasActiveDll || (fakeAppIdMode && !hasDisabled)) && !unsteamIsLiveIn(dir)) {
                 state.enabled = true;
                 state.overlayDir = path;
                 break;
