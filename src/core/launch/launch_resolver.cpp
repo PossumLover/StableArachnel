@@ -197,6 +197,13 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
         pluginExe.clear();
     }
 
+    // A plugin can name an executable that is not the game - Paradox titles report their
+    // launcher bootstrapper, for instance. Rather than refusing to launch, fall back to
+    // the same scan that picks an executable at install time; it scores the real game exe
+    // far above a helper sitting in a subdirectory.
+    if (pluginExe.isEmpty() && overrideExe.isEmpty() && !game.installPath.isEmpty())
+        pluginExe = findGameExecutableInTree(game.installPath, game.title);
+
     if (pluginExe.isEmpty() && overrideExe.isEmpty())
         return resolved;
 

@@ -62,6 +62,8 @@ bool isExcludedGameExecutable(const QString& fileName)
         || lower == QStringLiteral("gdb.exe") || lower == QStringLiteral("gdbserver.exe")
         || lower == QStringLiteral("lldb.exe") || lower == QStringLiteral("elevate.exe")
         || lower == QStringLiteral("launcher_helper.exe") || lower == QStringLiteral("register.exe")
+        // Paradox's launcher bootstrapper: opaque name, ships beside the real game exe.
+        || lower == QStringLiteral("dowser.exe")
         || lower == QStringLiteral("dotnet.exe") || lower.startsWith(QStringLiteral("windowsdesktop-runtime")))
         return true;
 

@@ -758,11 +758,11 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
                             .arg(repairedPrefixes)
                             .arg(repairedPrefixes == 1 ? QStringLiteral("y") : QStringLiteral("ies")));
 
-            const QString protonId = m_settings->resolvedProtonId(gameCopy.protonId, *m_protons);
-            const QString versionRepair =
-                m_protons->repairLegacyPrefixVersionForGame(gameCopy.id, protonId);
-            if (!versionRepair.isEmpty())
-                logLine(versionRepair);
+            // Nothing rewrites the prefix's version marker: Proton owns that file and is
+            // the only thing that knows what it should say. Arachnel used to write its own
+            // idea of the version there, which Proton rejected on every launch
+            // ("Prefix has an invalid version?!") before repairing it itself - so the next
+            // launch broke it again, running a full prefix upgrade every time.
         }
         if (gameCopy.executableOverride.contains(QLatin1Char('\\'))) {
             QString override = gameCopy.executableOverride;
