@@ -5,6 +5,7 @@
 #include "catalog_types.h"
 #include "file_utils.h"
 #include "plugin_api.h"
+#include "plugin_interface_rev1.h"
 #include "plugin_catalog_json.h"
 #include "plugin_urls.h"
 #include "plugin_version.h"
@@ -43,7 +44,14 @@ namespace arachnel::core {
 
 #include "plugin_host_helpers.h"
 
-#if defined(Q_OS_LINUX)
+/**
+ * sizeof(CatalogEntry) in the SDK just before 86b028f - the last revision that
+ * still had genreTokens + genreKeys. Measured, not guessed: that header compiles
+ * to exactly 592 bytes against Qt 6 (two extra QStringList at 24 bytes each).
+ * It is the marker for a revision-1 plugin that does not export its revision.
+ */
+constexpr int kCatalogEntrySizeRev1 = 592;
+
 // Layout claim inside an abiToken, e.g. "api=4;entry=544". Returns 0 when the
 // token carries no claim, which is the case for every plugin built before tokens
 // carried one.
@@ -63,6 +71,7 @@ static int abiTokenEntrySize(const QString& abiToken)
     return 0;
 }
 
+#if defined(Q_OS_LINUX)
 static QStringList linuxMissingSharedLibs(const QString& libraryPath)
 {
     QProcess proc;
@@ -138,7 +147,11 @@ void PluginHost::unloadPlugin(const QString& pluginId)
         // (FreeTP reinstall) then segfaults inside arachnel_plugin_destroy.
         // Leak the instance and drop the DSO - same idea as plugin resetCatalogCache.
         loaded->instance = nullptr;
+        loaded->rawInstance = nullptr;
     }
+    // The shim is ours, holds no plugin state, and must go before the DSO does.
+    delete loaded->ownedShim;
+    loaded->ownedShim = nullptr;
     if (loaded->library.isLoaded()) {
         const QString path = loaded->library.fileName();
         if (!loaded->library.unload()) {
@@ -477,6 +490,10 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
         resolvePluginFn("arachnel_plugin_catalog_json"));
     auto* catalogJsonFreeFn =
         reinterpret_cast<void (*)(char*)>(resolvePluginFn("arachnel_plugin_catalog_json_free"));
+    auto* interfaceRevisionFn =
+        reinterpret_cast<int (*)()>(resolvePluginFn("arachnel_plugin_interface_revision"));
+    auto* abiSizesFn = reinterpret_cast<void (*)(ArachnelAbiSizes*)>(
+        resolvePluginFn("arachnel_plugin_abi_sizes"));
 
     if (!apiVersionFn || !createFn || !destroyFn) {
         setLoadRejectReason(QCoreApplication::translate(
@@ -531,24 +548,34 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
                     .arg(exportedApi));
             if (pluginEntrySize == coreEntrySize) {
                 layoutTrusted = true;
+            } else if (pluginEntrySize == kCatalogEntrySizeRev1) {
+                // Built against the SDK immediately before 86b028f, where
+                // CatalogEntry still carried genreTokens + genreKeys (2 QStringList
+                // = 48 bytes). The host can still talk to such a plugin: under
+                // API 4 the catalog crosses as JSON, and the revision shim below
+                // puts the vtable slots back where this plugin has them. Only the
+                // CatalogEntry-carrying calls stay disabled.
+                logDiagnostic(
+                    QStringLiteral("Plugin %1 uses the revision 1 CatalogEntry "
+                                   "(plugin=%2 core=%3): JSON catalog only, "
+                                   "entryById / detectUpdate stay disabled")
+                        .arg(id)
+                        .arg(pluginEntrySize)
+                        .arg(coreEntrySize));
             } else {
-                // Upstream only marked the plugin "untrusted" here and loaded it
-                // anyway. FreeTP v1.0.28 (592 vs 544) then corrupted the heap
-                // through ~2,783 ingested entries, surfacing as an access
-                // violation on Windows and a free(): invalid size at teardown on
-                // Linux (upstream issue #64). A layout disagreement is not
-                // something a host can work around - refuse the plugin.
+                // Some other vintage - nothing known to shim against, and a
+                // CatalogEntry of an unknown shape cannot be allowed to cross.
                 setLoadRejectReason(QCoreApplication::translate(
                     "Core",
-                    "%1 was built against a different Arachnel SDK: CatalogEntry is %2 bytes "
-                    "in the plugin and %3 bytes in this app. Loading it would corrupt memory, "
-                    "so it was not loaded. Install a plugin build made for this app version.")
+                    "%1 was built against an Arachnel SDK this app does not know: CatalogEntry "
+                    "is %2 bytes in the plugin and %3 bytes here. Loading it would corrupt "
+                    "memory, so it was not loaded. Rebuild the plugin against this app version.")
                                         .arg(displayName)
                                         .arg(pluginEntrySize)
                                         .arg(coreEntrySize));
                 logDiagnostic(
                     QStringLiteral(
-                        "Plugin rejected (CatalogEntry size mismatch): %1 plugin=%2 core=%3 "
+                        "Plugin rejected (unknown CatalogEntry size): %1 plugin=%2 core=%3 "
                         "(API %4) from %5 - rebuild the plugin against this SDK")
                         .arg(id)
                         .arg(pluginEntrySize)
@@ -611,6 +638,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
     }
 
     loaded->instance = createFn(dirPath.toUtf8().constData());
+    loaded->rawInstance = loaded->instance;
     loaded->destroyFn = destroyFn;
     loaded->catalogEntryLayoutTrusted = layoutTrusted;
     if (!loaded->instance) {
@@ -619,6 +647,98 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
         loaded->library.unload();
         delete loaded;
         return false;
+    }
+
+    // --- vtable layout -------------------------------------------------------
+    // apiVersion does not describe where the virtuals sit, and 86b028f moved one
+    // without bumping anything. Establish the revision explicitly.
+    int pluginRevision = interfaceRevisionFn ? interfaceRevisionFn() : 0;
+    if (pluginRevision <= 0) {
+        // No export: infer from the CatalogEntry vintage, since the commit that
+        // moved the virtual is the same one that shrank the struct.
+        pluginRevision = (catalogEntrySizeFn && catalogEntrySizeFn() == kCatalogEntrySizeRev1)
+                             ? 1
+                             : ARACHNEL_PLUGIN_INTERFACE_REVISION;
+    }
+    loaded->interfaceRevision = pluginRevision;
+
+    if (abiSizesFn) {
+        ArachnelAbiSizes pluginSizes{};
+        abiSizesFn(&pluginSizes);
+        ArachnelAbiSizes coreSizes{};
+        arachnel_fill_abi_sizes(&coreSizes);
+
+        // CatalogEntry is handled above (a known older layout is tolerated because
+        // nothing carrying it is called). Every other struct is passed straight
+        // across on install / launch, so any drift there is fatal.
+        const struct {
+            const char* name;
+            unsigned int plugin;
+            unsigned int core;
+        } checks[] = {
+            {"CatalogComponent", pluginSizes.catalogComponent, coreSizes.catalogComponent},
+            {"LibraryGame", pluginSizes.libraryGame, coreSizes.libraryGame},
+            {"InstallContext", pluginSizes.installContext, coreSizes.installContext},
+            {"AddonInstallContext", pluginSizes.addonInstallContext, coreSizes.addonInstallContext},
+            {"InstallResult", pluginSizes.installResult, coreSizes.installResult},
+            {"InstallAnalysis", pluginSizes.installAnalysis, coreSizes.installAnalysis},
+            {"LaunchInfo", pluginSizes.launchInfo, coreSizes.launchInfo},
+            {"OwnedDownloadProgress", pluginSizes.ownedDownloadProgress,
+             coreSizes.ownedDownloadProgress},
+        };
+        for (const auto& check : checks) {
+            if (check.plugin == check.core)
+                continue;
+            setLoadRejectReason(
+                QCoreApplication::translate(
+                    "Core",
+                    "%1 was built against a different Arachnel SDK: %2 is %3 bytes in the "
+                    "plugin and %4 bytes here. Rebuild the plugin against this app version.")
+                    .arg(displayName, QLatin1String(check.name))
+                    .arg(check.plugin)
+                    .arg(check.core));
+            logDiagnostic(QStringLiteral("Plugin rejected (%1 size mismatch): %2 plugin=%3 core=%4")
+                              .arg(QLatin1String(check.name), id)
+                              .arg(check.plugin)
+                              .arg(check.core));
+            loaded->library.unload();
+            delete loaded;
+            return false;
+        }
+        if (interfaceRevisionFn == nullptr && pluginSizes.interfaceRevision > 0)
+            loaded->interfaceRevision = static_cast<int>(pluginSizes.interfaceRevision);
+    }
+
+    if (loaded->interfaceRevision != ARACHNEL_PLUGIN_INTERFACE_REVISION) {
+        if (loaded->interfaceRevision == 1) {
+            // Route every call to the slot this plugin actually has.
+            auto* shim = new SourcePluginRev1Adapter(
+                reinterpret_cast<ISourcePluginRev1*>(loaded->rawInstance), layoutTrusted);
+            loaded->ownedShim = shim;
+            loaded->instance = shim;
+            logDiagnostic(
+                QStringLiteral("Plugin %1 uses interface revision 1 (this app is %2); "
+                               "calls routed through the revision 1 shim")
+                    .arg(id)
+                    .arg(ARACHNEL_PLUGIN_INTERFACE_REVISION));
+        } else {
+            setLoadRejectReason(
+                QCoreApplication::translate(
+                    "Core",
+                    "%1 was built against plugin interface revision %2; this app speaks %3 "
+                    "and has no shim for that revision. Rebuild the plugin against this "
+                    "app version.")
+                    .arg(displayName)
+                    .arg(loaded->interfaceRevision)
+                    .arg(ARACHNEL_PLUGIN_INTERFACE_REVISION));
+            logDiagnostic(QStringLiteral("Plugin rejected (interface revision %1, host %2): %3")
+                              .arg(loaded->interfaceRevision)
+                              .arg(ARACHNEL_PLUGIN_INTERFACE_REVISION)
+                              .arg(id));
+            loaded->library.unload();
+            delete loaded;
+            return false;
+        }
     }
 
     SourcePluginInfo info;
@@ -675,7 +795,7 @@ QByteArray PluginHost::loadPluginCatalogPayload(const QString& id, QByteArray* p
     if (loaded->apiVersion >= 4 && loaded->catalogJsonFn && loaded->catalogJsonFreeFn) {
         char* buf = nullptr;
         size_t len = 0;
-        const int rc = loaded->catalogJsonFn(loaded->instance, &buf, &len);
+        const int rc = loaded->catalogJsonFn(loaded->rawInstance, &buf, &len);
         if (rc != 0 || !buf) {
             if (buf)
                 loaded->catalogJsonFreeFn(buf);

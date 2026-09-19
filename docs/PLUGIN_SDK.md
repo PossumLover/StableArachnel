@@ -259,6 +259,54 @@ The SDK static library compiles shared helpers from Arachnel core (catalog parse
 4. **API 2/3:** `arachnel_plugin_catalog_entry_size()` is required and must match the app. Migrate to v4 when you can.
 5. Build plugins with the **same MinGW + Qt kit** as Arachnel `release.yml` (`scripts/ci/launcher-toolchain.env`). Set `ARACHNEL_SDK_REF` to that release tag.
 6. After cutting an Arachnel release that changes `CatalogEntry` / plugin ABI, bump plugin `ARACHNEL_SDK_REF` / `minArachnel` and publish sourcelist `builds[]` for both old and new hosts.
+7. **`ARACHNEL_PLUGIN_INTERFACE_REVISION`** describes where the virtuals sit. Export it
+   (`arachnel_plugin_interface_revision()`) and export `arachnel_plugin_abi_sizes()` too;
+   both come from the SDK headers you compiled against, so you get them for free.
+8. Export `arachnel_plugin_abi_sizes()` so a mismatch names the struct that drifted
+   instead of surfacing as a crash somewhere inside a call.
+
+---
+
+## Why the vtable, not just the structs
+
+`apiVersion` says which protocol a plugin speaks. It says nothing about **where the
+virtual functions sit**, and that is what actually breaks plugins.
+
+Commit `86b028f` moved `updateMayBreakDlc` from between `detectUpdate` and
+`launchInfo` to the end of `ISourcePlugin`, without changing `ARACHNEL_PLUGIN_API_VERSION`.
+For every plugin compiled before it, `launchInfo` and each slot after it shifted by one.
+The host then called
+
+```
+launchInfo(const LibraryGame&) -> LaunchInfo
+```
+
+and landed in
+
+```
+updateMayBreakDlc(const LibraryGame&, const CatalogEntry&) -> bool
+```
+
+A `LaunchInfo` return goes back through a hidden pointer the caller passes in; a `bool`
+return never writes it, and the arguments shift by one register, so the plugin reads a
+`CatalogEntry&` from whatever happened to be there. That is issue #64 — "crash
+upon updating or launching a game". The `CatalogEntry` size mismatch reported alongside it
+(592 vs 544, from dropping `genreTokens` + `genreKeys`) came from the *same commit* and was
+a co-traveller, not the cause.
+
+**Rules that follow from this:**
+
+- Adding, removing, reordering, or re-signing a virtual is an ABI break. Bump
+  `ARACHNEL_PLUGIN_INTERFACE_REVISION`.
+- Appending at the very end is the only safe edit — and it still needs a bump, so the host
+  knows whether the slot exists.
+- "Append-only" comments in the header are not enforcement. The revision number is.
+
+The host refuses a plugin whose revision it cannot speak, and carries a shim for
+revision 1 (`plugin_interface_rev1.h`) that routes each call to the slot such a plugin
+actually has. Under API 4 the catalog crosses as JSON, so a revision-1 plugin stays useful;
+only the calls that carry a `CatalogEntry` across (`entryById`, `detectUpdate`,
+`updateMayBreakDlc`) stay disabled when its `CatalogEntry` layout differs.
 
 ---
 
