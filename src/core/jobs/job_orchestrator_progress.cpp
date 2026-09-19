@@ -63,11 +63,16 @@ void JobOrchestrator::reportPluginProgress(const QString& jobId,
             nextProgress = bytePercent;
     }
 
-    // Status-only ticks often send percent=0 - never rewind the bar mid-download.
+    // Status-only ticks often send percent=0 - never rewind the bar for those. A real
+    // percent from the plugin is trusted even when it is lower than the last one:
+    // steamidra walks a game's depots and restarts its percentage for each, so the bar
+    // has to be allowed to come back down. The old guard also held the previous value
+    // whenever bytes had not gone backwards, which is true for essentially every tick of
+    // a healthy download - so once a small depot briefly reported 99% the bar stuck there
+    // for the rest of a multi-depot update while the bytes underneath read 6%.
     if (nextProgress < previousProgress && previousProgress < 100) {
         const bool statusOnly = progress.percent <= 0 && downloaded <= previousDownloaded;
-        const bool noRealRegression = downloaded + 64 * 1024 >= previousDownloaded;
-        if (statusOnly || noRealRegression)
+        if (statusOnly)
             nextProgress = previousProgress;
     }
     job.progress = nextProgress;

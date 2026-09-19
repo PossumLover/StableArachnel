@@ -314,14 +314,11 @@ MD.ApplicationWindow {
 
             function warmCatalogLoaders() {
                 // Create Discover/Catalog off-tab (enabled=false → catalog model stays null).
-                if (!discoverLoader.keepAlive) {
-                    discoverLoader.keepAlive = true
-                    discoverLoader.active = true
-                }
-                if (!catalogBrowseLoader.keepAlive) {
-                    catalogBrowseLoader.keepAlive = true
-                    catalogBrowseLoader.active = true
-                }
+                // Setting keepAlive is enough: `active` is bound to
+                // `pageIndex === 1 || keepAlive`. Assigning active directly also
+                // destroyed that binding, so the loader could never follow the rail again.
+                discoverLoader.keepAlive = true
+                catalogBrowseLoader.keepAlive = true
             }
 
             StackView.onStatusChanged: {
