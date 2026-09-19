@@ -20,6 +20,7 @@
 #include <cxxabi.h>
 #include <dlfcn.h>
 #include <execinfo.h>
+#include <pthread.h>
 #include <unistd.h>
 #endif
 
@@ -36,6 +37,8 @@ extern QStringList g_breadcrumbs;
 extern qint64 g_appStartMs;
 #if defined(Q_OS_WIN)
 extern DWORD g_mainThreadId;
+#else
+extern pthread_t g_mainThreadHandle;
 #endif
 
 struct CrashReportData {
@@ -48,6 +51,7 @@ QString logDirectory();
 QString runLogPath();
 QString crashLogPath();
 QString latestCrashReportPath();
+QString latestHangReportPath();
 QString pendingCrashMarkerPath();
 QString latestCrashDumpPath();
 
@@ -75,6 +79,10 @@ QString captureStackTraceWindows(CONTEXT* optionalContext);
 LONG WINAPI unhandledExceptionFilter(EXCEPTION_POINTERS* info);
 #else
 QString captureStackTraceUnix();
+/** Arm the signal-based backtrace of the main thread. Call from the main thread. */
+void installHangStackCapture();
+/** Backtrace of the main thread, taken from another thread. */
+QString captureMainThreadStackUnix(int timeoutMs);
 void linuxSignalHandler(int signal, siginfo_t* info, void* context);
 #endif
 

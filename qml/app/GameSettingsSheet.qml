@@ -401,7 +401,10 @@ MD.BottomSheet {
 
                                 MD.Label {
                                     Layout.fillWidth: true
-                                    text: root.availableLaunchOptions[0].title || qsTr("Default")
+                                    // Bindings still evaluate while the block is
+                                    // invisible, so [0] can be undefined here.
+                                    text: (root.availableLaunchOptions[0] ? root.availableLaunchOptions[0].title : "")
+                                          || qsTr("Default")
                                     typescale: MD.Token.typescale.body_medium
                                     color: MD.Token.color.on_surface
                                 }
@@ -410,6 +413,8 @@ MD.BottomSheet {
                                     Layout.fillWidth: true
                                     text: {
                                         const opt = root.availableLaunchOptions[0]
+                                        if (!opt)
+                                            return ""
                                         let desc = opt.executable || ""
                                         if (opt.arguments && opt.arguments.length > 0)
                                             desc += " " + (Array.isArray(opt.arguments) ? opt.arguments.join(" ") : opt.arguments)

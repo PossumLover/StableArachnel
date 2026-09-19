@@ -14,6 +14,8 @@
 #include <QTextStream>
 #include <QUrl>
 
+#include <atomic>
+#include <cerrno>
 #include <cstdio>
 #include <vector>
 
@@ -45,6 +47,8 @@ QStringList g_breadcrumbs;
 qint64 g_appStartMs = 0;
 #if defined(Q_OS_WIN)
 DWORD g_mainThreadId = 0;
+#else
+pthread_t g_mainThreadHandle = {};
 #endif
 
 constexpr int kRecentLogLines = 200;
@@ -77,6 +81,12 @@ QString crashLogPath()
 QString latestCrashReportPath()
 {
     return logDirectory() + QStringLiteral("/crash-report-latest.txt");
+}
+
+QString latestHangReportPath()
+{
+    // Hangs are not crashes and must not clobber the pending-crash report.
+    return logDirectory() + QStringLiteral("/hang-report-latest.txt");
 }
 
 QString pendingCrashMarkerPath()
@@ -659,13 +669,15 @@ QString moduleForAddressUnix(void* address)
     return QDir::fromNativeSeparators(QString::fromUtf8(info.dli_fname));
 }
 
-QString captureStackTraceUnix()
+namespace {
+
+constexpr int kStackFrames = 64;
+
+QString formatStackFrames(void* const* frames, int frameCount, const QString& title)
 {
     QStringList lines;
-    lines.append(QStringLiteral("Stack trace:"));
+    lines.append(title);
 
-    void* frames[64] = {};
-    const int frameCount = backtrace(frames, 64);
     char** symbols = backtrace_symbols(frames, frameCount);
     for (int i = 0; i < frameCount; ++i) {
         const QString symbol = symbols && symbols[i] ? demangleSymbol(symbols[i])
@@ -682,6 +694,83 @@ QString captureStackTraceUnix()
         lines.append(QStringLiteral("  (no stack frames captured)"));
 
     return lines.join(QLatin1Char('\n'));
+}
+
+// --- Main-thread backtrace, taken from the watchdog thread -------------------
+// A thread cannot walk another thread's stack, so the main thread is
+// interrupted with a signal and its handler records the frames for us. Without
+// this, hang reports on Linux only ever said "(not captured on this platform)"
+// and never named the call that blocked the UI.
+
+void* g_hangFrames[kStackFrames] = {};
+std::atomic<int> g_hangFrameCount{-1};
+bool g_hangCaptureReady = false;
+
+int hangCaptureSignal()
+{
+    // SIGRTMIN and SIGRTMIN+1 belong to glibc's thread implementation; +4 is
+    // free and unused by Qt.
+    const int realtime = SIGRTMIN + 4;
+    if (realtime <= SIGRTMAX)
+        return realtime;
+    return SIGPROF;
+}
+
+void hangStackSignalHandler(int)
+{
+    const int savedErrno = errno;
+    g_hangFrameCount.store(backtrace(g_hangFrames, kStackFrames), std::memory_order_release);
+    errno = savedErrno;
+}
+
+} // namespace
+
+void installHangStackCapture()
+{
+    g_mainThreadHandle = pthread_self();
+
+    // The first backtrace() may dlopen the unwinder and malloc. Do that here,
+    // on a healthy main thread, never inside the signal handler.
+    void* warmup[4] = {};
+    backtrace(warmup, 4);
+
+    struct sigaction action = {};
+    action.sa_handler = hangStackSignalHandler;
+    action.sa_flags = SA_RESTART;
+    sigemptyset(&action.sa_mask);
+    g_hangCaptureReady = sigaction(hangCaptureSignal(), &action, nullptr) == 0;
+}
+
+QString captureMainThreadStackUnix(int timeoutMs)
+{
+    if (!g_hangCaptureReady)
+        return QStringLiteral("Hung thread stack: (capture not installed)");
+
+    g_hangFrameCount.store(-1, std::memory_order_release);
+    if (pthread_kill(g_mainThreadHandle, hangCaptureSignal()) != 0)
+        return QStringLiteral("Hung thread stack: (signal delivery failed)");
+
+    int frameCount = -1;
+    for (int waited = 0; waited < timeoutMs; waited += 10) {
+        frameCount = g_hangFrameCount.load(std::memory_order_acquire);
+        if (frameCount >= 0)
+            break;
+        usleep(10 * 1000);
+    }
+    if (frameCount < 0) {
+        return QStringLiteral("Hung thread stack: (main thread never took the signal - "
+                              "stuck in an uninterruptible call)");
+    }
+
+    return formatStackFrames(g_hangFrames, frameCount,
+                             QStringLiteral("Hung thread stack (main):"));
+}
+
+QString captureStackTraceUnix()
+{
+    void* frames[kStackFrames] = {};
+    const int frameCount = backtrace(frames, kStackFrames);
+    return formatStackFrames(frames, frameCount, QStringLiteral("Stack trace:"));
 }
 
 QString describeUnixSignal(int signal, siginfo_t* info)
@@ -752,20 +841,46 @@ void reportUiHang(int hungSeconds)
         return;
     const QString summary =
         QStringLiteral("UI hang / not responding (~%1s)").arg(hungSeconds);
-    const QString extra = QStringLiteral(
-        "Main thread did not process the event loop. Arachnel was frozen for the user.");
-    const CrashReportData report = buildCrashReport(
-        summary, extra, QStringLiteral("Hung thread stack: (not captured on this platform)"));
 
-    // Same as Windows: avoid g_logMutex while the UI thread is stuck.
+    QStringList extra;
+    extra.append(QStringLiteral(
+        "Main thread did not process the event loop. Arachnel was frozen for the user."));
+    extra.append(QStringLiteral(
+        "A hang is not a crash: the process was left running so the UI can come back "
+        "when the blocking call returns."));
+    extra.append(QStringLiteral("Hang report: %1").arg(latestHangReportPath()));
+
+    const CrashReportData report = buildCrashReport(
+        summary, extra.join(QStringLiteral("\n")), captureMainThreadStackUnix(2000));
+
     fprintf(stderr, "\n%s\n\n%s\n", qPrintable(report.summary), qPrintable(report.details));
     fflush(stderr);
-    persistPendingCrash(report);
-    spawnCrashDialogUi();
 
-    // Same as Windows: dialog is forked; exit the frozen main process.
-    g_shuttingDown = true;
-    _exit(1);
+    writeTextFile(latestHangReportPath(), report.details);
+
+    // Keep a history in crash.log, but never block on g_logMutex: the frozen
+    // main thread may be stuck holding it inside writeLine().
+    const QString headline = QStringLiteral("[%1] HANG: %2")
+                                 .arg(QDateTime::currentDateTime().toString(Qt::ISODate), summary);
+    if (g_logMutex.tryLock(500)) {
+        appendToFile(crashLogPath(), headline);
+        appendToFile(crashLogPath(), report.details);
+        appendToFile(runLogPath(), headline);
+        g_logMutex.unlock();
+    } else {
+        // crash.log is only ever written from these report paths, so an
+        // unlocked append here cannot interleave with normal logging.
+        appendToFile(crashLogPath(), headline);
+        appendToFile(crashLogPath(), report.details);
+    }
+
+    // Opt back into the old behaviour (crash dialog + kill) if someone wants it.
+    if (qEnvironmentVariableIntValue("ARACHNEL_HANG_ABORT") == 1) {
+        persistPendingCrash(report);
+        spawnCrashDialogUi();
+        g_shuttingDown = true;
+        _exit(1);
+    }
 }
 #endif
 

@@ -65,6 +65,12 @@ void startHangWatchdog()
         // First QML/DirectWrite layout and plugin/SSL setup can exceed 25s on a
         // cold disk. Killing that looks like a crash (#39, #50, #51).
         constexpr qint64 kStartupGraceMs = 120 * 1000;
+        // One long stall should leave one report, not one every half minute.
+        constexpr qint64 kReportCooldownMs = 5 * 60 * 1000;
+
+        qint64 hangStartedMs = 0; // 0 while the UI is answering pings
+        qint64 lastReportMs = 0;
+
         while (!g_shuttingDown) {
             std::this_thread::sleep_for(3s);
             if (g_shuttingDown || g_isCrashDialogProcess)
@@ -73,6 +79,7 @@ void startHangWatchdog()
             if (!app)
                 continue;
 
+            const qint64 pingSentMs = QDateTime::currentMSecsSinceEpoch();
             const qint64 ping = g_mainPingSerial.fetch_add(1) + 1;
             const bool queued = QMetaObject::invokeMethod(
                 app,
@@ -86,18 +93,32 @@ void startHangWatchdog()
 
             if (g_shuttingDown)
                 break;
-            if (g_mainPingAck.load(std::memory_order_acquire) == ping)
+            if (g_mainPingAck.load(std::memory_order_acquire) == ping) {
+                if (hangStartedMs > 0) {
+                    const qint64 frozenMs = QDateTime::currentMSecsSinceEpoch() - hangStartedMs;
+                    logDiagnostic(QStringLiteral("[hang] main thread resumed after ~%1s")
+                                      .arg(frozenMs / 1000));
+                    hangStartedMs = 0;
+                }
                 continue;
+            }
 
             const qint64 now = QDateTime::currentMSecsSinceEpoch();
             if (g_appStartMs > 0 && (now - g_appStartMs) < kStartupGraceMs)
                 continue;
 
-            reportUiHang(kHangSeconds);
+            if (hangStartedMs == 0)
+                hangStartedMs = pingSentMs;
+            const int frozenSeconds = static_cast<int>((now - hangStartedMs) / 1000);
 
-            // reportUiHang should kill this process after spawning the crash
-            // dialog. If it returned early (shutting down / dialog mode), stop.
-            break;
+            if (lastReportMs == 0 || now - lastReportMs >= kReportCooldownMs) {
+                lastReportMs = now;
+                reportUiHang(qMax(kHangSeconds, frozenSeconds));
+            }
+
+            // A frozen UI is not a dead app: the blocking call almost always
+            // returns. Keep watching instead of killing the process (and the
+            // user's in-flight downloads) the way upstream did.
         }
     }).detach();
 }
@@ -132,6 +153,10 @@ void installCrashLogging()
     const int crashSignals[] = {SIGSEGV, SIGABRT, SIGFPE, SIGILL, SIGBUS};
     for (const int sigNum : crashSignals)
         sigaction(sigNum, &action, nullptr);
+
+    // installCrashLogging() runs on the main thread: record it now so the
+    // watchdog can backtrace it during a hang.
+    installHangStackCapture();
 #endif
     std::set_terminate(cppTerminateHandler);
     qInstallMessageHandler(qtMessageHandler);

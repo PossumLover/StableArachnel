@@ -17,6 +17,7 @@
 #include <QProcess>
 #include <QStandardPaths>
 #include <QTemporaryDir>
+#include <QThreadPool>
 #include <QTimer>
 #include <QUrl>
 #include <QtConcurrent>
@@ -29,6 +30,29 @@
 #endif
 
 namespace arachnel::core {
+
+namespace {
+
+QThreadPool* pluginWorkerPool()
+{
+    // Owned downloads and installs run for minutes to hours. On the global pool
+    // (idealThreadCount() slots, 8 on a typical box) a few of them starve every
+    // other QtConcurrent user - catalog loads, cover fetches, install-kind
+    // probes - and a main-thread waitForFinished() on a future that is still
+    // *queued* behind them can never return. That reads to the user as a frozen
+    // UI and, before the watchdog was fixed, as a crash at the 140s mark.
+    //
+    // Intentionally leaked: a static QThreadPool would block process exit
+    // waiting for a download that is still running.
+    static QThreadPool* pool = []() {
+        auto* created = new QThreadPool;
+        created->setMaxThreadCount(32);
+        return created;
+    }();
+    return pool;
+}
+
+} // namespace
 
 void PluginHost::trackPluginWorker(QFuture<void> future)
 {
@@ -80,7 +104,7 @@ void PluginHost::runInstallAsync(ISourcePlugin* plugin, const InstallContext& ct
         return;
     }
 
-    QFuture<void> future = QtConcurrent::run([plugin, ctx, callback]() {
+    QFuture<void> future = QtConcurrent::run(pluginWorkerPool(), [plugin, ctx, callback]() {
         const InstallResult result = plugin->installFromDownload(ctx);
         QObject* app = QCoreApplication::instance();
         if (!app) {
@@ -103,7 +127,7 @@ void PluginHost::runAddonInstallAsync(ISourcePlugin* plugin, const AddonInstallC
         return;
     }
 
-    QFuture<void> future = QtConcurrent::run([plugin, ctx, callback]() {
+    QFuture<void> future = QtConcurrent::run(pluginWorkerPool(), [plugin, ctx, callback]() {
         const InstallResult result = plugin->installAddonFromDownload(ctx);
         QObject* app = QCoreApplication::instance();
         if (!app) {
@@ -127,7 +151,7 @@ void PluginHost::runOwnedDownloadAsync(ISourcePlugin* plugin, const InstallConte
         return;
     }
 
-    QFuture<void> future = QtConcurrent::run([plugin, ctx, onProgress, onFinished]() {
+    QFuture<void> future = QtConcurrent::run(pluginWorkerPool(), [plugin, ctx, onProgress, onFinished]() {
         auto progressBridge = [onProgress](const OwnedDownloadProgress& p) {
             if (!onProgress)
                 return;
