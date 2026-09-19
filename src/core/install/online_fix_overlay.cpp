@@ -307,9 +307,23 @@ void appendSteamOverlayEnvironment(LaunchInfo* info, const QString& fakeSteamId,
 }
 #endif
 
+/**
+ * Unsteam uses winmm.dll as its proxy too, so a winmm.dll sitting next to unsteam.dll /
+ * unsteam.ini belongs to Unsteam, not to Online Fix. Without this the two layers read as
+ * one: turning Unsteam on made Online Fix report itself enabled, and turning Online Fix
+ * off would have renamed Unsteam's proxy out from under it.
+ */
+bool winmmBelongsToUnsteam(const QDir& dir)
+{
+    return dir.exists(QStringLiteral("unsteam.dll")) || dir.exists(QStringLiteral("unsteam.ini"))
+        || dir.exists(QStringLiteral("unsteam.dll.arachnel-off"));
+}
+
 bool dirHasActiveOverlay(const QDir& dir)
 {
     for (const QString& name : overlayDllNames()) {
+        if (name == QStringLiteral("winmm.dll") && winmmBelongsToUnsteam(dir))
+            continue;
         if (dir.exists(name))
             return true;
     }
@@ -631,6 +645,8 @@ OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath)
             const QDir dir(path);
             bool hasActiveDll = false;
             for (const QString& name : overlayDllNames()) {
+                if (name == QStringLiteral("winmm.dll") && winmmBelongsToUnsteam(dir))
+                    continue;
                 if (dir.exists(name)) {
                     hasActiveDll = true;
                     break;
