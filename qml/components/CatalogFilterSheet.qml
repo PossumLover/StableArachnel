@@ -101,7 +101,9 @@ MD.BottomSheet {
         case "Free to Play":
             return MD.Token.icon.money_off
         case "Massively Multiplayer":
-            return MD.Token.icon.public
+            // `public` is a reserved word the Qt 6.8 QML parser refuses as a
+            // member name; bracket access reads the same icon on every version.
+            return MD.Token.icon["public"]
         case "VR":
             return MD.Token.icon.view_in_ar
         default:
