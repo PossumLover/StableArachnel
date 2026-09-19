@@ -1,5 +1,7 @@
 #include "core_controller_impl.h"
 
+#include "file_utils.h"
+
 #include <QDebug>
 #include <QFile>
 #include <QFuture>
@@ -255,8 +257,14 @@ void CoreController::installResolvedCatalogEntry(const CatalogEntry& entryIn,
                 m_jobOrchestrator->reportPluginProgress(jobId, progress);
             },
             [this, jobId](const InstallResult& result) {
-                if (result.success)
+                if (result.success) {
+                    // Depot downloads land Windows manifest paths as literal file names
+                    // ("Cities2_Data\\foo"). Split them into real directories now, while
+                    // the download is fresh, instead of waiting for the next launch.
+                    if (!result.installPath.isEmpty())
+                        healWindowsInstallLayout(result.installPath);
                     m_jobOrchestrator->completePluginDownload(jobId, result.installPath);
+                }
                 else
                     m_jobOrchestrator->failPluginDownload(
                         jobId, result.error.isEmpty()

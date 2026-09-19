@@ -1,6 +1,7 @@
 #include "file_utils.h"
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
@@ -404,6 +405,20 @@ int healWindowsInstallLayout(const QString& installPath)
             continue;
         QDir().mkpath(QFileInfo(dest).absolutePath());
         if (QFileInfo::exists(dest)) {
+            // A backslash-named entry is a depot path that was never split into
+            // directories, so on an update it holds the NEW content for a file that is
+            // already installed. Deleting it - which is all this did before - threw the
+            // update away and left the old file in place, so the game never changed and
+            // the next update re-downloaded everything because nothing ever matched.
+            // Replace when the stray copy is the newer one; otherwise it really is junk.
+            const QFileInfo destInfo(dest);
+            if (!info.isDir() && !destInfo.isDir()
+                && info.lastModified() > destInfo.lastModified()) {
+                if (QFile::remove(dest) && QFile::rename(src, dest)) {
+                    ++moved;
+                    continue;
+                }
+            }
             if (info.isDir())
                 QDir(src).removeRecursively();
             else
