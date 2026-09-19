@@ -160,6 +160,65 @@ ability to write files down with it.
 `appendToFile` / `writeTextFile` returned quietly when `open()` failed, which is
 what hid fix 10. They now print the path and the reason.
 
+**12. The real cause of issue #64: a moved virtual, not the struct size**
+(`plugin_api.h`, `plugin_interface_rev1.h`, `plugin_host.cpp`, `docs/PLUGIN_SDK.md`)
+
+Fix 5 refused ABI-mismatched plugins, which was right but incomplete — it treated
+`sizeof(CatalogEntry)` as the problem. It wasn't.
+
+Upstream `86b028f` ("changes filters and v4 plugin fix", 2026-08-19) did two things
+at once. It dropped `genreTokens` + `genreKeys` from `CatalogEntry` — two
+`QStringList` at 24 bytes each, which is exactly the 592 → 544 everyone was
+looking at. And it **moved `updateMayBreakDlc`** from between `detectUpdate` and
+`launchInfo` to the end of `ISourcePlugin`, without touching
+`ARACHNEL_PLUGIN_API_VERSION`.
+
+That second change is the crash. For a plugin built before it, `launchInfo` and
+every slot after it shift by one, so the host calling
+
+```
+launchInfo(const LibraryGame&) -> LaunchInfo
+```
+
+lands in
+
+```
+updateMayBreakDlc(const LibraryGame&, const CatalogEntry&) -> bool
+```
+
+The `LaunchInfo` return travels through a hidden pointer the caller supplies; a
+`bool` return never writes it, and the arguments shift a register, so the plugin
+reads a `CatalogEntry&` out of whatever was there. Hence the issue's own title —
+"crash upon updating or launching a game" — the `free(): invalid size`, and the
+read of `0xffffffffffffffff`. The struct size was a co-traveller from the same
+commit, which is why disabling `entryById` never helped.
+
+Measured, not inferred: the SDK at `86b028f^` compiles `CatalogEntry` to exactly
+592 bytes against Qt 6, and HEAD to 544.
+
+The fork adds:
+
+- `ARACHNEL_PLUGIN_INTERFACE_REVISION` — a vtable layout number, exported by the
+  plugin and checked at load. Any add/remove/reorder/re-sign bumps it. The host
+  refuses a revision it cannot speak instead of calling into the wrong slot.
+- `arachnel_plugin_abi_sizes()` — every shared struct's size in one table, so
+  drift is reported as "LibraryGame is 312 bytes in the plugin and 296 here"
+  rather than as a crash mid-call. Non-`CatalogEntry` drift is fatal, since those
+  structs cross on install and launch.
+- `plugin_interface_rev1.h` — the pre-`86b028f` layout plus an adapter that routes
+  each call to the slot a revision-1 plugin actually has. A plugin that does not
+  export a revision is identified by its 592-byte `CatalogEntry`, since one commit
+  caused both.
+
+**This makes FreeTP v1.0.28 usable again.** It loads through the shim, its full
+2,783-entry catalog comes across as JSON, and the app runs past the 140s mark that
+used to kill it. `entryById` / `detectUpdate` / `updateMayBreakDlc` stay disabled
+for it — its `CatalogEntry` really is a different shape — so FreeTP games do not
+get update detection. Everything else works.
+
+`docs/PLUGIN_SDK.md` gains a section explaining why the vtable, not the struct, is
+the thing to version.
+
 ## Measured, same data and display
 
 Both builds run against an identical copy of the real library under Xvfb:
@@ -168,7 +227,7 @@ Both builds run against an identical copy of the real library under Xvfb:
 |---|---|---|
 | "recursive rearrange" warnings | 6 | 0 |
 | QML warnings total | 6 | 0 |
-| FreeTP v1.0.28 (592 vs 544) | loaded | rejected |
+| FreeTP v1.0.28 (592 vs 544) | loaded, then crashed | loaded via revision-1 shim |
 | steamidra v0.6.18 | loaded | loaded |
 | open-file soft limit | 1024 | raised to hard limit |
 
