@@ -19,6 +19,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
+#include <QRegularExpression>
 #include <QSet>
 #include <QStandardPaths>
 #include <QTemporaryDir>
@@ -43,6 +44,25 @@ namespace arachnel::core {
 #include "plugin_host_helpers.h"
 
 #if defined(Q_OS_LINUX)
+// Layout claim inside an abiToken, e.g. "api=4;entry=544". Returns 0 when the
+// token carries no claim, which is the case for every plugin built before tokens
+// carried one.
+static int abiTokenEntrySize(const QString& abiToken)
+{
+    const QStringList parts =
+        abiToken.split(QRegularExpression(QStringLiteral("[;,\\s]+")), Qt::SkipEmptyParts);
+    for (const QString& part : parts) {
+        const QString trimmed = part.trimmed();
+        if (!trimmed.startsWith(QStringLiteral("entry="), Qt::CaseInsensitive))
+            continue;
+        bool ok = false;
+        const int value = QStringView(trimmed).mid(6).toInt(&ok);
+        if (ok && value > 0)
+            return value;
+    }
+    return 0;
+}
+
 static QStringList linuxMissingSharedLibs(const QString& libraryPath)
 {
     QProcess proc;
@@ -307,6 +327,31 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
         return false;
     }
 
+    // "api=4" encodes an API generation but nothing about struct layout, so a
+    // plugin built against a modified SDK still resolves as compatible. Honour a
+    // layout claim when the token carries one ("api=4;entry=544"), so a bad build
+    // is refused before its code is ever mapped. Tokens without it fall through to
+    // the export-based check after load.
+    const QString abiToken = manifest.value(QStringLiteral("abiToken")).toString();
+    const int declaredEntrySize = abiTokenEntrySize(abiToken);
+    if (declaredEntrySize > 0 && declaredEntrySize != static_cast<int>(sizeof(CatalogEntry))) {
+        setLoadRejectReason(QCoreApplication::translate(
+            "Core",
+            "%1 declares a CatalogEntry of %2 bytes; this app uses %3. "
+            "Install a plugin build made for this app version.")
+                                .arg(displayName)
+                                .arg(declaredEntrySize)
+                                .arg(static_cast<int>(sizeof(CatalogEntry))));
+        logDiagnostic(QStringLiteral(
+                          "Plugin rejected (abiToken layout mismatch): %1 declared=%2 core=%3 "
+                          "token=\"%4\" from %5")
+                          .arg(id)
+                          .arg(declaredEntrySize)
+                          .arg(static_cast<int>(sizeof(CatalogEntry)))
+                          .arg(abiToken, dirPath));
+        return false;
+    }
+
     const QString minArachnel = manifest.value(QStringLiteral("minArachnel")).toString();
     const QString maxArachnel = manifest.value(QStringLiteral("maxArachnel")).toString();
     const QString appVersion = QCoreApplication::applicationVersion();
@@ -487,13 +532,32 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
             if (pluginEntrySize == coreEntrySize) {
                 layoutTrusted = true;
             } else {
+                // Upstream only marked the plugin "untrusted" here and loaded it
+                // anyway. FreeTP v1.0.28 (592 vs 544) then corrupted the heap
+                // through ~2,783 ingested entries, surfacing as an access
+                // violation on Windows and a free(): invalid size at teardown on
+                // Linux (upstream issue #64). A layout disagreement is not
+                // something a host can work around - refuse the plugin.
+                setLoadRejectReason(QCoreApplication::translate(
+                    "Core",
+                    "%1 was built against a different Arachnel SDK: CatalogEntry is %2 bytes "
+                    "in the plugin and %3 bytes in this app. Loading it would corrupt memory, "
+                    "so it was not loaded. Install a plugin build made for this app version.")
+                                        .arg(displayName)
+                                        .arg(pluginEntrySize)
+                                        .arg(coreEntrySize));
                 logDiagnostic(
                     QStringLiteral(
-                        "Plugin %1 CatalogEntry size mismatch (plugin=%2 core=%3) - "
-                        "JSON catalog still loads; skip entryById / detectUpdate across DLL")
+                        "Plugin rejected (CatalogEntry size mismatch): %1 plugin=%2 core=%3 "
+                        "(API %4) from %5 - rebuild the plugin against this SDK")
                         .arg(id)
                         .arg(pluginEntrySize)
-                        .arg(coreEntrySize));
+                        .arg(coreEntrySize)
+                        .arg(exportedApi)
+                        .arg(libraryPath));
+                loaded->library.unload();
+                delete loaded;
+                return false;
             }
         } else {
             logDiagnostic(QStringLiteral(
