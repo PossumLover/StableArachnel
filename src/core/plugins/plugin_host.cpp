@@ -44,7 +44,6 @@ namespace arachnel::core {
 
 #include "plugin_host_helpers.h"
 
-#if defined(Q_OS_LINUX)
 // Layout claim inside an abiToken, e.g. "api=4;entry=544". Returns 0 when the
 // token carries no claim, which is the case for every plugin built before the
 // fork started asking for one.
@@ -72,6 +71,7 @@ static int abiTokenEntrySize(const QString& abiToken)
     return 0;
 }
 
+#if defined(Q_OS_LINUX)
 static QStringList linuxMissingSharedLibs(const QString& libraryPath)
 {
     QProcess proc;
