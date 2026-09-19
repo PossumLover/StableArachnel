@@ -82,8 +82,11 @@ GameLaunchTarget resolveGameLaunchTarget(const LibraryGame& game, const LaunchIn
     // Shortcut / Steam: game exe + args only (no Proton wrapper).
     target.arguments = info.argumentsPrefix;
     target.arguments += info.arguments;
-    target.arguments += splitLaunchArguments(settings.globalLaunchArgs());
-    target.arguments += splitLaunchArguments(game.launchArgs);
+    // Only the argument half of the launch options: a shortcut runs the exe directly,
+    // so a %command% wrapper or VAR=value prefix has nothing to attach to and must not
+    // be handed to the game as a literal argument.
+    target.arguments += parseLaunchOptions(settings.globalLaunchArgs()).arguments;
+    target.arguments += parseLaunchOptions(game.launchArgs).arguments;
     return target;
 }
 

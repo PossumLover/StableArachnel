@@ -949,7 +949,7 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
             const VrGameDetection vrDetection =
                 detectVrGame(gameCopy.installPath, info.executable, gameCopy.genres, gameCopy.title,
                              launchOpts, gameCopy.selectedLaunchOptionId,
-                             info.arguments + splitLaunchArguments(gameCopy.launchArgs));
+                             info.arguments + parseLaunchOptions(gameCopy.launchArgs).arguments);
             if (vrDetection.isCurrentLaunchVr) {
                 logLine(QCoreApplication::translate("Core", "VR launch mode active (runtime: %1, engine: %2)")
                             .arg(vrRuntimeName(vrDetection.runtime),

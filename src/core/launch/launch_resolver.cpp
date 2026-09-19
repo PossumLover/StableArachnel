@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
 
 namespace arachnel::core {
 
@@ -36,6 +37,39 @@ QStringList splitLaunchArguments(const QString& text)
     if (!current.isEmpty())
         result.append(current);
     return result;
+}
+
+LaunchOptions parseLaunchOptions(const QString& text)
+{
+    LaunchOptions options;
+    const QStringList tokens = splitLaunchArguments(text);
+    const int commandIndex = tokens.indexOf(QStringLiteral("%command%"));
+
+    // No %command%: every token is a game argument, exactly as before. Lifting VAR=value
+    // out of a string that never asked for substitution would silently change the meaning
+    // of launch options people already rely on.
+    if (commandIndex < 0) {
+        options.arguments = tokens;
+        return options;
+    }
+
+    static const QRegularExpression assignment(QStringLiteral("^([A-Za-z_][A-Za-z0-9_]*)=(.*)$"),
+                                               QRegularExpression::DotMatchesEverythingOption);
+
+    int i = 0;
+    for (; i < commandIndex; ++i) {
+        const QRegularExpressionMatch match = assignment.match(tokens.at(i));
+        if (!match.hasMatch())
+            break;
+        options.environment.insert(match.captured(1), match.captured(2));
+    }
+
+    // Anything still left before %command% is a wrapper command (mangohud, gamemoderun…).
+    for (; i < commandIndex; ++i)
+        options.wrapper.append(tokens.at(i));
+
+    options.arguments = tokens.mid(commandIndex + 1);
+    return options;
 }
 
 namespace {
@@ -110,6 +144,40 @@ QString filterOverlayPreloadForHost(const QString& preload, int gameBits)
     return kept.join(QLatin1Char(':'));
 }
 
+// User launch options win over the plugin's, except for the two variables where
+// replacing outright would quietly disable something the plugin needs: those merge.
+void applyUserLaunchOptions(ResolvedLaunch* resolved, const LaunchOptions& global,
+                            const LaunchOptions& game)
+{
+    for (const LaunchOptions* options : {&global, &game}) {
+        for (auto it = options->environment.constBegin(); it != options->environment.constEnd();
+             ++it) {
+            if (it.key() == QStringLiteral("WINEDLLOVERRIDES")
+                || it.key() == QStringLiteral("LD_PRELOAD")) {
+                const QChar separator = it.key() == QStringLiteral("LD_PRELOAD")
+                                            ? QLatin1Char(':')
+                                            : QLatin1Char(';');
+                const QString existing = resolved->environment.value(it.key());
+                resolved->environment.insert(it.key(), existing.isEmpty()
+                                                           ? it.value()
+                                                           : existing + separator + it.value());
+            } else {
+                resolved->environment.insert(it.key(), it.value());
+            }
+        }
+    }
+
+    const QStringList wrapper = game.wrapper.isEmpty() ? global.wrapper : game.wrapper;
+    if (wrapper.isEmpty())
+        return;
+
+    QStringList wrapped = wrapper.mid(1);
+    wrapped.append(resolved->program);
+    wrapped += resolved->arguments;
+    resolved->program = wrapper.first();
+    resolved->arguments = wrapped;
+}
+
 } // namespace
 
 ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& game,
@@ -142,9 +210,12 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
     if (workDir.isEmpty() || !overrideExe.isEmpty())
         workDir = QFileInfo(executable).absolutePath();
 
+    const LaunchOptions globalOptions = parseLaunchOptions(settings.globalLaunchArgs());
+    const LaunchOptions gameOptions = parseLaunchOptions(game.launchArgs);
+
     QStringList arguments = pluginInfo.arguments;
-    arguments += splitLaunchArguments(settings.globalLaunchArgs());
-    arguments += splitLaunchArguments(game.launchArgs);
+    arguments += globalOptions.arguments;
+    arguments += gameOptions.arguments;
 
     const bool useProton = shouldUseProton(executable);
 
@@ -231,6 +302,7 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
                 resolved.environment.insert(it.key(), it.value());
             }
         }
+        applyUserLaunchOptions(&resolved, globalOptions, gameOptions);
         return resolved;
     }
 
@@ -262,6 +334,7 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
                                                   : existing + QLatin1Char(';') + pluginInfo.wineDllOverrides;
         resolved.environment.insert(QStringLiteral("WINEDLLOVERRIDES"), merged);
     }
+    applyUserLaunchOptions(&resolved, globalOptions, gameOptions);
     return resolved;
 }
 
