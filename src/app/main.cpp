@@ -9,6 +9,10 @@
 #include <QTimer>
 #include <cstdio>
 
+#if defined(Q_OS_UNIX)
+#include <sys/resource.h>
+#endif
+
 #if !defined(Q_OS_WIN)
 #include <QApplication>
 #else
@@ -84,6 +88,35 @@ void applyTranslations(QQmlApplicationEngine& engine, QCoreApplication& app)
                      });
 }
 
+#if defined(Q_OS_UNIX)
+/**
+ * Raise RLIMIT_NOFILE to the hard limit.
+ *
+ * Source plugins open a descriptor per file they write, and a large depot
+ * download can hold hundreds at once - a steamidra download of one game was
+ * seen holding 499. At the usual 1024 soft limit the process then runs out of
+ * descriptors, and because *core* is the one that can no longer open a file,
+ * the symptom is that settings, the library and crash reports silently stop
+ * being written while the leak itself stays invisible.
+ */
+void raiseFileDescriptorLimit()
+{
+    rlimit limit{};
+    if (getrlimit(RLIMIT_NOFILE, &limit) != 0)
+        return;
+    if (limit.rlim_cur >= limit.rlim_max)
+        return;
+    const rlim_t previous = limit.rlim_cur;
+    limit.rlim_cur = limit.rlim_max;
+    if (setrlimit(RLIMIT_NOFILE, &limit) == 0) {
+        arachnel::logDiagnostic(
+            QStringLiteral("Open-file limit raised from %1 to %2")
+                .arg(static_cast<qulonglong>(previous))
+                .arg(static_cast<qulonglong>(limit.rlim_max)));
+    }
+}
+#endif
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -100,6 +133,9 @@ int main(int argc, char* argv[])
 
     arachnel::installCrashLogging();
     arachnel::logRunStarted(argc, argv);
+#if defined(Q_OS_UNIX)
+    raiseFileDescriptorLimit();
+#endif
 
     const QIcon windowIcon = []() {
         QIcon icon;

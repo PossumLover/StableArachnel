@@ -114,7 +114,7 @@ PluginHost::~PluginHost()
 void PluginHost::unloadAll()
 {
     if (m_beforeUnload)
-        m_beforeUnload();
+        m_beforeUnload(QString());
 
     const QStringList ids = m_plugins.keys();
     for (const QString& id : ids)
@@ -149,7 +149,7 @@ void PluginHost::unloadPlugin(const QString& pluginId)
     delete loaded;
 }
 
-void PluginHost::setBeforeUnloadHook(std::function<void()> hook)
+void PluginHost::setBeforeUnloadHook(std::function<void(const QString&)> hook)
 {
     m_beforeUnload = std::move(hook);
 }

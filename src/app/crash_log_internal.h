@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QFile>
 #include <QMutex>
 #include <QString>
 #include <QStringList>
@@ -55,6 +56,7 @@ QString latestHangReportPath();
 QString pendingCrashMarkerPath();
 QString latestCrashDumpPath();
 
+void reportFileWriteFailure(const QString& path, const QFile& file);
 void appendToFile(const QString& path, const QString& text);
 void writeTextFile(const QString& path, const QString& text);
 QString readTextFile(const QString& path);

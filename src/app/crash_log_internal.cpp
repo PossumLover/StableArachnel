@@ -94,11 +94,23 @@ QString pendingCrashMarkerPath()
     return logDirectory() + QStringLiteral("/crash-pending.json");
 }
 
+void reportFileWriteFailure(const QString& path, const QFile& file)
+{
+    // Silent failure here cost a real diagnostic: with the process at its
+    // file-descriptor limit every open() failed, so a UI-hang report reached
+    // stderr but never made it to disk.
+    fprintf(stderr, "[log] cannot write %s: %s\n", qPrintable(path),
+            qPrintable(file.errorString()));
+    fflush(stderr);
+}
+
 void appendToFile(const QString& path, const QString& text)
 {
     QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+        reportFileWriteFailure(path, file);
         return;
+    }
 
     QTextStream stream(&file);
     stream << text;
@@ -109,8 +121,10 @@ void appendToFile(const QString& path, const QString& text)
 void writeTextFile(const QString& path, const QString& text)
 {
     QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        reportFileWriteFailure(path, file);
         return;
+    }
 
     QTextStream stream(&file);
     stream << text;

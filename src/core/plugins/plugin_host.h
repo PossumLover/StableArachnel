@@ -77,10 +77,16 @@ public:
     void setOwnedDownloadPaused(const QString& pluginId, const QString& jobId, bool paused);
 
     /** Called immediately before unloading plugin DLLs (wait for catalog futures). */
-    void setBeforeUnloadHook(std::function<void()> hook);
+    /**
+     * Called before a plugin library is unloaded. The argument is the plugin
+     * being unloaded, or an empty string when every plugin is going away, so the
+     * hook only has to drain work that actually touches that library.
+     */
+    void setBeforeUnloadHook(std::function<void(const QString&)> hook);
     /** Block until install / owned-download workers leave plugin code. */
-    void waitForInFlightPluginWorkers();
-    bool hasInFlightPluginWorkers() const;
+    /** Empty pluginId means "every plugin". */
+    void waitForInFlightPluginWorkers(const QString& pluginId = QString());
+    bool hasInFlightPluginWorkers(const QString& pluginId = QString()) const;
 
     static QStringList pluginSearchRoots();
     /** Copy plugins from install-dir / legacy AppData into the writable plugins folder. */
@@ -120,12 +126,13 @@ private:
     QHash<QString, LoadedPlugin*> m_plugins;
     QString m_lastError;
     QString m_lastLoadRejectReason;
-    std::function<void()> m_beforeUnload;
+    std::function<void(const QString&)> m_beforeUnload;
     int m_scanDepth = 0;
     mutable QMutex m_pluginWorkerMutex;
-    QList<QFuture<void>> m_pluginWorkerFutures;
+    QList<QPair<QString, QFuture<void>>> m_pluginWorkerFutures;
 
-    void trackPluginWorker(QFuture<void> future);
+    void trackPluginWorker(const QString& pluginId, QFuture<void> future);
+    QString pluginIdForInstance(const ISourcePlugin* instance) const;
 };
 
 } // namespace arachnel::core

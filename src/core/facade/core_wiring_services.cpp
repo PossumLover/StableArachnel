@@ -124,7 +124,7 @@ void CoreController::initializeServices()
     if (m_catalogFilters)
         m_catalogFilters->setCacheLock(&m_catalogCacheLock);
     if (m_pluginHost) {
-        m_pluginHost->setBeforeUnloadHook([this]() {
+        m_pluginHost->setBeforeUnloadHook([this](const QString& pluginId) {
             m_pluginCallsBlocked = true;
             waitForCatalogAddonEnrich();
             if (m_catalogController)
@@ -132,7 +132,9 @@ void CoreController::initializeServices()
             // Drain anything queued while catalog loads finished.
             waitForCatalogAddonEnrich();
             // Install / owned-download workers still hold ISourcePlugin* into the DSO.
-            m_pluginHost->waitForInFlightPluginWorkers();
+            // Scoped to the plugin going away: these run for the whole length of a
+            // download, so draining every plugin's workers here froze the UI.
+            m_pluginHost->waitForInFlightPluginWorkers(pluginId);
         });
     }
     connect(m_catalogController, &CatalogController::catalogLoadingChanged, this,

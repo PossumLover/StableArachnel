@@ -251,10 +251,23 @@ bool PluginHost::installFromArach(const QString& archivePath)
         return false;
     }
 
+    // This plugin's own workers still hold ISourcePlugin* into the library, and
+    // an owned download runs for as long as the download does. Waiting on them
+    // here would block the GUI thread for minutes or hours, so say so instead.
+    if (hasInFlightPluginWorkers(id)) {
+        m_lastError = QCoreApplication::translate(
+            "Core",
+            "%1 is still downloading or installing something. Let it finish or "
+            "cancel it, then install again.")
+                          .arg(id);
+        removePathRecursive(stagingRoot);
+        return false;
+    }
+
     // Unlock only this plugin's library before replacing files (do not tear down
     // every other source - that destroyed FreeTP's catalog and crashed on Linux).
     if (m_beforeUnload)
-        m_beforeUnload();
+        m_beforeUnload(id);
     unloadPlugin(id);
 
     if (QDir(targetRoot).exists()) {
@@ -324,9 +337,19 @@ bool PluginHost::uninstallPlugin(const QString& pluginId)
         return false;
     }
 
+    // Same as install: never block the GUI thread on this plugin's own downloads.
+    if (hasInFlightPluginWorkers(id)) {
+        m_lastError = QCoreApplication::translate(
+            "Core",
+            "%1 is still downloading or installing something. Let it finish or "
+            "cancel it, then uninstall again.")
+                          .arg(id);
+        return false;
+    }
+
     // Drop this plugin's library before deleting files (DLL/.so stay locked otherwise).
     if (m_beforeUnload)
-        m_beforeUnload();
+        m_beforeUnload(id);
     unloadPlugin(id);
 
     bool removedAny = false;

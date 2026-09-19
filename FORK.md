@@ -113,6 +113,53 @@ QmlMaterial ships Material Symbols via Git LFS and a fresh `FetchContent` clone
 gets pointer files, so a from-source build renders with no icons. The script that
 fixes this only knew `apt-get`; it now handles `pacman` too.
 
+**9. Installing a plugin froze the whole app** (`plugin_host_async.cpp`,
+`plugin_host_packages.cpp`, `core_wiring_services.cpp`)
+
+Caught live with gdb on 2026-09-18 while the UI was wedged:
+
+```
+#6  PluginHost::waitForInFlightPluginWorkers()   plugin_host_async.cpp
+#8  PluginHost::installFromArach()               plugin_host_packages.cpp:257
+#9  CoreController::installPluginArachInternal() plugin_facade.cpp:153
+#19 PluginCatalogService::finishInstallAttempt()
+    ... on the main thread, inside signal delivery
+```
+
+Installing *any* plugin drained *every* plugin's in-flight workers on the GUI
+thread. An owned download occupies its worker for the entire download, so
+installing FreeTP blocked on an unrelated multi-hour steamidra depot download.
+Upstream's watchdog then killed the app at 140s, which is what this looked like
+from outside: "installing a plugin crashes it".
+
+Workers are now tagged with the plugin that owns them, and the before-unload hook
+only drains the plugin actually being unloaded — installing FreeTP no longer cares
+what steamidra is doing. And when the plugin being replaced *does* have its own
+work in flight, install and uninstall refuse with a message ("... is still
+downloading or installing something") rather than blocking the UI. That matches
+what `runOfficialPluginAutoUpdate` already did: defer, never block.
+
+**10. The process ran out of file descriptors** (`src/app/main.cpp`)
+
+At the moment of that freeze the process held exactly 1024 open descriptors
+against a 1024 soft limit - **499 of them files under a single steamidra depot
+download**, which opens a descriptor per written file and does not close them.
+Systemd's user-app units set `LimitNOFILESoft=1024` with a hard limit of
+1048576, so the app ran into the soft limit and every later `open()` failed.
+
+That is why the hang report reached stderr but never reached disk: core, not the
+plugin, was the thing that could no longer open a file. Settings and library saves
+fail the same silent way.
+
+The fork raises `RLIMIT_NOFILE` to the hard limit at startup and logs that it did.
+The leak is in the plugin and stays the plugin's bug; this stops it taking core's
+ability to write files down with it.
+
+**11. Failed log writes are no longer silent** (`crash_log_internal.cpp`)
+
+`appendToFile` / `writeTextFile` returned quietly when `open()` failed, which is
+what hid fix 10. They now print the path and the reason.
+
 ## Measured, same data and display
 
 Both builds run against an identical copy of the real library under Xvfb:
@@ -123,6 +170,7 @@ Both builds run against an identical copy of the real library under Xvfb:
 | QML warnings total | 6 | 0 |
 | FreeTP v1.0.28 (592 vs 544) | loaded | rejected |
 | steamidra v0.6.18 | loaded | loaded |
+| open-file soft limit | 1024 | raised to hard limit |
 
 The watchdog fix was verified separately with a temporary 45s main-thread stall
 (since reverted): the process survived, the report carried a real backtrace, and
