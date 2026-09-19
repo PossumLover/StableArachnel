@@ -435,16 +435,31 @@ void applyUnsteamLaunchInfo(const QString& installPath, LaunchInfo* info)
                                  ? overrides
                                  : info->wineDllOverrides + QLatin1Char(';') + overrides;
 
-    // Unsteam presents real_app_id to the game itself; Steam only ever sees fake_app_id.
-    QString fakeAppId = QStringLiteral("480");
+    // The Steam API resolves the app id from $SteamAppId before anything else, so this
+    // is what the GAME ends up reporting - it has to be real_app_id. Exporting
+    // fake_app_id here made the game read 480 whatever unsteam.ini said, and titles that
+    // check their own id quit on the spot ("AppId Reported = 480, AppId Expected =
+    // 4001890"). fake_app_id is Unsteam's business to present to Steam, not ours.
+    QString appId;
     if (!state.iniPath.isEmpty()) {
         QSettings ini(state.iniPath, QSettings::IniFormat);
-        const QString fromIni = ini.value(QStringLiteral("game/fake_app_id")).toString().trimmed();
-        if (!fromIni.isEmpty())
-            fakeAppId = fromIni;
+        appId = ini.value(QStringLiteral("game/real_app_id")).toString().trimmed();
+        if (appId.isEmpty())
+            appId = ini.value(QStringLiteral("game/fake_app_id")).toString().trimmed();
     }
-    info->environmentExtras.insert(QStringLiteral("SteamAppId"), fakeAppId);
-    info->environmentExtras.insert(QStringLiteral("SteamGameId"), fakeAppId);
+    if (appId.isEmpty())
+        appId = QStringLiteral("480");
+    info->environmentExtras.insert(QStringLiteral("SteamAppId"), appId);
+    info->environmentExtras.insert(QStringLiteral("SteamGameId"), appId);
+
+    // steam_appid.txt is the API's next lookup after the environment, so a stale 480 in
+    // the game folder would undo the line above.
+    const QString appIdFile = QDir(state.overlayDir).filePath(QStringLiteral("steam_appid.txt"));
+    QFile out(appIdFile);
+    if (out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        out.write(appId.toUtf8());
+        out.write("\n");
+    }
 }
 
 } // namespace arachnel::core
