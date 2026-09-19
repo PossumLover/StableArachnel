@@ -759,9 +759,8 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
                             .arg(repairedPrefixes == 1 ? QStringLiteral("y") : QStringLiteral("ies")));
 
             const QString protonId = m_settings->resolvedProtonId(gameCopy.protonId, *m_protons);
-            const QString protonName = m_protons->activeVersionName(protonId);
             const QString versionRepair =
-                m_protons->repairLegacyPrefixVersionForGame(gameCopy.id, protonName);
+                m_protons->repairLegacyPrefixVersionForGame(gameCopy.id, protonId);
             if (!versionRepair.isEmpty())
                 logLine(versionRepair);
         }

@@ -464,14 +464,30 @@ int ProtonManager::repairCorruptPrefixForGame(const QString& gameId) const
 }
 
 QString ProtonManager::repairLegacyPrefixVersionForGame(const QString& gameId,
-                                                         const QString& protonVersion) const
+                                                         const QString& protonId) const
 {
 #if !defined(Q_OS_LINUX)
     Q_UNUSED(gameId);
-    Q_UNUSED(protonVersion);
+    Q_UNUSED(protonId);
     return {};
 #else
-    const QString targetVersion = protonVersion.trimmed();
+    // The prefix marker has to hold the Proton build's OWN version string, the one it
+    // ships in <dist>/version (e.g. "1784681208 cachyos-11.0-20260703-slr"). This used to
+    // be handed activeVersionName(), a display name like "Proton-CachyOS Latest", which
+    // Proton never recognises: it logged "Prefix has an invalid version?!", ran a prefix
+    // upgrade and rewrote the file on every single launch, so the next launch wrote the
+    // bad marker again - a ping-pong that left a version.arachnel-backup.N behind each
+    // time and put a full prefix upgrade in front of every game start. If the build's own
+    // version cannot be read, leave the marker alone; Proton manages it perfectly well.
+    const QString protonDir = installDirForId(protonId.trimmed());
+    if (protonDir.isEmpty())
+        return {};
+
+    QFile distVersionFile(protonDir + QStringLiteral("/version"));
+    if (!distVersionFile.open(QIODevice::ReadOnly | QIODevice::Text))
+        return {};
+    const QString targetVersion = QString::fromUtf8(distVersionFile.readAll()).trimmed();
+    distVersionFile.close();
     if (targetVersion.isEmpty())
         return {};
 
