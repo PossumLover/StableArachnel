@@ -837,6 +837,26 @@ void linuxSignalHandler(int signal, siginfo_t* info, void* context)
 
     handleCrashReport(
         buildCrashReport(summary, extra.join(QStringLiteral("\n")), captureStackTraceUnix()));
+
+    // The in-process backtrace names the Qt frames but carries no arguments, locals or
+    // QML context, which is not enough for a crash inside Qt's own QML machinery. With
+    // ARACHNEL_CRASH_COREDUMP=1 set, hand the signal back to the default handler so the
+    // kernel writes a core (systemd-coredump picks it up) that can be opened later with
+    // full symbols. Off by default - cores of this process are hundreds of megabytes.
+    // SA_RESETHAND already restored the default disposition for this signal, so re-raising
+    // dumps core rather than re-entering here.
+    if (qEnvironmentVariableIntValue("ARACHNEL_CRASH_COREDUMP") == 1) {
+        // sigaction() blocks the signal for the duration of its own handler, so a plain
+        // raise() here would only mark it pending and _exit() below would win. Unblock it
+        // first; SA_RESETHAND already restored the default disposition, so this dumps core.
+        sigset_t unblock;
+        sigemptyset(&unblock);
+        sigaddset(&unblock, signal);
+        sigprocmask(SIG_UNBLOCK, &unblock, nullptr);
+        raise(signal);
+        // Only reached if the signal is ignored.
+    }
+
     _exit(128 + signal);
 }
 
