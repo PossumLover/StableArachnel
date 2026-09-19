@@ -14,6 +14,7 @@
 #include "library_store.h"
 #include "online_fix_overlay.h"
 #include "unsteam_overlay.h"
+#include <QRegularExpression>
 #include "plugin_host.h"
 #include "plugin_interface.h"
 #include "settings_store.h"
@@ -373,11 +374,18 @@ void LibraryController::setGameUnsteamEnabled(const QString& entryId, bool enabl
             }
         }
         if (!detectUnsteamOverlay(existing->installPath).present) {
-            // Both ids stay Spacewar (480). Writing the game's own AppId here made Steam
-            // report two titles at once (Spacewar and the game), and it means every game
-            // needs its id juggled by hand when testing against another account. 480 is
-            // owned by every Steam account, so it is never in the way.
-            const QString realAppId = QStringLiteral("480");
+            // The two ids are not interchangeable. fake_app_id is what Steam is shown,
+            // and stays 480 (Spacewar, owned by every account, so it never needs juggling
+            // between test accounts). real_app_id is what the GAME is shown, and has to
+            // be its own: titles that check it - How to Fish exits with "AppId Reported =
+            // 480, AppId Expected = 4001890" - refuse to run otherwise.
+            QString realAppId = existing->steamAppId.trimmed();
+            if (realAppId.isEmpty()) {
+                static const QRegularExpression steamId(QStringLiteral("^steam-(\\d+)$"));
+                const QRegularExpressionMatch match = steamId.match(entryId);
+                if (match.hasMatch())
+                    realAppId = match.captured(1);
+            }
             const QString exe = findGameExecutableInTree(existing->installPath, existing->title);
             // Loader by default: the winmm proxy loads on these games but never takes
             // over the Steam API, so the game keeps talking to the real client.
