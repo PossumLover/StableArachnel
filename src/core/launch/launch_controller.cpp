@@ -1075,6 +1075,12 @@ void LaunchController::startSteamShim(const QString& compatDataPath,
                                       const ResolvedLaunch& resolved)
 {
     stopSteamShim();
+    // A stub from a session that ended badly would keep the prefix alive and keep Steam
+    // reporting the game as running, so clear any out before starting a new one.
+    if (const int stray = stopStraySteamShims(); stray > 0) {
+        logLine(QCoreApplication::translate("Core", "Unsteam: stopped %1 leftover steam.exe stub(s)")
+                    .arg(stray));
+    }
     if (compatDataPath.isEmpty() || resolved.program.isEmpty())
         return;
 

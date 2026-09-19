@@ -57,6 +57,14 @@ void applyUnsteamLaunchInfo(const QString& installPath, LaunchInfo* info);
  * which is what makes Unsteam report "Unable to find steam process".
  */
 QString ensureSteamShimInPrefix(const QString& compatDataPath);
+/**
+ * Kill any steam.exe stub left running from an earlier session. The stub outlives a
+ * crash of Arachnel, and while it lives it holds the Wine session open and keeps
+ * ActiveProcess pointing at a live PID - so Steam and Arachnel both go on believing a
+ * game is running. Returns how many were stopped.
+ */
+int stopStraySteamShims();
+
 /** Path of the built steam.exe stub, or empty when it was not shipped. */
 QString steamShimSourcePath();
 

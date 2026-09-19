@@ -10,6 +10,10 @@
 #include <QSettings>
 #include <QStandardPaths>
 
+#if defined(Q_OS_LINUX)
+#include <signal.h>
+#endif
+
 namespace arachnel::core {
 
 namespace {
@@ -89,6 +93,35 @@ bool renameIfPresent(const QDir& dir, const QString& from, const QString& to)
 }
 
 } // namespace
+
+int stopStraySteamShims()
+{
+#if !defined(Q_OS_LINUX)
+    return 0;
+#else
+    // Wine reports the stub's command line as its Windows path, which is specific enough
+    // to match on: nothing else in the system runs C:\arachnel\steam.exe.
+    static const QByteArray marker = QByteArrayLiteral("arachnel\\steam.exe");
+    int stopped = 0;
+    const QDir proc(QStringLiteral("/proc"));
+    for (const QString& entry : proc.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+        bool isPid = false;
+        const qint64 pid = entry.toLongLong(&isPid);
+        if (!isPid || pid <= 0 || pid == QCoreApplication::applicationPid())
+            continue;
+        QFile cmdline(QStringLiteral("/proc/%1/cmdline").arg(entry));
+        if (!cmdline.open(QIODevice::ReadOnly))
+            continue;
+        const QByteArray line = cmdline.readAll();
+        cmdline.close();
+        if (!line.contains(marker))
+            continue;
+        if (::kill(static_cast<pid_t>(pid), SIGTERM) == 0)
+            ++stopped;
+    }
+    return stopped;
+#endif
+}
 
 QString steamShimSourcePath()
 {
