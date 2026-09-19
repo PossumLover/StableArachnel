@@ -55,7 +55,7 @@ constexpr int kRecentLogLines = 200;
 constexpr int kBreadcrumbLines = 48;
 
 constexpr const char* kGithubIssuesNew =
-    "https://github.com/BadKiko/Arachnel/issues/new";
+    "https://github.com/PossumLover/StableArachnel/issues/new";
 
 QString logDirectory()
 {

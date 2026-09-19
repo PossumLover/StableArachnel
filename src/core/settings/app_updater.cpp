@@ -25,11 +25,15 @@ namespace arachnel::core {
 
 namespace {
 
+// Point the updater at the fork, not upstream. Left on BadKiko/Arachnel it
+// offers the stock 0.1.47 build as an "update" and installing it would silently
+// replace this build - reintroducing every bug the fork fixes.
 const char* kGithubLatestRelease =
-    "https://api.github.com/repos/BadKiko/Arachnel/releases/latest";
+    "https://api.github.com/repos/PossumLover/StableArachnel/releases/latest";
 const char* kGithubReleasesList =
-    "https://api.github.com/repos/BadKiko/Arachnel/releases?per_page=30";
-const char* kGithubReleasesPage = "https://github.com/BadKiko/Arachnel/releases/latest";
+    "https://api.github.com/repos/PossumLover/StableArachnel/releases?per_page=30";
+const char* kGithubReleasesPage =
+    "https://github.com/PossumLover/StableArachnel/releases/latest";
 
 QString preferredAssetNameHint()
 {

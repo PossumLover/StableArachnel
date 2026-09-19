@@ -19,7 +19,14 @@ fi
 
 if ! command -v git-lfs >/dev/null 2>&1; then
   echo "setup-material-fonts: installing git-lfs…"
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git-lfs
+  if command -v pacman >/dev/null 2>&1; then
+    sudo pacman -S --noconfirm --needed git-lfs
+  elif command -v apt-get >/dev/null 2>&1; then
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git-lfs
+  else
+    echo "setup-material-fonts: install git-lfs manually, then re-run" >&2
+    exit 1
+  fi
 fi
 
 echo "setup-material-fonts: pulling Material Symbols fonts via git lfs…"

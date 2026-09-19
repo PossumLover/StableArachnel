@@ -333,7 +333,12 @@ Item {
         }
     }
 
-    implicitWidth: embedded ? (parent ? parent.width : implicitWidth) : implicitWidth
+    // No implicitWidth binding: both call sites put this card in a layout with
+    // Layout.fillWidth, so the layout assigns the width. Deriving implicitWidth
+    // from parent.width closed the loop layout -> width -> implicitWidth ->
+    // layout, which is what Qt reported as "Detected recursive rearrange" from
+    // DownloadJobGroupCard.qml:109 on every job update. (The old binding's other
+    // branch referenced implicitWidth itself, so it never contributed a width.)
     implicitHeight: content.implicitHeight + (embedded ? 0 : 2 * MD.Token.spacing.large)
 
     MD.ElevationRectangle {
