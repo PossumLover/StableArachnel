@@ -1,5 +1,7 @@
 #include "runtime_dependency_service.h"
 
+#include "crash_log.h"
+
 #include "installscript_vdf.h"
 #include "proton_manager.h"
 #include "runtime_container_manager.h"
@@ -371,12 +373,18 @@ RuntimeEnsureResult RuntimeDependencyService::ensureInstalled(
         }
 
         QString installError;
+        // This runs on the GUI thread and blocks it for as long as the depot's
+        // installer takes (up to 10 min). Leave a breadcrumb so a hang report
+        // names the installer instead of pointing at the whole launch path.
+        arachnel::logBreadcrumb(QStringLiteral("runtime.install"), depot.label);
         if (!installDepotIntoContainer(depot, effectiveRequest, protonManager, settings, onStatus,
                                        &installError)) {
             result.success = false;
             result.error = installError;
             return result;
         }
+
+        arachnel::logBreadcrumb(QStringLiteral("runtime.install.done"), depot.label);
 
         // Soft-skip (DotNet / missing optional content) returns true without satisfying probe.
         if (isDepotSatisfied(depot, request.gameId))
