@@ -3,6 +3,7 @@
 #include "file_utils.h"
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -88,6 +89,42 @@ bool renameIfPresent(const QDir& dir, const QString& from, const QString& to)
 }
 
 } // namespace
+
+QString steamShimSourcePath()
+{
+    const QStringList candidates = {
+        appDataDir() + QStringLiteral("/steam-shim/steam.exe"),
+        QCoreApplication::applicationDirPath() + QStringLiteral("/resources/steam-shim/steam.exe"),
+    };
+    for (const QString& path : candidates) {
+        if (QFileInfo::exists(path))
+            return path;
+    }
+    return {};
+}
+
+QString ensureSteamShimInPrefix(const QString& compatDataPath)
+{
+    const QString source = steamShimSourcePath();
+    if (source.isEmpty() || compatDataPath.isEmpty())
+        return {};
+
+    const QString driveC = compatDataPath + QStringLiteral("/pfx/drive_c");
+    if (!QFileInfo::exists(driveC))
+        return {};
+
+    const QString dir = driveC + QStringLiteral("/arachnel");
+    QDir().mkpath(dir);
+    const QString dest = dir + QStringLiteral("/steam.exe");
+    // Refresh whenever the shipped stub is newer, so a rebuilt stub reaches old prefixes.
+    const QFileInfo destInfo(dest);
+    if (!destInfo.exists() || QFileInfo(source).lastModified() > destInfo.lastModified()) {
+        QFile::remove(dest);
+        if (!QFile::copy(source, dest))
+            return {};
+    }
+    return QStringLiteral("C:\\arachnel\\steam.exe");
+}
 
 QString unsteamPayloadDir()
 {

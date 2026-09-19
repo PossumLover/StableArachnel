@@ -293,6 +293,7 @@ void LaunchController::clearRunning(bool allowOnlineFixFallback, bool suppressQu
     const bool earlyOfExit = allowOnlineFixFallback && m_watchingOnlineFix
         && !m_onlineFixFallbackUsed && elapsedMs >= 0 && elapsedMs < kOnlineFixEarlyExitMs
         && !cleanQuit;
+    stopSteamShim();
     const qint64 endedPid = m_processId;
     m_gameId.clear();
     m_gameTitle.clear();
@@ -1047,8 +1048,12 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
         }
 
         QString error;
+        if (m_protons && detectUnsteamOverlay(gameCopy.installPath).enabled)
+            startSteamShim(m_protons->compatDataPathForGame(gameCopy.id), resolved);
+
         qint64 processId = 0;
         if (!ProcessLauncher::launch(resolved, &error, &processId, launchLogFilePath())) {
+            stopSteamShim();
             logLine(QCoreApplication::translate("Core", "Failed to start process: %1")
                         .arg(error.isEmpty()
                                  ? QCoreApplication::translate("Core", "unknown error")
@@ -1064,6 +1069,50 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
             markRunning(gameCopy, processId, watchOnlineFix, watchHints);
         });
     });
+}
+
+void LaunchController::startSteamShim(const QString& compatDataPath,
+                                      const ResolvedLaunch& resolved)
+{
+    stopSteamShim();
+    if (compatDataPath.isEmpty() || resolved.program.isEmpty())
+        return;
+
+    const QString windowsPath = ensureSteamShimInPrefix(compatDataPath);
+    if (windowsPath.isEmpty()) {
+        logLine(QCoreApplication::translate(
+            "Core", "Unsteam: steam.exe stub is missing, Steam detection will fail"));
+        return;
+    }
+
+    // Same Proton and same prefix as the game, so both share one wineserver and the stub
+    // is visible to the emulator. It is a separate session on purpose: wrapping the game
+    // in a batch file would mean rewriting the whole launch command.
+    m_steamShim = new QProcess(this);
+    m_steamShim->setProgram(resolved.program);
+    m_steamShim->setArguments({QStringLiteral("run"), windowsPath});
+    m_steamShim->setProcessEnvironment(resolved.environment);
+    m_steamShim->setStandardOutputFile(QProcess::nullDevice());
+    m_steamShim->setStandardErrorFile(QProcess::nullDevice());
+    m_steamShim->start();
+    if (!m_steamShim->waitForStarted(10000)) {
+        logLine(QCoreApplication::translate("Core", "Unsteam: could not start the steam.exe stub"));
+        stopSteamShim();
+        return;
+    }
+    logLine(QCoreApplication::translate(
+        "Core", "Unsteam: steam.exe stub running so the game can find Steam"));
+}
+
+void LaunchController::stopSteamShim()
+{
+    if (!m_steamShim)
+        return;
+    m_steamShim->terminate();
+    if (!m_steamShim->waitForFinished(3000))
+        m_steamShim->kill();
+    m_steamShim->deleteLater();
+    m_steamShim = nullptr;
 }
 
 void LaunchController::stopRunningGame()

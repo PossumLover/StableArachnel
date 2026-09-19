@@ -50,6 +50,17 @@ bool removeUnsteamOverlay(const QString& installPath, QString* error = nullptr);
 void applyUnsteamLaunchInfo(const QString& installPath, LaunchInfo* info);
 
 /**
+ * Copy the steam.exe stub into a game's Wine prefix and return its Windows path, or
+ * empty when it is unavailable. The stub registers itself in
+ * HKCU\Software\Valve\Steam\ActiveProcess so Unsteam's "is Steam running" lookup
+ * finds a live process; Proton leaves a placeholder PID there that belongs to nothing,
+ * which is what makes Unsteam report "Unable to find steam process".
+ */
+QString ensureSteamShimInPrefix(const QString& compatDataPath);
+/** Path of the built steam.exe stub, or empty when it was not shipped. */
+QString steamShimSourcePath();
+
+/**
  * Directory holding the Unsteam release (`x86/` and `x64/` subdirectories), or empty
  * when it has not been provisioned. Resolution order: the path set in settings, then
  * `<app data>/unsteam`, then `<app dir>/resources/unsteam`.

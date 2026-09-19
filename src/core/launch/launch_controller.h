@@ -4,12 +4,15 @@
 #include "wine_error_probe.h"
 
 #include <QDateTime>
+#include <QProcess>
 #include <QObject>
 #include <QStringList>
 #include <QTimer>
 #include <functional>
 
 namespace arachnel::core {
+
+struct ResolvedLaunch;
 
 class PluginHost;
 class ProtonManager;
@@ -83,7 +86,12 @@ private:
     QString m_lastSessionGameId;
     qint64 m_lastSessionElapsedMs = -1;
     bool m_watchingOnlineFix = false;
+    void startSteamShim(const QString& compatDataPath, const ResolvedLaunch& resolved);
+    void stopSteamShim();
+
     bool m_onlineFixFallbackUsed = false;
+    /** steam.exe stub kept alive beside an Unsteam game; see startSteamShim(). */
+    QProcess* m_steamShim = nullptr;
     bool m_relaunchWithoutOnlineFix = false;
     bool m_sawGameExecutable = false;
     bool m_userStopped = false;
