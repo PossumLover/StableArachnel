@@ -3,6 +3,9 @@
 #include <QIcon>
 #include <QPixmapCache>
 #include <QQmlApplicationEngine>
+
+#include <cstdio>
+#include <cstdlib>
 #include <QQmlError>
 #include <QStyleHints>
 #include <QString>
@@ -222,6 +225,19 @@ int main(int argc, char* argv[])
 
         if (!crashDialogMode)
             arachnel::core::CoreController::instance().prepareShutdown();
+
+        // Leave without unwinding the QQmlEngine. prepareShutdown() has already flushed
+        // jobs, settings and library, stopped the sessions and unloaded the plugins, so
+        // nothing below this point can still persist anything - but running
+        // ~QQmlEngine afterwards reliably aborts with "free(): invalid size" inside
+        // libQt6Qml, tearing down QML objects whose native plugin code is already gone.
+        // The comment above was an earlier attempt at fixing that by ordering alone; it
+        // is not enough. Every close became a crash (and, with core dumps armed, a
+        // 294 MB core), so stop unwinding once the work is done and let the kernel
+        // reclaim the rest.
+        arachnel::logRunFinished(exitCode);
+        std::fflush(nullptr);
+        std::_Exit(exitCode);
     }
 
     arachnel::logRunFinished(exitCode);
