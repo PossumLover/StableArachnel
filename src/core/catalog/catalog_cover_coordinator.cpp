@@ -349,7 +349,12 @@ void CatalogCoverCoordinator::ensureCurrentUrl(const QString& entryId, CoverPlan
                 plan.phase = PlanPhase::Done;
                 return;
             }
-            continue;
+            // Still interested, but the HQ fetch for this plan is already queued (the
+            // only way to reach here): the ladder must not advance past the URL that
+            // fetch is for. This used to `continue` without touching plan.index, so the
+            // loop re-tested the same index forever and spun the GUI thread at 100%.
+            // There is nothing left to do until that fetch reports back.
+            return;
         }
 
         CatalogEntry* entry = m_findEntry ? m_findEntry(entryId) : nullptr;
