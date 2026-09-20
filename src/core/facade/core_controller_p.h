@@ -60,6 +60,8 @@
     InstallKind detectInstallKindForEntry(const QString&, const QString&) const;
     bool hasInstallHandlerForPath(const QString&, const QString&) const;
     void offerManualInstallForJob(const JobEntry&);
+    /** A refused fix addon often has a newer sibling that still downloads; try it. */
+    bool retryAddonWithSiblingVersion(const QString& jobId, const QString& error);
     void syncCatalogInstallKind(const QString&, InstallKind);
     void syncInstallKindProbeSuspension();
     void applyCachedMetadata(CatalogEntry&) const;
