@@ -931,20 +931,7 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
             }
             applyOnlineFixLaunchInfo(gameCopy.installPath, &info, realAppId);
         }
-        applyUnsteamLaunchInfo(gameCopy.installPath, &info);
 
-        // Unsteam's loader starts the game itself, reading unsteam.ini's [loader] section
-        // for which executable to run and which DLL to inject, so it takes the game's
-        // place as the program. watchHints keeps naming the real executable below, so
-        // process tracking still follows the game rather than the loader.
-        if (const QString loader = unsteamLoaderExecutable(gameCopy.installPath);
-            !loader.isEmpty()) {
-            logLine(QCoreApplication::translate("Core", "Unsteam: launching through %1")
-                        .arg(QFileInfo(loader).fileName()));
-            info.executable = loader;
-            info.workingDirectory = QFileInfo(loader).absolutePath();
-            info.arguments.clear();
-        }
         {
             const OnlineFixOverlayState overlay = detectOnlineFixOverlay(gameCopy.installPath);
 #if defined(Q_OS_LINUX)

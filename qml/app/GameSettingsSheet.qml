@@ -234,42 +234,6 @@ MD.BottomSheet {
                     }
                 }
             }
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: MD.Token.spacing.medium
-                visible: !!(root.info.unsteamCanToggle)
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 2
-
-                    MD.Label {
-                        Layout.fillWidth: true
-                        text: qsTr("Unsteam for this game")
-                        typescale: MD.Token.typescale.body_large
-                    }
-
-                    MD.Label {
-                        Layout.fillWidth: true
-                        text: root.info.unsteamPayloadAvailable
-                              ? qsTr("Alternative to Online Fix for titles it can't run. Only one of the two runs at a time.")
-                              : qsTr("Unsteam files not set up yet - point Arachnel at them in Settings.")
-                        color: MD.Token.color.on_surface_variant
-                        typescale: MD.Token.typescale.body_small
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-                MD.Switch {
-                    enabled: !!(root.info.unsteamPayloadAvailable) || !!(root.info.unsteamPresent)
-                    checked: !!(root.info.unsteamEnabled)
-                    onToggled: {
-                        Core.setGameUnsteamEnabled(root.gameId, checked)
-                        root.detailsRevision++
-                    }
-                }
-            }
         }
 
         MD.ElevationRectangle {
