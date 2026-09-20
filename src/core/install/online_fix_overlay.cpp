@@ -289,18 +289,9 @@ void appendSteamOverlayEnvironment(LaunchInfo* info, const QString& fakeSteamId,
     // OF.me ships SteamOverlay32/64 next to the game. Forcing Valve's
     // gameoverlayrenderer on top makes Steam show "Failed to load steam overlay
     // dll" (126) on 32-bit titles and can trip OF.me self-protection.
-    //
-    // That was only ever observed on 32-bit titles, and standing Valve's overlay down
-    // costs shift+tab - which several games lean on for invites and joining friends, so
-    // it is worth having wherever it is safe. A 64-bit game keeps the real overlay; only
-    // 32-bit ones fall back to whatever the repack bundles.
-    // ARACHNEL_NO_STEAM_OVERLAY=1 forces the old behaviour back for either.
-    const bool gameIs32Bit = peImageBits(info->executable) == 32;
-    const bool forceOff = qEnvironmentVariableIntValue("ARACHNEL_NO_STEAM_OVERLAY") == 1;
-    if ((gameIs32Bit || forceOff)
-        && (dirHasBundledSteamOverlayDll(overlayDir)
-            || QDir(overlayDir).exists(QStringLiteral("OnlineFix.dll"))
-            || QDir(overlayDir).exists(QStringLiteral("OnlineFix64.dll")))) {
+    if (dirHasBundledSteamOverlayDll(overlayDir)
+        || QDir(overlayDir).exists(QStringLiteral("OnlineFix.dll"))
+        || QDir(overlayDir).exists(QStringLiteral("OnlineFix64.dll"))) {
         // Explicit clear so host/Steam LD_PRELOAD cannot leak into Proton.
         info->environmentExtras.insert(QStringLiteral("LD_PRELOAD"), QString());
         info->environmentExtras.insert(QStringLiteral("ENABLE_VK_LAYER_VALVE_steam_overlay_1"),
