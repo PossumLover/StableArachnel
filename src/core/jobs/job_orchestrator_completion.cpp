@@ -4,6 +4,9 @@
 #include "job_status.h"
 #include "torrent_session.h"
 
+#include <QCoreApplication>
+#include <QFile>
+#include <QFileInfo>
 #include <QDateTime>
 
 namespace arachnel::core {
@@ -382,6 +385,62 @@ void JobOrchestrator::onHttpProgress(const QString& jobId, int progress, qint64 
     persistJob(job);
 }
 
+namespace {
+
+/**
+ * A server that refuses a download often answers with a short error page, and nothing
+ * downstream can tell that from a real artifact: a Machine Party Online Fix addon
+ * arrived as 13 bytes reading "Access denied", was recorded as installed, and the game
+ * then ran with an incomplete fix that could never work.
+ *
+ * Treat a small response that is plainly text, and carries none of the magic bytes of
+ * the formats addons actually arrive in, as the failure it is - and hand back what the
+ * server said so the user sees it.
+ */
+bool looksLikeRefusedDownload(const QString& path, QString* messageOut)
+{
+    const QFileInfo info(path);
+    if (!info.isFile())
+        return false;
+    constexpr qint64 kMaxSuspiciousBytes = 8 * 1024;  // no archive or installer is this small
+    if (info.size() <= 0 || info.size() > kMaxSuspiciousBytes)
+        return false;
+
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+    const QByteArray head = file.read(kMaxSuspiciousBytes);
+    file.close();
+
+    // XZ is FD 37 7A 58 5A. Hex escapes are greedy - "\xFD7zXZ" would parse as \xFD7 -
+    // so the 7 is spelled \x37.
+    static const QList<QByteArray> archiveMagic = {
+        QByteArrayLiteral("PK"), QByteArrayLiteral("Rar!"), QByteArrayLiteral("7z"),
+        QByteArrayLiteral("MZ"), QByteArrayLiteral("\x1F\x8B"), QByteArrayLiteral("\xFD\x37zXZ"),
+        QByteArrayLiteral("ustar"),
+    };
+    for (const QByteArray& magic : archiveMagic) {
+        if (head.startsWith(magic))
+            return false;
+    }
+
+    for (const char c : head) {  // printable text = an error page, not a payload
+        const unsigned char u = static_cast<unsigned char>(c);
+        if (u < 0x09 || (u > 0x0D && u < 0x20))
+            return false;
+    }
+
+    if (messageOut) {
+        QString text = QString::fromUtf8(head).simplified();
+        if (text.size() > 200)
+            text = text.left(200) + QStringLiteral("...");
+        *messageOut = text;
+    }
+    return true;
+}
+
+} // namespace
+
 void JobOrchestrator::onHttpFinished(const QString& jobId, const QString& filePath)
 {
     const int row = m_jobs->indexOfJob(jobId);
@@ -390,6 +449,17 @@ void JobOrchestrator::onHttpFinished(const QString& jobId, const QString& filePa
 
     JobEntry job = jobFromModelRow(row);
     const JobKind kind = m_jobKinds.value(jobId, JobKind::Download);
+
+    QString refusal;
+    if (looksLikeRefusedDownload(filePath, &refusal)) {
+        QFile::remove(filePath);
+        onHttpFailed(jobId,
+                     refusal.isEmpty()
+                         ? QCoreApplication::translate("Core", "Download refused by the server")
+                         : QCoreApplication::translate("Core", "Download refused: %1").arg(refusal));
+        return;
+    }
+
 
     job.status = QStringLiteral("completed");
     job.progress = 100;
