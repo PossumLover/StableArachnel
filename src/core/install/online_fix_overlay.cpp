@@ -15,6 +15,7 @@
 #include <QRegularExpression>
 #include <QStandardPaths>
 #include <QSet>
+#include <QSettings>
 
 #if defined(Q_OS_WIN)
 #ifndef NOMINMAX
@@ -131,6 +132,28 @@ QString readIniAppId(const QString& iniPath, const QString& key)
                                 QRegularExpression::CaseInsensitiveOption);
     const QRegularExpressionMatch match = re.match(QString::fromUtf8(file.readAll()));
     return match.hasMatch() ? match.captured(1) : QString();
+}
+
+/**
+ * Add RealAppId to an OnlineFix/SteamFix ini that lacks it, leaving everything else in
+ * the file alone. Without it the layer has no real id to hand the game.
+ */
+void ensureRealAppIdInIni(const QString& overlayDir, const QString& realAppId)
+{
+    if (overlayDir.isEmpty() || realAppId.isEmpty())
+        return;
+    for (const QString& name :
+         {QStringLiteral("SteamFix.ini"), QStringLiteral("OnlineFix.ini")}) {
+        const QString path = QDir(overlayDir).filePath(name);
+        if (!QFileInfo::exists(path))
+            continue;
+        QSettings ini(path, QSettings::IniFormat);
+        const QString existing = ini.value(QStringLiteral("Main/RealAppId")).toString().trimmed();
+        if (existing == realAppId)
+            continue;
+        ini.setValue(QStringLiteral("Main/RealAppId"), realAppId);
+        ini.sync();
+    }
 }
 
 void ensureSteamFixWinmmTxt(const QString& dir, int bits)
@@ -782,7 +805,8 @@ int healOnlineFixLayoutForExecutable(const QString& installPath, const QString& 
     return placed;
 }
 
-void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info)
+void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
+                              const QString& realAppId)
 {
     if (!info || installPath.isEmpty())
         return;
@@ -860,6 +884,23 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info)
         if (!fakeAppId.endsWith(QLatin1Char('\n')))
             out.write("\n");
     };
+    // Let the fix layer do the translating rather than doing it from outside. A SteamFix
+    // repack ships RealAppId alongside FakeAppId and presents the real id to the game
+    // while Steam only ever sees the fake one; an OnlineFix repack ships FakeAppId alone,
+    // so the game is told it is Spacewar and any title that checks its own id quits -
+    // which then reads as "Online Fix quit right after launch" and disables the whole
+    // layer. Writing the missing RealAppId in gives the arrangement that works on
+    // Windows, and keeps Steam showing Spacewar.
+    // Every copy of the ini needs it, not just overlayDir: in a nested repack the layer
+    // that loads reads the copy healOnlineFixLayoutForExecutable() put beside the
+    // executable, which is never overwritten afterwards.
+    if (const QString id = realAppId.trimmed(); !id.isEmpty()) {
+        ensureRealAppIdInIni(overlayDir, id);
+        for (const QString& dir : findOverlayDirs(installPath))
+            ensureRealAppIdInIni(dir, id);
+        if (!info->workingDirectory.isEmpty())
+            ensureRealAppIdInIni(info->workingDirectory, id);
+    }
     ensureSteamAppIdFile(overlayDir);
     if (!info->workingDirectory.isEmpty()
         && QFileInfo(info->workingDirectory).absoluteFilePath()

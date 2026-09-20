@@ -29,6 +29,9 @@ QStringList splitLaunchArguments(const QString& text);
 QString chooseLaunchExecutable(const LaunchInfo& pluginInfo, const LibraryGame& game,
                                bool* fromOverride = nullptr);
 
+/** The game's real Steam app id: steamAppId, else the digits of a `steam-<n>` game id. */
+QString realSteamAppId(const LibraryGame& game);
+
 ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& game,
                              const SettingsStore& settings, ProtonManager* protonManager = nullptr);
 

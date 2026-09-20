@@ -7,6 +7,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
 
 namespace arachnel::core {
 
@@ -129,6 +130,16 @@ QString chooseLaunchExecutable(const LaunchInfo& pluginInfo, const LibraryGame& 
     if (!pluginExe.isEmpty() && !isExcludedGameExecutable(QFileInfo(pluginExe).fileName()))
         return pluginExe;
     return {};
+}
+
+QString realSteamAppId(const LibraryGame& game)
+{
+    const QString explicitId = game.steamAppId.trimmed();
+    if (!explicitId.isEmpty())
+        return explicitId;
+    static const QRegularExpression steamId(QStringLiteral("^steam-(\\d+)$"));
+    const QRegularExpressionMatch match = steamId.match(game.id);
+    return match.hasMatch() ? match.captured(1) : QString();
 }
 
 ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& game,

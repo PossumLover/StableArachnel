@@ -913,7 +913,7 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
                         "Core", "Online Fix: placed %1 file(s) next to the game executable")
                         .arg(placed));
         }
-        applyOnlineFixLaunchInfo(gameCopy.installPath, &info);
+        applyOnlineFixLaunchInfo(gameCopy.installPath, &info, realSteamAppId(gameCopy));
         {
             const OnlineFixOverlayState overlay = detectOnlineFixOverlay(gameCopy.installPath);
 #if defined(Q_OS_LINUX)

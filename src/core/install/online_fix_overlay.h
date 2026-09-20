@@ -35,7 +35,8 @@ QVariantMap onlineFixOverlayInfo(const QString& installPath);
  */
 int healOnlineFixLayoutForExecutable(const QString& installPath, const QString& executablePath);
 
-void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info);
+void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
+                              const QString& realAppId = {});
 
 bool isSteamClientRunning();
 /** Best-effort: spawn Steam detached. Returns true if the process was started. */
