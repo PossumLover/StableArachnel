@@ -441,16 +441,26 @@ void applyUnsteamLaunchInfo(const QString& installPath, LaunchInfo* info)
     // check their own id quit on the spot ("AppId Reported = 480, AppId Expected =
     // 4001890"). fake_app_id is Unsteam's business to present to Steam, not ours.
     QString appId;
+    QString gameId;
     if (!state.iniPath.isEmpty()) {
         QSettings ini(state.iniPath, QSettings::IniFormat);
         appId = ini.value(QStringLiteral("game/real_app_id")).toString().trimmed();
+        gameId = ini.value(QStringLiteral("game/fake_app_id")).toString().trimmed();
         if (appId.isEmpty())
-            appId = ini.value(QStringLiteral("game/fake_app_id")).toString().trimmed();
+            appId = gameId;
     }
     if (appId.isEmpty())
         appId = QStringLiteral("480");
+    if (gameId.isEmpty())
+        gameId = QStringLiteral("480");
+
+    // The two variables are read by different things, so they get different values.
+    // SteamAppId is what the game's own API initialises as and must be its real id.
+    // SteamGameId is what the Steam client uses for "playing X" and for deciding where
+    // to attach the overlay - keeping that on Spacewar means Steam reports a game the
+    // account actually owns, which is also what makes shift+tab work.
     info->environmentExtras.insert(QStringLiteral("SteamAppId"), appId);
-    info->environmentExtras.insert(QStringLiteral("SteamGameId"), appId);
+    info->environmentExtras.insert(QStringLiteral("SteamGameId"), gameId);
 
     // steam_appid.txt is the API's next lookup after the environment, so a stale 480 in
     // the game folder would undo the line above.
