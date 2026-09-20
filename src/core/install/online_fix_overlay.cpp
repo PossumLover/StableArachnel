@@ -719,6 +719,69 @@ QVariantMap onlineFixOverlayInfo(const QString& installPath)
     };
 }
 
+int healOnlineFixLayoutForExecutable(const QString& installPath, const QString& executablePath)
+{
+    if (installPath.isEmpty() || executablePath.isEmpty())
+        return 0;
+    const QString exeDir = QFileInfo(executablePath).absolutePath();
+    if (exeDir.isEmpty() || !QFileInfo::exists(exeDir))
+        return 0;
+
+    // A SteamFix layer beside the executable is a different emulator. Never copy Online
+    // Fix in next to it from some other folder that still carries a set (Paradox titles
+    // keep one under Launcher/).
+    {
+        const QDir dir(exeDir);
+        if (dir.exists(QStringLiteral("SteamFix64.dll")) || dir.exists(QStringLiteral("SteamFix32.dll"))
+            || dir.exists(QStringLiteral("SteamFix.ini")))
+            return 0;
+    }
+
+    // Find the directory that actually holds the fix, and stop if it is already the
+    // executable's own.
+    QString sourceDir;
+    for (const QString& dir : findOverlayDirs(installPath)) {
+        if (QFileInfo::exists(QDir(dir).filePath(QStringLiteral("dlllist.txt")))
+            && QFileInfo::exists(QDir(dir).filePath(QStringLiteral("winmm.dll")))) {
+            sourceDir = dir;
+            break;
+        }
+    }
+    if (sourceDir.isEmpty()
+        || QFileInfo(sourceDir).absoluteFilePath() == QFileInfo(exeDir).absoluteFilePath())
+        return 0;
+
+    QStringList wanted{QStringLiteral("winmm.dll"), QStringLiteral("dlllist.txt"),
+                       QStringLiteral("OnlineFix.ini"), QStringLiteral("SteamFix.ini")};
+    QFile list(QDir(sourceDir).filePath(QStringLiteral("dlllist.txt")));
+    if (list.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        const QStringList lines = QString::fromUtf8(list.readAll())
+                                      .split(QRegularExpression(QStringLiteral("[\r\n]")),
+                                             Qt::SkipEmptyParts);
+        for (const QString& line : lines)
+            wanted.append(line.trimmed());
+        list.close();
+    }
+
+    int placed = 0;
+    for (const QString& name : wanted) {
+        if (name.isEmpty())
+            continue;
+        const QString from = QDir(sourceDir).filePath(name);
+        if (!QFileInfo::exists(from))
+            continue;
+        const QString to = QDir(exeDir).filePath(name);
+        // Never overwrite: a file already beside the executable may be a deliberately
+        // different build of the layer, and replacing it with the copy from the install
+        // root is how a working setup gets broken. Only fill in what is missing.
+        if (QFileInfo::exists(to))
+            continue;
+        if (QFile::copy(from, to))
+            ++placed;
+    }
+    return placed;
+}
+
 void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info)
 {
     if (!info || installPath.isEmpty())

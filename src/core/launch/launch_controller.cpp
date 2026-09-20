@@ -868,15 +868,12 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
 
         const OnlineFixOverlayState overlayBefore = detectOnlineFixOverlay(gameCopy.installPath);
         const bool watchOnlineFix = overlayBefore.enabled && !m_onlineFixFallbackUsed;
+        // The exe resolveLaunch() will run. The watcher and the Online Fix heal must agree
+        // with it: the plugin's exe can be a launcher while an override runs the game.
+        const QString launchExe = chooseLaunchExecutable(info, gameCopy);
         WineErrorWatchHints watchHints;
         watchHints.installPath = gameCopy.installPath;
-        {
-            const QString exePath = !info.executable.isEmpty()
-                ? info.executable
-                : (!gameCopy.executableOverride.isEmpty() ? gameCopy.executableOverride
-                                                          : QString());
-            watchHints.executableName = QFileInfo(exePath).fileName();
-        }
+        watchHints.executableName = QFileInfo(launchExe).fileName();
         watchHints.fakeSteamAppId = QStringLiteral("480");
         {
             const QString ov =
@@ -904,6 +901,17 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
                 if (!id.isEmpty())
                     watchHints.fakeSteamAppId = id;
             }
+        }
+        // Put the fix next to the executable before anything reads it, or the loader is
+        // never found and the layer does nothing while reporting itself enabled. The heal
+        // walks the whole install, so skip it when there is no fix to place.
+        if (const int placed = overlayBefore.present
+                ? healOnlineFixLayoutForExecutable(gameCopy.installPath, launchExe)
+                : 0;
+            placed > 0) {
+            logLine(QCoreApplication::translate(
+                        "Core", "Online Fix: placed %1 file(s) next to the game executable")
+                        .arg(placed));
         }
         applyOnlineFixLaunchInfo(gameCopy.installPath, &info);
         {

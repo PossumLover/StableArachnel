@@ -20,6 +20,15 @@ struct ResolvedLaunch {
 
 QStringList splitLaunchArguments(const QString& text);
 
+/**
+ * The executable resolveLaunch() will run: the per-game override unless it names an
+ * excluded helper, else the plugin's executable. Anything that must agree with the
+ * launch - where the fix layer goes, which process the watcher tracks - asks this
+ * rather than deciding again.
+ */
+QString chooseLaunchExecutable(const LaunchInfo& pluginInfo, const LibraryGame& game,
+                               bool* fromOverride = nullptr);
+
 ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& game,
                              const SettingsStore& settings, ProtonManager* protonManager = nullptr);
 

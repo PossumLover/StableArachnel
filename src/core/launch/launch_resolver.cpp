@@ -112,34 +112,39 @@ QString filterOverlayPreloadForHost(const QString& preload, int gameBits)
 
 } // namespace
 
+QString chooseLaunchExecutable(const LaunchInfo& pluginInfo, const LibraryGame& game,
+                               bool* fromOverride)
+{
+    if (fromOverride)
+        *fromOverride = false;
+
+    const QString overrideExe = game.executableOverride.trimmed();
+    if (!overrideExe.isEmpty() && !isExcludedGameExecutable(QFileInfo(overrideExe).fileName())) {
+        if (fromOverride)
+            *fromOverride = true;
+        return overrideExe;
+    }
+
+    const QString pluginExe = pluginInfo.executable;
+    if (!pluginExe.isEmpty() && !isExcludedGameExecutable(QFileInfo(pluginExe).fileName()))
+        return pluginExe;
+    return {};
+}
+
 ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& game,
                              const SettingsStore& settings, ProtonManager* protonManager)
 {
     ResolvedLaunch resolved;
 
-    QString overrideExe = game.executableOverride.trimmed();
-    if (!overrideExe.isEmpty()
-        && isExcludedGameExecutable(QFileInfo(overrideExe).fileName())) {
-        overrideExe.clear();
-    }
-
-    QString pluginExe = pluginInfo.executable;
-    if (!pluginExe.isEmpty()
-        && isExcludedGameExecutable(QFileInfo(pluginExe).fileName())) {
-        pluginExe.clear();
-    }
-
-    if (pluginExe.isEmpty() && overrideExe.isEmpty())
-        return resolved;
-
-    QString executable = overrideExe;
+    bool fromOverride = false;
+    const QString executable = chooseLaunchExecutable(pluginInfo, game, &fromOverride);
     if (executable.isEmpty())
-        executable = pluginExe;
+        return resolved;
 
     const int gameBits = peImageBits(executable);
 
     QString workDir = pluginInfo.workingDirectory;
-    if (workDir.isEmpty() || !overrideExe.isEmpty())
+    if (workDir.isEmpty() || fromOverride)
         workDir = QFileInfo(executable).absolutePath();
 
     QStringList arguments = pluginInfo.arguments;
