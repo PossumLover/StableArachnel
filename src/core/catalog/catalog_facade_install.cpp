@@ -243,6 +243,22 @@ void CoreController::installResolvedCatalogEntry(const CatalogEntry& entryIn,
                     ctx.selectedAddonIds.append(c.id);
             }
         }
+        // An update that carries no DLC leaves any the repack bundled at their old build
+        // while the base game moves on, and the game then fails its own integrity check:
+        // Cities: Skylines II quit with "Data is corrupted in UrbanPromenades database"
+        // because that folder was still four weeks older than everything around it.
+        // Arachnel only knows about DLC it installed itself, and a repack's DLC never
+        // went through it - components and the marker's selectedDlc are both empty - so
+        // on an update fall back to every DLC the catalog knows for this game.
+        if (isUpdate && ctx.selectedAddonIds.isEmpty()) {
+            for (const auto& addon : entry.addons)
+                ctx.selectedAddonIds.append(addon.id);
+            if (!ctx.selectedAddonIds.isEmpty()) {
+                qInfo().noquote() << "[owns-download]" << entry.id << "update carrying"
+                                  << ctx.selectedAddonIds.size()
+                                  << "catalog DLC the install does not track";
+            }
+        }
         qInfo().noquote() << "[owns-download]" << entry.id
                           << "mode" << ctx.installMode
                           << "forceUpdate" << isUpdate
