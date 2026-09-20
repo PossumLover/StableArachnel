@@ -1,5 +1,7 @@
 #include "core_controller_impl.h"
 
+#include <QRegularExpression>
+
 namespace arachnel::core {
 
 namespace {
@@ -429,6 +431,56 @@ void CoreController::pruneCancelledAddonJobs()
 
     for (const QString& jobId : removeIds)
         m_jobOrchestrator->removeJob(jobId);
+}
+
+/**
+ * FreeTP keeps several versions of the same fix in its catalog and retires the older
+ * ones: Machine Party's "multiplayer-fix-online" (id 19827) answers "Access denied"
+ * while "multiplayer-fix-online-v1" (id 19943) serves the real 1.5 MB installer. Picking
+ * the dead one left the game with no usable fix, so when a fix addon is refused, try a
+ * sibling that differs only by its version suffix before giving up.
+ */
+bool CoreController::retryAddonWithSiblingVersion(const QString& jobId, const QString& error)
+{
+    const JobEntry* failed = m_jobStore.jobById(jobId);
+    if (!failed || failed->parentEntryId.isEmpty())
+        return false;
+
+    // "…-multiplayer-fix-online-v1-4" and "…-multiplayer-fix-online" share this base.
+    static const QRegularExpression versionSuffix(
+        QStringLiteral("-v\\d+(?:[-.]\\d+)*$"), QRegularExpression::CaseInsensitiveOption);
+    const QString base = QString(failed->entryId).remove(versionSuffix);
+    if (base.isEmpty())
+        return false;
+
+    const CatalogEntry* parent = findCatalogEntry(failed->parentEntryId);
+    if (!parent)
+        return false;
+
+    QString best;
+    for (const auto& addon : parent->addons) {
+        if (addon.id == failed->entryId)
+            continue;
+        if (QString(addon.id).remove(versionSuffix) != base)
+            continue;
+        // Skip anything already attempted, so a run of dead versions cannot loop.
+        bool tried = false;
+        for (const JobEntry& job : m_jobStore.jobs()) {
+            if (job.entryId == addon.id && job.parentEntryId == failed->parentEntryId) {
+                tried = true;
+                break;
+            }
+        }
+        if (!tried && addon.id > best)
+            best = addon.id;  // ids sort with the newer version last
+    }
+    if (best.isEmpty())
+        return false;
+
+    showNotice(QCoreApplication::translate("Core", "%1 - trying another version of this fix")
+                   .arg(error));
+    installCatalogAddon(failed->parentEntryId, best);
+    return true;
 }
 
 void CoreController::removeJobsForEntry(const QString& entryId)

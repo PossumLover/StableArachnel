@@ -744,7 +744,8 @@ void CoreController::initializeServices()
 
     connect(m_jobOrchestrator, &JobOrchestrator::downloadFailed, this,
             [this](const QString& jobId, const QString& error) {
-                Q_UNUSED(jobId)
+                if (retryAddonWithSiblingVersion(jobId, error))
+                    return;
                 showNotice(QCoreApplication::translate("Core", "Download error: %1").arg(error));
             });
 }
