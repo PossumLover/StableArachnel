@@ -361,7 +361,13 @@ MD.ApplicationWindow {
                 asynchronous: true
                 visible: status === Loader.Ready
                 opacity: mainPages.pageIndex === 1 ? 1 : 0
-                onLoaded: keepAlive = true
+                // Latch on Loading, not on Loaded: CatalogPage incubates asynchronously,
+                // and until it finishes `keepAlive` is still false, so a tab switch drops
+                // `active` and tears the half-built tree down from under the incubator.
+                // QQmlObjectCreator::finalize() then runs with a dead outerContext and
+                // QQmlConnections::connectSignalsToMethods() dereferences it.
+                onStatusChanged: if (status === Loader.Loading || status === Loader.Ready)
+                                     keepAlive = true
                 sourceComponent: Component {
                     CatalogPage {
                         anchors.fill: parent
@@ -394,7 +400,9 @@ MD.ApplicationWindow {
                 asynchronous: true
                 visible: status === Loader.Ready
                 opacity: mainPages.pageIndex === 2 ? 1 : 0
-                onLoaded: keepAlive = true
+                // Latch on Loading, not on Loaded - see discoverLoader above.
+                onStatusChanged: if (status === Loader.Loading || status === Loader.Ready)
+                                     keepAlive = true
                 sourceComponent: Component {
                     CatalogPage {
                         anchors.fill: parent
