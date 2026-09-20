@@ -746,7 +746,8 @@ QVariantMap onlineFixOverlayInfo(const QString& installPath)
     };
 }
 
-void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info)
+void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
+                              const QString& realAppId)
 {
     if (!info || installPath.isEmpty())
         return;
@@ -824,6 +825,19 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info)
         if (!fakeAppId.endsWith(QLatin1Char('\n')))
             out.write("\n");
     };
+    // The game reads its own app id from $SteamAppId first and steam_appid.txt second,
+    // so both have to carry the REAL id or a title that checks it quits on the spot -
+    // which Arachnel then misreads as "Online Fix quit right after launch" and disables
+    // the layer. Only what Steam is shown (SteamGameId) stays on the fake id. Repacks of
+    // the SteamFix kind carry RealAppId in their own ini and translate it themselves;
+    // the OnlineFix kind ships FakeAppId alone and needs to be told.
+    const QString gameAppId =
+        realAppId.trimmed().isEmpty() ? fakeAppId : realAppId.trimmed();
+    if (gameAppId != fakeAppId) {
+        info->environmentExtras.insert(QStringLiteral("SteamAppId"), gameAppId);
+        info->environmentExtras.insert(QStringLiteral("SteamGameId"), fakeAppId);
+    }
+    fakeAppId = gameAppId;  // ensureSteamAppIdFile writes what the game must read
     ensureSteamAppIdFile(overlayDir);
     if (!info->workingDirectory.isEmpty()
         && QFileInfo(info->workingDirectory).absoluteFilePath()

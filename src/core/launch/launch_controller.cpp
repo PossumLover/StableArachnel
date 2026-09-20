@@ -6,6 +6,8 @@
 #include "install_heuristics.h"
 #include "online_fix_overlay.h"
 #include "unsteam_overlay.h"
+
+#include <QRegularExpression>
 #include "plugin_host.h"
 #include "plugin_interface.h"
 #include "process_launcher.h"
@@ -906,7 +908,16 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
                     watchHints.fakeSteamAppId = id;
             }
         }
-        applyOnlineFixLaunchInfo(gameCopy.installPath, &info);
+        {
+            QString realAppId = gameCopy.steamAppId.trimmed();
+            if (realAppId.isEmpty()) {
+                static const QRegularExpression steamId(QStringLiteral("^steam-(\\d+)$"));
+                const QRegularExpressionMatch match = steamId.match(gameCopy.id);
+                if (match.hasMatch())
+                    realAppId = match.captured(1);
+            }
+            applyOnlineFixLaunchInfo(gameCopy.installPath, &info, realAppId);
+        }
         applyUnsteamLaunchInfo(gameCopy.installPath, &info);
 
         // Unsteam's loader starts the game itself, reading unsteam.ini's [loader] section
