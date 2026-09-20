@@ -14,7 +14,7 @@ MD.ApplicationWindow {
     height: 900
     minimumWidth: 1100
     minimumHeight: 720
-    title: qsTr("Arachnel")
+    title: Qt.application.displayName
     color: MD.Token.color.surface_container
     flags: customTitleBar ? (Qt.Window | Qt.FramelessWindowHint) : Qt.Window
 

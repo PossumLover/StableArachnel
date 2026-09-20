@@ -32,14 +32,11 @@ MD.Pane {
             color: MD.Token.color.primary_container
             elevation: MD.Token.elevation.level0
 
-            SpiderWebMark {
+            MD.Label {
                 anchors.centerIn: parent
-                width: 28
-                height: 28
-                strokeColor: MD.Token.color.on_primary_container
-                strokeWidth: 1.6
-                rings: 3
-                spokes: 8
+                text: "J"
+                color: MD.Token.color.on_primary_container
+                typescale: MD.Token.typescale.headline_medium
             }
 
             MouseArea {

@@ -1,6 +1,7 @@
 #include "settings_identity.h"
 
 #include <QCoreApplication>
+#include <QGuiApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -151,6 +152,11 @@ void configureApplicationIdentity()
     QCoreApplication::setOrganizationName(QStringLiteral("Arachnel"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("arachnel.app"));
     QCoreApplication::setApplicationName(QStringLiteral("Arachnel"));
+    // Visible name only. applicationName above is what QStandardPaths builds the data
+    // directory from, and that directory holds the library, the settings and 6.8 GB of
+    // Proton prefixes whose registries are full of absolute paths - renaming it would
+    // move all of that and break every game's prefix.
+    QGuiApplication::setApplicationDisplayName(QStringLiteral("JamesGames"));
 #ifndef ARACHNEL_VERSION
 #define ARACHNEL_VERSION "dev"
 #endif
