@@ -60,6 +60,10 @@
     InstallKind detectInstallKindForEntry(const QString&, const QString&) const;
     bool hasInstallHandlerForPath(const QString&, const QString&) const;
     void offerManualInstallForJob(const JobEntry&);
+    /** Second half of updateCatalogEntry() for owns_download sources, once DLC are known. */
+    void startOwnedUpdate(const QString& entryId, const QString& libraryId);
+    /** Report content an update left at the old build, before the game fails on it. */
+    void warnAboutStaleContentAfterUpdate(const QString& entryId);
     /** A refused fix addon often has a newer sibling that still downloads; try it. */
     bool retryAddonWithSiblingVersion(const QString& jobId, const QString& error);
     void syncCatalogInstallKind(const QString&, InstallKind);

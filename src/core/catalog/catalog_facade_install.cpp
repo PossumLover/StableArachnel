@@ -1,5 +1,7 @@
 #include "core_controller_impl.h"
 
+#include <QDirIterator>
+
 #include "file_utils.h"
 
 #include <QDebug>
@@ -272,7 +274,7 @@ void CoreController::installResolvedCatalogEntry(const CatalogEntry& entryIn,
             [this, jobId](const OwnedDownloadProgress& progress) {
                 m_jobOrchestrator->reportPluginProgress(jobId, progress);
             },
-            [this, jobId](const InstallResult& result) {
+            [this, jobId, isUpdate, entryId = entry.id](const InstallResult& result) {
                 if (result.success) {
                     // Depot downloads land Windows manifest paths as literal file names
                     // ("Cities2_Data\\foo"). Split them into real directories now, while
@@ -280,6 +282,8 @@ void CoreController::installResolvedCatalogEntry(const CatalogEntry& entryIn,
                     if (!result.installPath.isEmpty())
                         healWindowsInstallLayout(result.installPath);
                     m_jobOrchestrator->completePluginDownload(jobId, result.installPath);
+                    if (isUpdate)
+                        warnAboutStaleContentAfterUpdate(entryId);
                 }
                 else
                     m_jobOrchestrator->failPluginDownload(
@@ -349,14 +353,21 @@ void CoreController::updateCatalogEntry(const QString& entryId)
                                                             : m_settings.defaultLibraryId();
 
     if (m_pluginHost && m_pluginHost->pluginOwnsDownload(entry->sourceId)) {
-        QVariantList addonIds;
-        if (game) {
-            for (const InstalledComponent& c : game->components) {
-                if (c.installed)
-                    addonIds.append(c.id);
-            }
+        // The DLC fallback in installCatalogEntry() can only use DLC the catalog knows
+        // about, and for a game installed from a repack that list is often still empty -
+        // the plugin fetches it on demand. Ask for it before updating, so the fallback
+        // has something to work with rather than silently updating the base game alone.
+        if (!ensureCatalogAddons(entryId)) {
+            connect(this, &CoreController::catalogAddonsReady, this,
+                    [this, entryId, libId](const QString& readyId) {
+                        if (readyId != entryId)
+                            return;
+                        disconnect(this, &CoreController::catalogAddonsReady, this, nullptr);
+                        startOwnedUpdate(entryId, libId);
+                    });
+            return;
         }
-        installCatalogEntry(entryId, libId, addonIds, QStringLiteral("update"));
+        startOwnedUpdate(entryId, libId);
         return;
     }
 
@@ -365,6 +376,93 @@ void CoreController::updateCatalogEntry(const QString& entryId)
         showNotice(QCoreApplication::translate("Core", "Could not start update for %1").arg(entry->title));
         return;
     }
+}
+
+/**
+ * After an update, report content the update did not touch.
+ *
+ * A game whose DLC were installed from a repack keeps them in their own directories, and
+ * an update that carries only the base depot leaves them at the old build. Nothing fails
+ * at update time - the game fails its own integrity check on next launch, with a message
+ * about corrupt data that sends you looking for a damaged download instead of a partial
+ * update. Cities: Skylines II spent a day looking like a Proton problem for this reason.
+ *
+ * So compare: if the update rewrote files, and whole content directories beside them were
+ * left older than everything the update wrote, say so while the cause is still obvious.
+ */
+void CoreController::warnAboutStaleContentAfterUpdate(const QString& entryId)
+{
+    const LibraryGame* game = m_libraryStore.gameById(entryId);
+    if (!game || game->installPath.isEmpty())
+        return;
+
+    // Directories that hold a game's content packs, one level under the install or under
+    // a Unity-style <Game>_Data/Content.
+    QStringList contentRoots{game->installPath};
+    QDirIterator dataIt(game->installPath, {QStringLiteral("*_Data")}, QDir::Dirs,
+                        QDirIterator::NoIteratorFlags);
+    while (dataIt.hasNext()) {
+        const QString content = dataIt.next() + QStringLiteral("/Content");
+        if (QFileInfo::exists(content))
+            contentRoots.append(content);
+    }
+
+    QDateTime newest;  // when the update last wrote anything
+    for (const QString& root : contentRoots) {
+        QDirIterator it(root, QDir::Files, QDirIterator::Subdirectories);
+        while (it.hasNext()) {
+            it.next();
+            const QDateTime t = it.fileInfo().lastModified();
+            if (t > newest)
+                newest = t;
+        }
+    }
+    if (!newest.isValid())
+        return;
+
+    // A directory every one of whose files predates the update by more than a day was
+    // plainly not part of it.
+    const QDateTime cutoff = newest.addDays(-1);
+    QStringList stale;
+    for (const QString& root : contentRoots) {
+        const QFileInfoList dirs =
+            QDir(root).entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QFileInfo& dir : dirs) {
+            QDateTime dirNewest;
+            QDirIterator it(dir.absoluteFilePath(), QDir::Files, QDirIterator::Subdirectories);
+            while (it.hasNext()) {
+                it.next();
+                const QDateTime t = it.fileInfo().lastModified();
+                if (t > dirNewest)
+                    dirNewest = t;
+            }
+            if (dirNewest.isValid() && dirNewest < cutoff)
+                stale.append(dir.fileName());
+        }
+    }
+    if (stale.size() < 2)  // one stale folder is normal; a row of them is the symptom
+        return;
+
+    qInfo().noquote() << "[update]" << entryId << "left" << stale.size()
+                      << "content folder(s) at the old build:" << stale.join(QLatin1Char(','));
+    showNotice(QCoreApplication::translate(
+                   "Core",
+                   "%1 updated, but %2 content packs were left at the old version. The game "
+                   "may report corrupted data - reinstalling is the reliable fix.")
+                   .arg(game->title)
+                   .arg(stale.size()));
+}
+
+void CoreController::startOwnedUpdate(const QString& entryId, const QString& libraryId)
+{
+    QVariantList addonIds;
+    if (const LibraryGame* game = m_libraryStore.gameById(entryId)) {
+        for (const InstalledComponent& c : game->components) {
+            if (c.installed)
+                addonIds.append(c.id);
+        }
+    }
+    installCatalogEntry(entryId, libraryId, addonIds, QStringLiteral("update"));
 }
 
 bool CoreController::ensureCatalogAddons(const QString& entryId)
