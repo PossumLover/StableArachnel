@@ -25,6 +25,16 @@ QVariantMap onlineFixOverlayInfo(const QString& installPath);
  * Sets WINEDLLOVERRIDES, optional legacy steam-runtime/run.sh, and LD_PRELOAD
  * gameoverlayrenderer (+ SteamAppId/SteamGameId). Safe no-op when overlay is missing/disabled.
  */
+/**
+ * Repacks that nest the game one directory down leave the fix beside the install root
+ * while the executable lives in a subdirectory. Windows resolves winmm.dll from the
+ * executable's own directory, so the loader is never found there, dlllist.txt is never
+ * read and the whole layer silently does nothing while reporting itself enabled. Copy
+ * the loader, the DLLs it lists and the ini next to the executable. Returns how many
+ * files were placed.
+ */
+int healOnlineFixLayoutForExecutable(const QString& installPath, const QString& executablePath);
+
 void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
                               const QString& realAppId = {});
 

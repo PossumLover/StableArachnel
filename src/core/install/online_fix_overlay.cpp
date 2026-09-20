@@ -769,6 +769,58 @@ QVariantMap onlineFixOverlayInfo(const QString& installPath)
     };
 }
 
+int healOnlineFixLayoutForExecutable(const QString& installPath, const QString& executablePath)
+{
+    if (installPath.isEmpty() || executablePath.isEmpty())
+        return 0;
+    const QString exeDir = QFileInfo(executablePath).absolutePath();
+    if (exeDir.isEmpty() || !QFileInfo::exists(exeDir))
+        return 0;
+
+    // Find the directory that actually holds the fix, and stop if it is already the
+    // executable's own.
+    QString sourceDir;
+    for (const QString& dir : findOverlayDirs(installPath)) {
+        if (QFileInfo::exists(QDir(dir).filePath(QStringLiteral("dlllist.txt")))
+            && QFileInfo::exists(QDir(dir).filePath(QStringLiteral("winmm.dll")))) {
+            sourceDir = dir;
+            break;
+        }
+    }
+    if (sourceDir.isEmpty()
+        || QFileInfo(sourceDir).absoluteFilePath() == QFileInfo(exeDir).absoluteFilePath())
+        return 0;
+
+    QStringList wanted{QStringLiteral("winmm.dll"), QStringLiteral("dlllist.txt"),
+                       QStringLiteral("OnlineFix.ini"), QStringLiteral("SteamFix.ini")};
+    QFile list(QDir(sourceDir).filePath(QStringLiteral("dlllist.txt")));
+    if (list.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        const QStringList lines = QString::fromUtf8(list.readAll())
+                                      .split(QRegularExpression(QStringLiteral("[\r\n]")),
+                                             Qt::SkipEmptyParts);
+        for (const QString& line : lines)
+            wanted.append(line.trimmed());
+        list.close();
+    }
+
+    int placed = 0;
+    for (const QString& name : wanted) {
+        if (name.isEmpty())
+            continue;
+        const QString from = QDir(sourceDir).filePath(name);
+        if (!QFileInfo::exists(from))
+            continue;
+        const QString to = QDir(exeDir).filePath(name);
+        const QFileInfo toInfo(to);
+        if (toInfo.exists() && toInfo.size() == QFileInfo(from).size())
+            continue;  // already there and the same file
+        QFile::remove(to);
+        if (QFile::copy(from, to))
+            ++placed;
+    }
+    return placed;
+}
+
 void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
                               const QString& realAppId)
 {

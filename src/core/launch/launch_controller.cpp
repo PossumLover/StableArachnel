@@ -909,6 +909,19 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
             }
         }
         {
+            // Put the fix next to the executable before anything reads it, or the loader
+            // is never found and the layer does nothing while reporting itself enabled.
+            const QString exeForFix = !info.executable.isEmpty()
+                ? info.executable
+                : gameCopy.executableOverride;
+            if (const int placed =
+                    healOnlineFixLayoutForExecutable(gameCopy.installPath, exeForFix);
+                placed > 0) {
+                logLine(QCoreApplication::translate(
+                            "Core", "Online Fix: placed %1 file(s) next to the game executable")
+                            .arg(placed));
+            }
+
             QString realAppId = gameCopy.steamAppId.trimmed();
             if (realAppId.isEmpty()) {
                 static const QRegularExpression steamId(QStringLiteral("^steam-(\\d+)$"));
