@@ -454,7 +454,15 @@ void appendSymbolLine(QStringList& lines, HANDLE process, DWORD64 address)
     QString line = QStringLiteral("  0x%1").arg(address, 16, 16, QLatin1Char('0'));
 
     if (SymFromAddr(process, address, &displacement, symbol)) {
-        line += QStringLiteral(" %1").arg(QString::fromLocal8Bit(symbol->Name));
+        // SYMBOL_INFO::Name is declared `CHAR Name[1]` and the real name runs off
+        // the end of the struct into `buffer`. Passing the array straight to
+        // fromLocal8Bit() picks QByteArrayView's fixed-size-array overload, which
+        // takes the *declared* extent - one byte - so every frame came out as a
+        // single letter ("BaseThreadInitThunk" -> "B"). Decay to const char* and
+        // bound the scan by the space we actually gave DbgHelp.
+        const char* rawName = static_cast<const char*>(symbol->Name);
+        const qsizetype nameLen = qstrnlen(rawName, symbol->MaxNameLen);
+        line += QStringLiteral(" %1").arg(QString::fromLocal8Bit(rawName, nameLen));
         if (displacement > 0)
             line += QStringLiteral("+0x%1").arg(displacement, 0, 16);
     } else {
