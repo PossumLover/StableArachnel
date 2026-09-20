@@ -811,10 +811,11 @@ int healOnlineFixLayoutForExecutable(const QString& installPath, const QString& 
         if (!QFileInfo::exists(from))
             continue;
         const QString to = QDir(exeDir).filePath(name);
-        const QFileInfo toInfo(to);
-        if (toInfo.exists() && toInfo.size() == QFileInfo(from).size())
-            continue;  // already there and the same file
-        QFile::remove(to);
+        // Never overwrite: a file already beside the executable may be a deliberately
+        // different build of the layer, and replacing it with the copy from the install
+        // root is how a working setup gets broken. Only fill in what is missing.
+        if (QFileInfo::exists(to))
+            continue;
         if (QFile::copy(from, to))
             ++placed;
     }
