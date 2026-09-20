@@ -1,8 +1,8 @@
 # Arachnel — Rose's fork
 
 Forked from [BadKiko/Arachnel](https://github.com/BadKiko/Arachnel) at `v0.1.47`.
-Branch: `rose-fork`. Upstream `main` is untouched, so rebasing on a future
-release stays easy.
+Work lands on `main` (formerly `rose-fork`). The `master` branch still holds
+upstream's tree untouched, so rebasing on a future release stays easy.
 
 The fork exists because the app kept dying on this machine — always at ~140s
 uptime, always with a "UI hang / not responding (~25s)" report. Two earlier root
