@@ -4,7 +4,9 @@
 #include "process_tracker.h"
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QProcess>
 #include <QSet>
@@ -274,6 +276,79 @@ bool launchWindowsDetached(const ResolvedLaunch& launch, const QString& workDir,
 
 #endif
 
+#if !defined(Q_OS_WIN)
+QString shellQuote(const QString& text)
+{
+    QString quoted = text;
+    quoted.replace(QLatin1Char('\''), QStringLiteral("'\\''"));
+    return QLatin1Char('\'') + quoted + QLatin1Char('\'');
+}
+
+/**
+ * Write the exact spawn as a runnable script beside the launch log
+ * (launch-<id>.log -> launch-<id>.replay.sh), so a launch can be re-run by hand
+ * or by scripts/dev/launch-probe.sh without going back through Arachnel.
+ *
+ * That matters for debugging: a real launch rewrites steam_appid.txt, re-heals
+ * the fix layout and, on a quick exit, disables Online Fix and relaunches - all
+ * of which change the thing being tested between runs. A replay does none of it.
+ *
+ * Only the environment Arachnel CHANGED is written (set or unset relative to its
+ * own), not the whole session environment.
+ */
+void writeReplayScript(const ResolvedLaunch& launch, const QString& workDir,
+                       const QString& logFilePath)
+{
+    if (!logFilePath.endsWith(QStringLiteral(".log")))
+        return;
+    const QString scriptPath = logFilePath.left(logFilePath.size() - 4)
+                               + QStringLiteral(".replay.sh");
+
+    const QProcessEnvironment host = QProcessEnvironment::systemEnvironment();
+    QStringList unsets;
+    QStringList sets;
+    for (const QString& key : host.keys()) {
+        if (!launch.environment.contains(key))
+            unsets.append(QStringLiteral("-u ") + shellQuote(key));
+    }
+    QStringList keys = launch.environment.keys();
+    keys.sort();
+    for (const QString& key : keys) {
+        const QString value = launch.environment.value(key);
+        if (host.contains(key) && host.value(key) == value)
+            continue;
+        sets.append(shellQuote(key + QLatin1Char('=') + value));
+    }
+
+    QStringList command{shellQuote(launch.program)};
+    for (const QString& arg : launch.arguments)
+        command.append(shellQuote(arg));
+
+    QString script;
+    script += QStringLiteral("#!/bin/sh\n");
+    script += QStringLiteral("# Replay of an Arachnel launch, written %1.\n")
+                  .arg(QDateTime::currentDateTime().toString(Qt::ISODate));
+    script += QStringLiteral("# Re-runs the exact program, arguments and environment it spawned.\n");
+    script += QStringLiteral("# Edit freely for experiments; the next real launch overwrites it.\n");
+    script += QStringLiteral("cd ") + shellQuote(workDir) + QStringLiteral(" || exit 1\n");
+    script += QStringLiteral("exec env");
+    for (const QString& u : unsets)
+        script += QStringLiteral(" \\\n  ") + u;
+    for (const QString& s : sets)
+        script += QStringLiteral(" \\\n  ") + s;
+    script += QStringLiteral(" \\\n  ") + command.join(QLatin1Char(' ')) + QLatin1Char('\n');
+
+    QFile file(scriptPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+        return;
+    file.write(script.toUtf8());
+    file.close();
+    // Owner-only: the environment diff can carry paths and ids worth not sharing.
+    QFile::setPermissions(scriptPath, QFileDevice::ReadOwner | QFileDevice::WriteOwner
+                                          | QFileDevice::ExeOwner);
+}
+#endif
+
 } // namespace
 
 bool ProcessLauncher::launch(const ResolvedLaunch& launch, QString* errorOut, qint64* processIdOut,
@@ -303,6 +378,8 @@ bool ProcessLauncher::launch(const ResolvedLaunch& launch, QString* errorOut, qi
     Q_UNUSED(logFilePath);
     return launchWindowsDetached(launch, workDir, errorOut, processIdOut);
 #else
+    writeReplayScript(launch, workDir, logFilePath);
+
     QProcess process;
     process.setProgram(launch.program);
     process.setArguments(launch.arguments);

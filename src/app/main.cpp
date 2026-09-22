@@ -159,15 +159,49 @@ int main(int argc, char* argv[])
 
         singleInstance = new arachnel::SingleInstanceGuard(&app);
         const QString launchLink = arachnel::findDeepLinkArgument(app.arguments());
+
+        // `--launch <gameId>`: launch a game through the running instance's real
+        // launch path, from a shell. For scripted debugging (scripts/dev/). It is
+        // deliberately NOT a URL verb: arachnel:// links reach this binary from any
+        // web page via xdg-open, and a page must not be able to start games. The
+        // payload scheme below can only come from this flag or a local process of
+        // the same user on the single-instance socket.
+        static const QString kCliLaunchPrefix = QStringLiteral("arachnel-cli:launch/");
+        QString cliLaunchId;
+        {
+            const QStringList args = app.arguments();
+            const int at = args.indexOf(QStringLiteral("--launch"));
+            if (at >= 0 && at + 1 < args.size())
+                cliLaunchId = args.at(at + 1).trimmed();
+        }
+
         if (!singleInstance->tryBecomePrimary()) {
-            singleInstance->forwardToPrimary(launchLink);
+            singleInstance->forwardToPrimary(cliLaunchId.isEmpty() ? launchLink
+                                                                   : kCliLaunchPrefix + cliLaunchId);
             return 0;
         }
 
         QObject::connect(singleInstance, &arachnel::SingleInstanceGuard::messageReceived, &app,
                          [](const QString& url) {
+                             if (url.startsWith(kCliLaunchPrefix)) {
+                                 const QString id = url.mid(kCliLaunchPrefix.size()).trimmed();
+                                 if (!id.isEmpty()) {
+                                     arachnel::logDiagnostic(
+                                         QStringLiteral("[cli] launch requested: %1").arg(id));
+                                     arachnel::core::CoreController::instance().launchGame(id);
+                                 }
+                                 return;
+                             }
                              arachnel::core::CoreController::instance().requestDeepLink(url);
                          });
+
+        if (!cliLaunchId.isEmpty()) {
+            // Started cold with --launch: give the library and plugins time to load.
+            QTimer::singleShot(8000, &app, [cliLaunchId]() {
+                arachnel::logDiagnostic(QStringLiteral("[cli] launch requested: %1").arg(cliLaunchId));
+                arachnel::core::CoreController::instance().launchGame(cliLaunchId);
+            });
+        }
 
         if (!launchLink.isEmpty())
             arachnel::core::CoreController::instance().requestDeepLink(launchLink);
