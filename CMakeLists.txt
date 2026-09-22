@@ -5,9 +5,52 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(DEFINED ENV{ARACHNEL_VERSION} AND NOT "$ENV{ARACHNEL_VERSION}" STREQUAL "")
+    # Release builds (CI) pass the version in the environment.
     set(ARACHNEL_VERSION "$ENV{ARACHNEL_VERSION}" CACHE STRING "Application version" FORCE)
-elseif(NOT DEFINED ARACHNEL_VERSION)
-    set(ARACHNEL_VERSION "dev" CACHE STRING "Application version")
+else()
+    # Local builds: derive it from git, so the in-app updater compares against the
+    # release this tree is actually built on. A hand-set -DARACHNEL_VERSION sits in
+    # the cache forever and goes stale - a build containing v0.1.48 kept calling
+    # itself 0.1.47 and kept offering 0.1.48 as an update.
+    #
+    # Commits since the tag become a fourth number (v0.1.48 + 11 -> 0.1.48.11), not
+    # a -11-gHASH suffix: the stable update channel ranks any suffixed version BELOW
+    # the plain tag (it reads suffixes as pre-builds), which would nag forever.
+    # 0.1.48.11 sorts above 0.1.48 and below 0.1.49.
+    execute_process(
+        COMMAND git describe --tags --long --match "v[0-9]*"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        OUTPUT_VARIABLE _arachnel_describe
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+        RESULT_VARIABLE _arachnel_describe_rc)
+    if(_arachnel_describe_rc EQUAL 0 AND _arachnel_describe MATCHES "^v([0-9.]+)-([0-9]+)-g")
+        if(CMAKE_MATCH_2 EQUAL 0)
+            set(_arachnel_git_version "${CMAKE_MATCH_1}")
+        else()
+            set(_arachnel_git_version "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}")
+        endif()
+        set(ARACHNEL_VERSION "${_arachnel_git_version}" CACHE STRING "Application version" FORCE)
+        # Re-run configure after a commit so the number does not go stale.
+        foreach(_ref IN ITEMS HEAD packed-refs)
+            if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git/${_ref}")
+                set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+                             "${CMAKE_CURRENT_SOURCE_DIR}/.git/${_ref}")
+            endif()
+        endforeach()
+        execute_process(
+            COMMAND git symbolic-ref -q HEAD
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            OUTPUT_VARIABLE _arachnel_head_ref
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET)
+        if(_arachnel_head_ref AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git/${_arachnel_head_ref}")
+            set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+                         "${CMAKE_CURRENT_SOURCE_DIR}/.git/${_arachnel_head_ref}")
+        endif()
+    elseif(NOT DEFINED ARACHNEL_VERSION)
+        set(ARACHNEL_VERSION "dev" CACHE STRING "Application version")
+    endif()
 endif()
 message(STATUS "Arachnel version: ${ARACHNEL_VERSION}")
 
