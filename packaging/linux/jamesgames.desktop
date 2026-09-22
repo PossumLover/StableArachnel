@@ -1,11 +1,11 @@
 [Desktop Entry]
 Type=Application
-Name=Arachnel
+Name=JamesGames
 GenericName=Game Launcher
 Comment=Game launcher with plugin-based sources
-Exec=arachnel_app %u
-Icon=arachnel
+Exec=JamesGames %u
+Icon=jamesgames
 Categories=Game;Utility;
-StartupWMClass=arachnel_app
+StartupWMClass=JamesGames
 MimeType=x-scheme-handler/arachnel;
 Terminal=false

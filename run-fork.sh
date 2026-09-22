@@ -10,4 +10,4 @@ export QSG_RHI_BACKEND=vulkan
 export QSG_RENDER_LOOP=basic
 export QT_QML_MATERIAL_IMPORT_PATH="${ROOT}/build/qml_modules"
 
-exec "${ROOT}/build/arachnel_app" "$@"
+exec "${ROOT}/build/JamesGames" "$@"

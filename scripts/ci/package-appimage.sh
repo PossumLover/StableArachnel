@@ -39,25 +39,25 @@ fi
 
 cmake "${CMAKE_ARGS[@]}"
 
-echo "==> Build arachnel_app"
+echo "==> Build JamesGames"
 cmake --build "${BUILD}" --target arachnel_app -j"$(nproc)"
 
 if [[ -x "${ROOT}/scripts/setup-material-fonts.sh" ]]; then
   bash "${ROOT}/scripts/setup-material-fonts.sh"
 fi
 
-APP_BIN="${BUILD}/arachnel_app"
+APP_BIN="${BUILD}/JamesGames"
 if [[ ! -x "${APP_BIN}" ]]; then
-  echo "arachnel_app not found at ${APP_BIN}" >&2
+  echo "JamesGames not found at ${APP_BIN}" >&2
   exit 1
 fi
 
 rm -rf "${APPDIR}"
 mkdir -p "${APPDIR}/usr/bin" "${DIST}"
 
-cp "${APP_BIN}" "${APPDIR}/usr/bin/arachnel_app"
-cp "${ROOT}/packaging/linux/arachnel.desktop" "${APPDIR}/arachnel.desktop"
-cp "${ROOT}/resources/icons/png/256.png" "${APPDIR}/arachnel.png"
+cp "${APP_BIN}" "${APPDIR}/usr/bin/JamesGames"
+cp "${ROOT}/packaging/linux/jamesgames.desktop" "${APPDIR}/jamesgames.desktop"
+cp "${ROOT}/resources/icons/png/256.png" "${APPDIR}/jamesgames.png"
 
 TOOLS="${DIST}/linuxdeploy"
 mkdir -p "${TOOLS}"
@@ -238,9 +238,9 @@ cd "${ROOT}"
 # second pass - it would re-run qt deploy and may pick the wrong qmake.
 "${LINUXDEPLOY}" --appdir "${APPDIR}" \
   --plugin qt \
-  --executable "${APPDIR}/usr/bin/arachnel_app" \
-  --desktop-file "${APPDIR}/arachnel.desktop" \
-  --icon-file "${APPDIR}/arachnel.png" \
+  --executable "${APPDIR}/usr/bin/JamesGames" \
+  --desktop-file "${APPDIR}/jamesgames.desktop" \
+  --icon-file "${APPDIR}/jamesgames.png" \
   "${EXCLUDE_ARGS[@]}"
 
 deploy_qml_modules
@@ -295,7 +295,7 @@ if [[ -z "${APPIMAGE}" ]]; then
   exit 1
 fi
 
-OUT="${DIST}/Arachnel-${VERSION}-x86_64.AppImage"
+OUT="${DIST}/JamesGames-${VERSION}-x86_64.AppImage"
 mv -f "${APPIMAGE}" "${OUT}"
 chmod +x "${OUT}"
 

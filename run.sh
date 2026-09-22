@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD="${ROOT}/build"
-APP="${BUILD}/arachnel_app"
+APP="${BUILD}/JamesGames"
 export QT_QML_MATERIAL_IMPORT_PATH="${BUILD}/qml_modules"
 
 ensure_material_fonts() {
@@ -68,7 +68,7 @@ if [[ "${RUN_ONLY}" -eq 0 ]]; then
 fi
 
 if [[ ! -x "${APP}" ]]; then
-  echo "arachnel_app not found. Run without --run first." >&2
+  echo "JamesGames not found. Run without --run first." >&2
   exit 1
 fi
 

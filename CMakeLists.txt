@@ -110,6 +110,11 @@ qt_add_executable(arachnel_app
     ${ARACHNEL_APP_SOURCES}
 )
 
+# Shipped file name. The CMake target keeps its old name so every script and
+# qt_add_* call below still refers to it, and applicationName stays "Arachnel"
+# (see settings_identity.cpp) so the data directory and Proton prefixes do not move.
+set_target_properties(arachnel_app PROPERTIES OUTPUT_NAME JamesGames)
+
 if(WIN32)
     set_target_properties(arachnel_app PROPERTIES WIN32_EXECUTABLE TRUE)
 
