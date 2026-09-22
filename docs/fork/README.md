@@ -9,7 +9,7 @@ out.
 |---|---|
 | [diagnosing-game-launch.md](diagnosing-game-launch.md) | How to find out why a game will not start on Linux. Read this first; it is the method the rest came from. |
 | [steam-compat-layers.md](steam-compat-layers.md) | Online Fix / SteamFix / Unsteam: what each one is, the layout rule that governs all of them, and the AppId split. |
-| [steam-overlay.md](steam-overlay.md) | The shift+tab overlay. **Open.** What SOFL does, what has been ruled out, what to try next. |
+| [steam-overlay.md](steam-overlay.md) | The shift+tab overlay. **Solved** — the four conditions that all have to hold, and the history of what was ruled out. |
 
 ## House rules learned the hard way
 
@@ -23,3 +23,7 @@ out.
   Check `Online Fix: enabled/disabled` in `run.log` for the run you are reading.
 - **Rose's instance is usually running with a long download in flight.** Never
   `pkill` by pattern; take the PID first.
+- **Diff two live processes before theorising about environments.** Running the
+  same game under Arachnel and under SOFL and diffing `/proc/<pid>/environ`
+  settled the overlay in one pass, after two rounds lost to inference from
+  `strings` on a jar.

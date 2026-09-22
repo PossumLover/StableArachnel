@@ -1,10 +1,42 @@
-# The shift+tab overlay — open
+# The shift+tab overlay — solved
 
-**Status (2026-09-21): games launch with the toggle on, the overlay does not appear.**
-No crash, no regression. The remaining question is why Valve's overlay does not
-attach.
+**Status (2026-09-21): working.** Verified on How to Fish, an Online Fix game,
+through Arachnel with the per-game toggle on.
 
-## Why it never worked at all before
+Four things all have to be true. Miss any one and the game still runs, so the
+only symptom is "no overlay":
+
+1. **Run inside `SteamLinuxRuntime_4`.** Not sniper — see the Python section below.
+2. **Hand pressure-vessel BOTH overlay builds**, 32- and 64-bit. It copies them
+   into the container and rewrites `LD_PRELOAD` as
+   `/tmp/pressure-vessel-libs-*/${LIB}/gameoverlayrenderer.so`, where `${LIB}`
+   resolves per architecture. Arch-filtering on the host hands it half the pair.
+3. **`ENABLE_VK_LAYER_VALVE_steam_overlay_1=1`** — literally `1`. `true` is
+   rejected.
+4. **Do NOT set `PROTON_ENABLE_WAYLAND`.** This was the last blocker. Valve's
+   `gameoverlayrenderer` hooks the X11/GL/Vulkan presentation path; on Proton's
+   native Wayland backend there is nothing for it to hook. SOFL runs through
+   XWayland (`nativeWayland=` empty in `Games.ini`, `PROTON_ENABLE_WAYLAND=` with
+   no value in the live process).
+
+`SteamOverlayGameId` is set; `SteamAppId`/`SteamGameId` are also set by Arachnel
+and SOFL sets neither, which turned out not to matter.
+
+Harmless noise in the launch log: the host-side processes inherit the raw
+`LD_PRELOAD` before entering the container and ld.so reports
+`wrong ELF class: ELFCLASS32` for the 32-bit path, four times. It is ignored and
+the overlay still loads. SOFL avoids it by passing `--ld-preload=` as arguments
+to the runtime rather than as an environment variable; Arachnel could do the same
+if the noise ever gets in the way.
+
+## How it was found
+
+By diffing `/proc/<pid>/environ` between a live SOFL launch and a live Arachnel
+launch **of the same game**, rather than reasoning about it. That is the move to
+reach for first next time — two rounds were lost to inference from `strings`
+before anyone looked at a running process.
+
+## Why it never worked at all before (history)
 
 `appendSteamOverlayEnvironment()` cleared `LD_PRELOAD` and set
 `ENABLE_VK_LAYER_VALVE_steam_overlay_1=0` for any install shipping
