@@ -1092,7 +1092,7 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
                 logLine(QCoreApplication::translate("Core", "Hybrid VR/Desktop game detected - launching in 2D Desktop mode"));
             }
         }
-        const ResolvedLaunch resolved = resolveLaunch(info, gameCopy, *m_settings, m_protons);
+        ResolvedLaunch resolved = resolveLaunch(info, gameCopy, *m_settings, m_protons);
         if (resolved.program.isEmpty()) {
             const QString reason = QCoreApplication::translate(
                 "Core",
@@ -1155,8 +1155,18 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
         }
 
         QString error;
-        if (m_protons && detectUnsteamOverlay(gameCopy.installPath).enabled)
+        if (m_protons && detectUnsteamOverlay(gameCopy.installPath).enabled) {
+            // The shim is a long-running Wine process in the SAME prefix, started
+            // before the game. `waitforexitandrun` waits for every Wine process in the
+            // prefix to exit before starting - it would wait on the shim forever. Keep
+            // the plain `run` verb for these launches (they lose protonfixes).
+            const int verbAt = resolved.arguments.indexOf(QStringLiteral("waitforexitandrun"));
+            if (verbAt >= 0) {
+                resolved.arguments[verbAt] = QStringLiteral("run");
+                logLine(QStringLiteral("Unsteam shim in use: Proton verb 'run' (no protonfixes)"));
+            }
             startSteamShim(m_protons->compatDataPathForGame(gameCopy.id), resolved);
+        }
 
         qint64 processId = 0;
         if (!ProcessLauncher::launch(resolved, &error, &processId, launchLogFilePath())) {

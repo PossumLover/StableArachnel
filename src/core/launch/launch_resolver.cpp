@@ -239,7 +239,14 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
             return resolved;
 
         QStringList protonArgs = pluginInfo.argumentsPrefix;
-        protonArgs += QStringList{QStringLiteral("run"), executable};
+        // `waitforexitandrun`, the verb Steam itself uses, not `run`: protonfixes
+        // only runs when argv[1] contains "waitforexitandrun" (check_conditions() in
+        // protonfixes/__init__.py). With `run` every launch logged "Skipping fix
+        // execution. We are probably running a unit test." and got no game fixes and
+        // no -pf_* launch-option support. The verb also waits for the prefix's
+        // wineserver to go idle first - see LaunchController for the one case
+        // (the Unsteam steam.exe shim) where that must not happen.
+        protonArgs += QStringList{QStringLiteral("waitforexitandrun"), executable};
         protonArgs += arguments;
 
         // SOFL Online-Fix: optionally prefix with legacy steam-runtime/run.sh.
