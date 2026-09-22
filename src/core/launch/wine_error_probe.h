@@ -8,6 +8,7 @@ namespace arachnel::core {
 
 struct WineErrorWatchHints {
     QString installPath;
+    QString executablePath;
     QString executableName;
     QString fakeSteamAppId;
 };

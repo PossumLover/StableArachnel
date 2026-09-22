@@ -4,6 +4,7 @@
 #include "steam_shortcut_service.h"
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
@@ -753,6 +754,154 @@ bool setOnlineFixOverlayEnabled(const QString& installPath, bool enabled, QStrin
 
 namespace {
 constexpr auto kSteamOverlayMarker = ".arachnel-steam-overlay";
+}
+
+QString steamFixKitDir()
+{
+    return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+           + QStringLiteral("/kits/steamfix");
+}
+
+bool steamFixKitAvailable()
+{
+    const QDir kit(steamFixKitDir());
+    return kit.exists(QStringLiteral("SteamFix64.dll")) && kit.exists(QStringLiteral("winmm.dll"));
+}
+
+bool convertOnlineFixToSteamFix(const QString& gameId, const QString& installPath,
+                                const QString& executablePath, const QString& realAppId,
+                                QString* summaryOut, QString* error)
+{
+    auto fail = [error](const QString& why) {
+        if (error)
+            *error = why;
+        return false;
+    };
+    if (installPath.isEmpty() || !QDir(installPath).exists())
+        return fail(QCoreApplication::translate("Core", "Install folder is missing"));
+    if (!steamFixKitAvailable()) {
+        return fail(QCoreApplication::translate("Core", "No SteamFix kit in %1")
+                        .arg(steamFixKitDir()));
+    }
+
+    const QString exeDir = !executablePath.isEmpty() && QFileInfo::exists(executablePath)
+                               ? QFileInfo(executablePath).absolutePath()
+                               : installPath;
+    if (!executablePath.isEmpty() && QFileInfo::exists(executablePath)
+        && peImageBits(executablePath) == 32) {
+        return fail(QCoreApplication::translate(
+            "Core", "The SteamFix kit is 64-bit and this game is 32-bit"));
+    }
+
+    // Read the ids before anything moves.
+    QString fakeAppId = QStringLiteral("480");
+    QString appId = realAppId.trimmed();
+    const QString onlineFixIni = QDir(exeDir).filePath(QStringLiteral("OnlineFix.ini"));
+    if (QFileInfo::exists(onlineFixIni)) {
+        const QString fake = readIniAppId(onlineFixIni, QStringLiteral("FakeAppId"));
+        if (!fake.isEmpty())
+            fakeAppId = fake;
+        if (appId.isEmpty())
+            appId = readIniAppId(onlineFixIni, QStringLiteral("RealAppId"));
+    }
+    if (appId.isEmpty())
+        return fail(QCoreApplication::translate("Core", "Unknown Steam app id for this game"));
+
+    // Move - never delete - every Online Fix file, active or parked, out of the
+    // install. Leaving them in a subfolder is not enough: the layout healer copies
+    // missing fix files from any folder holding winmm.dll + dlllist.txt.
+    static const QStringList kOnlineFixFiles = {
+        QStringLiteral("winmm.dll"),          QStringLiteral("dlllist.txt"),
+        QStringLiteral("OnlineFix64.dll"),    QStringLiteral("OnlineFix.dll"),
+        QStringLiteral("OnlineFix.ini"),      QStringLiteral("SteamOverlay64.dll"),
+        QStringLiteral("SteamOverlay32.dll"), QStringLiteral("StubDRM64.dll"),
+        QStringLiteral("StubDRM32.dll"),
+    };
+    const QString backupRoot =
+        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+        + QStringLiteral("/backups/") + gameId + QStringLiteral("-onlinefix-")
+        + QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"));
+
+    QStringList dirs{exeDir};
+    if (QFileInfo(installPath).absoluteFilePath() != QFileInfo(exeDir).absoluteFilePath())
+        dirs.append(installPath);
+
+    QStringList restoreLines;
+    int movedCount = 0;
+    for (int i = 0; i < dirs.size(); ++i) {
+        const QDir src(dirs.at(i));
+        const bool holdsOnlineFix = src.exists(QStringLiteral("OnlineFix64.dll"))
+                                    || src.exists(QStringLiteral("OnlineFix64.dll.arachnel-off"))
+                                    || src.exists(QStringLiteral("OnlineFix.ini"))
+                                    || src.exists(QStringLiteral("dlllist.txt"));
+        if (!holdsOnlineFix)
+            continue;
+        const QString dst = backupRoot
+                            + (i == 0 ? QStringLiteral("/beside-exe") : QStringLiteral("/install-root"));
+        if (!QDir().mkpath(dst))
+            return fail(QCoreApplication::translate("Core", "Could not create %1").arg(dst));
+        for (const QString& name : kOnlineFixFiles) {
+            for (const QString& variant : {name, name + QStringLiteral(".arachnel-off")}) {
+                const QString from = src.filePath(variant);
+                if (!QFileInfo::exists(from))
+                    continue;
+                const QString to = dst + QLatin1Char('/') + variant;
+                // QFile::rename falls back to copy+remove across filesystems.
+                if (!QFile::rename(from, to)) {
+                    return fail(QCoreApplication::translate("Core", "Could not move %1").arg(from));
+                }
+                restoreLines.append(to + QStringLiteral("  ->  ") + from);
+                ++movedCount;
+            }
+        }
+    }
+
+    const QDir kit(steamFixKitDir());
+    for (const QString& name : {QStringLiteral("SteamFix64.dll"), QStringLiteral("winmm.dll")}) {
+        const QString to = QDir(exeDir).filePath(name);
+        QFile::remove(to);
+        if (!QFile::copy(kit.filePath(name), to))
+            return fail(QCoreApplication::translate("Core", "Could not copy %1").arg(name));
+    }
+
+    auto writeText = [](const QString& path, const QString& text) {
+        QFile out(path);
+        if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+            return false;
+        out.write(text.toUtf8());
+        return true;
+    };
+    // SteamFix's winmm.dll loads what winmm.txt lists (not dlllist.txt).
+    writeText(QDir(exeDir).filePath(QStringLiteral("winmm.txt")), QStringLiteral("SteamFix64.dll\n"));
+    // Same shape as the SteamFix.ini that runs Big Walk and Cities: Skylines II.
+    // RealAppId is what the game sees (it checks its own id); FakeAppId is what
+    // Steam sees.
+    writeText(QDir(exeDir).filePath(QStringLiteral("SteamFix.ini")),
+              QStringLiteral("[Main]\nRealAppId=%1\nFakeAppId=%2\nBuildId=0\n\n"
+                             "[Misc]\nOverlay=true\nFilterLobby=false\n\n"
+                             "[Interfaces]\nApps=true\nFriends=true\nUser=true\nInventory=true\n"
+                             "Stats=true\nStorage=true\nUtils=true\nWorkshop=false\n\n"
+                             "[DLC]\n0=dlc\n")
+                  .arg(appId, fakeAppId));
+
+    if (movedCount > 0) {
+        writeText(backupRoot + QStringLiteral("/RESTORE.txt"),
+                  QStringLiteral("Online Fix files moved out of %1 by Arachnel when it switched\n"
+                                 "the game to SteamFix after \"Self-protection failed\".\n\n"
+                                 "To go back: delete SteamFix64.dll, SteamFix.ini, winmm.txt and\n"
+                                 "winmm.dll beside the game exe, then move these back:\n\n%2\n")
+                      .arg(installPath, restoreLines.join(QLatin1Char('\n'))));
+    }
+
+    if (summaryOut) {
+        *summaryOut = QCoreApplication::translate(
+                          "Core", "Switched to SteamFix (RealAppId=%1, FakeAppId=%2); moved %3 "
+                                  "Online Fix file(s) to %4")
+                          .arg(appId, fakeAppId)
+                          .arg(movedCount)
+                          .arg(backupRoot);
+    }
+    return true;
 }
 
 bool steamOverlayForced(const QString& installPath)

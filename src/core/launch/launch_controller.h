@@ -66,6 +66,8 @@ private:
     void clearRunning(bool allowOnlineFixFallback, bool suppressQuickExitLog = false,
                      int exitCode = -1);
     void pollRunningGame();
+    /** Online Fix refused the game ("Self-protection failed"): switch to SteamFix. */
+    void handleOnlineFixSelfProtection(const QString& gameId);
     void handleOnlineFixLaunchFailure(const QString& gameId, const QString& reason);
     void terminateTrackedLaunch();
     void logLine(const QString& line);
@@ -90,6 +92,8 @@ private:
     void stopSteamShim();
 
     bool m_onlineFixFallbackUsed = false;
+    /** Self-protection scan already acted (or found nothing) for this launch. */
+    bool m_selfProtectionHandled = false;
     /** steam.exe stub kept alive beside an Unsteam game; see startSteamShim(). */
     QProcess* m_steamShim = nullptr;
     bool m_relaunchWithoutOnlineFix = false;

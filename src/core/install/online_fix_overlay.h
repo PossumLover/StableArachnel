@@ -29,6 +29,33 @@ OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath);
  * Opt-in per game, stored as a marker beside the install the way the Online Fix
  * enable/disable state already is.
  */
+/**
+ * Online Fix's own OnlineFix64.dll refuses some games with
+ * "Self-protection failed. Error code: 4". It is tied to the per-game [Hashes]
+ * entry in OnlineFix.ini: removing it from a working game reproduces the error
+ * exactly, and the value is not derivable from anything in the install. Plenty of
+ * games run fine without one (Teardown, Satisfactory, BOKURA...), so the trigger
+ * is the error itself, never a missing hash.
+ *
+ * SteamFix (SteamFix64.dll + its own winmm.dll reading winmm.txt) is a separate
+ * emulator with no self-protection, and runs games Online Fix refuses - Cities:
+ * Skylines II goes from the error dialog to its main menu.
+ *
+ * The kit is NOT shipped with Arachnel. It is picked up from steamFixKitDir().
+ */
+QString steamFixKitDir();
+/** True when steamFixKitDir() holds a usable 64-bit kit. */
+bool steamFixKitAvailable();
+/**
+ * Replace an install's Online Fix layer with SteamFix. Online Fix files beside the
+ * executable (and in the install root, if the fix lives there) are MOVED to
+ * <AppData>/backups/<gameId>-onlinefix-<time>/ with a RESTORE.txt, never deleted,
+ * and never left inside the install where the layout healer would copy them back.
+ */
+bool convertOnlineFixToSteamFix(const QString& gameId, const QString& installPath,
+                                const QString& executablePath, const QString& realAppId,
+                                QString* summaryOut = nullptr, QString* error = nullptr);
+
 bool steamOverlayForced(const QString& installPath);
 bool setSteamOverlayForced(const QString& installPath, bool forced);
 /** Enable/disable Online Fix (SteamFix rename, or marker + Valve restore for old embeds). */

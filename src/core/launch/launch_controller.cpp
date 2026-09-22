@@ -44,6 +44,9 @@ constexpr int kPollIntervalMs = 1500;
 constexpr int kOnlineFixPollIntervalMs = 400;
 constexpr int kOnlineFixWatchMs = 20000;
 constexpr int kOnlineFixEarlyExitMs = 12000;
+// Online Fix shows "Self-protection failed" before the game's engine starts, but a
+// cold Proton + runtime start can take a while to get there.
+constexpr int kSelfProtectionScanMs = 60000;
 
 QString formatProcessExitCode(int exitCode)
 {
@@ -231,6 +234,7 @@ void LaunchController::markRunning(const LibraryGame& game, qint64 processId,
     m_watchHints = watchHints;
     m_sawGameExecutable = false;
     m_userStopped = false;
+    m_selfProtectionHandled = false;
     m_onlineFixWatchUntil =
         watchingOnlineFix ? m_launchStartedAt.addMSecs(kOnlineFixWatchMs) : QDateTime();
     m_timer->setInterval(watchingOnlineFix ? kOnlineFixPollIntervalMs : kPollIntervalMs);
@@ -331,6 +335,60 @@ void LaunchController::clearRunning(bool allowOnlineFixFallback, bool suppressQu
             }
         }
     }
+}
+
+void LaunchController::handleOnlineFixSelfProtection(const QString& gameId)
+{
+    if (gameId.isEmpty() || !m_library)
+        return;
+    const LibraryGame* game = m_library->gameById(gameId);
+    if (!game || game->installPath.isEmpty())
+        return;
+
+    logLine(QCoreApplication::translate(
+        "Core", "Online Fix refused this game: \"Self-protection failed\" (error 4)"));
+
+    if (!steamFixKitAvailable()) {
+        logLine(QCoreApplication::translate("Core", "No SteamFix kit in %1 - cannot switch")
+                    .arg(steamFixKitDir()));
+        if (m_hooks.notice) {
+            m_hooks.notice(QCoreApplication::translate(
+                "Core",
+                "Online Fix refused to run this game (self-protection error 4). Put a "
+                "SteamFix kit (SteamFix64.dll + its winmm.dll) in %1 and Arachnel will "
+                "switch the game to it automatically.")
+                               .arg(steamFixKitDir()));
+        }
+        return;
+    }
+
+    const QString executable = !m_watchHints.executablePath.isEmpty()
+                                   ? m_watchHints.executablePath
+                                   : game->executableOverride;
+    QString summary;
+    QString error;
+    if (!convertOnlineFixToSteamFix(game->id, game->installPath, executable, game->steamAppId,
+                                    &summary, &error)) {
+        logLine(QCoreApplication::translate("Core", "Could not switch to SteamFix: %1").arg(error));
+        if (m_hooks.notice) {
+            m_hooks.notice(QCoreApplication::translate(
+                "Core", "Online Fix refused this game, and switching to SteamFix failed: %1")
+                               .arg(error));
+        }
+        return;
+    }
+
+    logLine(summary);
+    if (m_hooks.notice) {
+        m_hooks.notice(QCoreApplication::translate(
+            "Core", "Online Fix refused this game, so it now uses SteamFix. Relaunching."));
+    }
+
+    // Close the blocked launch (the error dialog included) and start again on the
+    // new layer. A fresh launchGame() also resets the Online Fix fallback state.
+    terminateTrackedLaunch();
+    clearRunning(false, true);
+    QTimer::singleShot(1500, this, [this, gameId]() { launchGame(gameId); });
 }
 
 void LaunchController::handleOnlineFixLaunchFailure(const QString& gameId, const QString& reason)
@@ -583,6 +641,25 @@ void LaunchController::pollRunningGame()
 
     if (relatedGameExecutableAlive(m_processId, m_watchHints))
         m_sawGameExecutable = true;
+
+    // The dialog blocks the game rather than killing it, so no exit-based check
+    // ever fires - the user just sees an error box. WINEDEBUG=+msgbox puts its
+    // text in the launch log; look for it there.
+    if (!m_selfProtectionHandled && m_launchStartedAt.isValid()
+        && m_launchStartedAt.msecsTo(QDateTime::currentDateTime()) <= kSelfProtectionScanMs) {
+        const QString capturePath = launchLogFilePath();
+        QFile capture(capturePath);
+        if (!capturePath.isEmpty() && capture.open(QIODevice::ReadOnly)) {
+            if (capture.readAll().contains("Self-protection failed")) {
+                m_selfProtectionHandled = true;
+                const QString gameId = m_gameId;
+                QTimer::singleShot(0, this, [this, gameId]() {
+                    handleOnlineFixSelfProtection(gameId);
+                });
+                return;
+            }
+        }
+    }
 
     if (m_watchingOnlineFix && !m_onlineFixFallbackUsed && m_onlineFixWatchUntil.isValid()
         && QDateTime::currentDateTime() <= m_onlineFixWatchUntil) {
@@ -874,10 +951,16 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
         WineErrorWatchHints watchHints;
         watchHints.installPath = gameCopy.installPath;
         {
-            const QString exePath = !info.executable.isEmpty()
-                ? info.executable
-                : (!gameCopy.executableOverride.isEmpty() ? gameCopy.executableOverride
-                                                          : QString());
+            // Same precedence as resolveLaunch(): the per-game override is what
+            // actually runs. The plugin's executable can be something else entirely -
+            // Paradox titles report their launcher bootstrapper (Cities: Skylines II
+            // reports Launcher/…), and watching that name, or converting its folder
+            // to SteamFix, targets the wrong directory.
+            const QString overrideExe = gameCopy.executableOverride.trimmed();
+            const QString exePath = !overrideExe.isEmpty() && QFileInfo::exists(overrideExe)
+                ? overrideExe
+                : info.executable;
+            watchHints.executablePath = exePath;
             watchHints.executableName = QFileInfo(exePath).fileName();
         }
         watchHints.fakeSteamAppId = QStringLiteral("480");

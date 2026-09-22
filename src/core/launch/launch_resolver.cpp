@@ -97,7 +97,11 @@ QProcessEnvironment buildProtonEnvironment(const QString& gameId, const QString&
     env.remove(QStringLiteral("STEAM_RUNTIME_LIBRARY_PATH"));
     env.insert(QStringLiteral("STEAM_COMPAT_CLIENT_INSTALL_PATH"), manager.steamCompatClientPath());
     env.insert(QStringLiteral("STEAM_COMPAT_DATA_PATH"), manager.compatDataPathForGame(gameId));
-    env.insert(QStringLiteral("WINEDEBUG"), QStringLiteral("-all"));
+    // Everything off except message boxes: +msgbox puts the text of any Windows
+    // dialog in launch-<id>.log (MSGBOX_OnInit L"..."). That is how Arachnel spots
+    // Online Fix's "Self-protection failed" - otherwise only visible on screen.
+    // It prints nothing unless a dialog actually opens.
+    env.insert(QStringLiteral("WINEDEBUG"), QStringLiteral("-all,+msgbox"));
     if (!protonInstallDir.trimmed().isEmpty())
         env.insert(QStringLiteral("PROTON_PATH"), protonInstallDir);
     return env;
