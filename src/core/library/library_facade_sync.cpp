@@ -460,6 +460,12 @@ void CoreController::setGameOnlineFixEnabled(const QString& entryId, bool enable
         m_libraryController->setGameOnlineFixEnabled(entryId, enabled);
 }
 
+void CoreController::setGameSteamOverlayForced(const QString& entryId, bool forced)
+{
+    if (m_libraryController)
+        m_libraryController->setGameSteamOverlayForced(entryId, forced);
+}
+
 void CoreController::setGameAddonEnabled(const QString& entryId, const QString& addonId,
                                          bool enabled)
 {

@@ -234,6 +234,39 @@ MD.BottomSheet {
                     }
                 }
             }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: MD.Token.spacing.medium
+                visible: !!(root.info.steamOverlayCanToggle)
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 2
+
+                    MD.Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Steam overlay (shift+tab)")
+                        typescale: MD.Token.typescale.body_large
+                    }
+
+                    MD.Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Runs inside the Steam Linux Runtime with Valve's overlay loaded. Needs the Steam client running.")
+                        color: MD.Token.color.on_surface_variant
+                        typescale: MD.Token.typescale.body_small
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                MD.Switch {
+                    checked: !!(root.info.steamOverlayForced)
+                    onToggled: {
+                        Core.setGameSteamOverlayForced(root.gameId, checked)
+                        root.detailsRevision++
+                    }
+                }
+            }
         }
 
         MD.ElevationRectangle {

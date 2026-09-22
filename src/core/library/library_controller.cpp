@@ -406,6 +406,25 @@ void LibraryController::setGameUnsteamEnabled(const QString& entryId, bool enabl
     sync();
 }
 
+void LibraryController::setGameSteamOverlayForced(const QString& entryId, bool forced)
+{
+    const LibraryGame* existing = m_store->gameById(entryId);
+    if (!existing || existing->installPath.isEmpty())
+        return;
+    if (!setSteamOverlayForced(existing->installPath, forced)) {
+        if (m_hooks.notice) {
+            m_hooks.notice(QCoreApplication::translate(
+                "Core", "Could not change the Steam overlay setting for this game."));
+        }
+        return;
+    }
+    if (forced && m_hooks.notice) {
+        m_hooks.notice(QCoreApplication::translate(
+            "Core", "Steam overlay forced on. The game now runs inside the Steam Linux "
+                    "Runtime and needs the Steam client running."));
+    }
+}
+
 void LibraryController::setGameOnlineFixEnabled(const QString& entryId, bool enabled)
 {
     const LibraryGame* existing = m_store->gameById(entryId);

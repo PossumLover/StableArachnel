@@ -57,6 +57,7 @@ public:
     void setGameExecutableOverride(const QString& entryId, const QString& path);
     void setGameProtonId(const QString& entryId, const QString& protonId);
     void setGameOnlineFixEnabled(const QString& entryId, bool enabled);
+    void setGameSteamOverlayForced(const QString& entryId, bool forced);
     /** Unsteam: the second Steam compatibility layer. Installs the payload on first use. */
     void setGameUnsteamEnabled(const QString& entryId, bool enabled);
     void setGameAddonEnabled(const QString& entryId, const QString& addonId, bool enabled);

@@ -15,6 +15,22 @@ struct OnlineFixOverlayState {
 };
 
 OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath);
+
+/**
+ * Valve's shift+tab overlay on top of an Online Fix game.
+ *
+ * Arachnel used to stand Valve's gameoverlayrenderer down for every install that
+ * ships OnlineFix64.dll / SteamOverlay*.dll, which is every Online Fix game - so
+ * the overlay could never appear. OnlineFix Linux Launcher (SOFL) runs the same
+ * layers with the overlay on, by preloading both gameoverlayrenderer.so builds
+ * AND running inside the Steam Linux Runtime with the Steam client up. The
+ * earlier "Failed to load steam overlay dll (126)" attempts had neither.
+ *
+ * Opt-in per game, stored as a marker beside the install the way the Online Fix
+ * enable/disable state already is.
+ */
+bool steamOverlayForced(const QString& installPath);
+bool setSteamOverlayForced(const QString& installPath, bool forced);
 /** Enable/disable Online Fix (SteamFix rename, or marker + Valve restore for old embeds). */
 bool setOnlineFixOverlayEnabled(const QString& installPath, bool enabled, QString* error = nullptr);
 /** Labels + flags for Game Settings / entryDetails. */

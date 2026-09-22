@@ -278,7 +278,7 @@ bool dirHasBundledSteamOverlayDll(const QString& dir)
 }
 
 void appendSteamOverlayEnvironment(LaunchInfo* info, const QString& fakeSteamId,
-                                   const QString& overlayDir)
+                                   const QString& overlayDir, bool forceValveOverlay)
 {
     const QString overlayId = fakeSteamId.isEmpty() ? QStringLiteral("480") : fakeSteamId;
     // SpaceWar AppId is still required for SteamFix / OF.me IPC.
@@ -289,9 +289,10 @@ void appendSteamOverlayEnvironment(LaunchInfo* info, const QString& fakeSteamId,
     // OF.me ships SteamOverlay32/64 next to the game. Forcing Valve's
     // gameoverlayrenderer on top makes Steam show "Failed to load steam overlay
     // dll" (126) on 32-bit titles and can trip OF.me self-protection.
-    if (dirHasBundledSteamOverlayDll(overlayDir)
-        || QDir(overlayDir).exists(QStringLiteral("OnlineFix.dll"))
-        || QDir(overlayDir).exists(QStringLiteral("OnlineFix64.dll"))) {
+    if (!forceValveOverlay
+        && (dirHasBundledSteamOverlayDll(overlayDir)
+            || QDir(overlayDir).exists(QStringLiteral("OnlineFix.dll"))
+            || QDir(overlayDir).exists(QStringLiteral("OnlineFix64.dll")))) {
         // Explicit clear so host/Steam LD_PRELOAD cannot leak into Proton.
         info->environmentExtras.insert(QStringLiteral("LD_PRELOAD"), QString());
         info->environmentExtras.insert(QStringLiteral("ENABLE_VK_LAYER_VALVE_steam_overlay_1"),
@@ -749,6 +750,33 @@ bool setOnlineFixOverlayEnabled(const QString& installPath, bool enabled, QStrin
     return true;
 }
 
+namespace {
+constexpr auto kSteamOverlayMarker = ".arachnel-steam-overlay";
+}
+
+bool steamOverlayForced(const QString& installPath)
+{
+    if (installPath.isEmpty())
+        return false;
+    return QFileInfo::exists(QDir(installPath).filePath(QLatin1String(kSteamOverlayMarker)));
+}
+
+bool setSteamOverlayForced(const QString& installPath, bool forced)
+{
+    if (installPath.isEmpty())
+        return false;
+    const QString marker = QDir(installPath).filePath(QLatin1String(kSteamOverlayMarker));
+    if (!forced)
+        return QFile::exists(marker) ? QFile::remove(marker) : true;
+    if (QFileInfo::exists(marker))
+        return true;
+    QFile file(marker);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+        return false;
+    file.write("Valve shift+tab overlay forced on for this game (Arachnel).\n");
+    return true;
+}
+
 QVariantMap onlineFixOverlayInfo(const QString& installPath)
 {
     const OnlineFixOverlayState state = detectOnlineFixOverlay(installPath);
@@ -766,6 +794,12 @@ QVariantMap onlineFixOverlayInfo(const QString& installPath)
         {QStringLiteral("onlineFixCanToggle"), state.present},
         {QStringLiteral("onlineFixLabel"), label},
         {QStringLiteral("onlineFixOverlayDir"), state.overlayDir},
+        {QStringLiteral("steamOverlayForced"), steamOverlayForced(installPath)},
+#if defined(Q_OS_LINUX)
+        {QStringLiteral("steamOverlayCanToggle"), state.present},
+#else
+        {QStringLiteral("steamOverlayCanToggle"), false},
+#endif
     };
 }
 
@@ -869,10 +903,32 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
         }
     }
 
+    const bool forceOverlay = steamOverlayForced(installPath);
+
     // Proton + WINEDLLOVERRIDES is enough for Online Fix. Do not wrap in legacy
     // steam-runtime/run.sh: that helper often exits after fork, so the launcher
     // thinks the game died immediately while Wine may still be starting.
-    info->environmentExtras.remove(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"));
+    //
+    // The modern Steam Linux Runtime ("1") is a different thing and does not
+    // fork away. SOFL always runs inside it, and a preloaded
+    // gameoverlayrenderer.so has to resolve its dependencies against the same
+    // container Steam built it for - which is the most likely reason forcing the
+    // overlay outside it produced "Failed to load steam overlay dll (126)".
+    if (forceOverlay)
+        info->environmentExtras.insert(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"),
+                                       QStringLiteral("1"));
+    else
+        info->environmentExtras.remove(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"));
+
+#if defined(Q_OS_LINUX)
+    // SOFL sets this unconditionally; harmless on X11, and Proton needs it to use
+    // the Wayland backend natively instead of going through XWayland.
+    if (qgetenv("XDG_SESSION_TYPE").toLower() == QByteArrayLiteral("wayland")
+        && !info->environmentExtras.contains(QStringLiteral("PROTON_ENABLE_WAYLAND"))) {
+        info->environmentExtras.insert(QStringLiteral("PROTON_ENABLE_WAYLAND"),
+                                       QStringLiteral("1"));
+    }
+#endif
 
     QString fakeAppId = QStringLiteral("480");
     const QString steamFixIni = QDir(overlayDir).filePath(QStringLiteral("SteamFix.ini"));
@@ -960,7 +1016,7 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
                              || ovDir.exists(QStringLiteral("OnlineFix.dll"))
                              || ovDir.exists(QStringLiteral("OnlineFix64.dll"));
     auto applyAliasPolicy = [&](const QString& dir) {
-        if (onlineFixMe)
+        if (onlineFixMe && !forceOverlay)
             stripOfMeOverlayAlias(dir);
         else
             plantOverlayAlias(dir);
@@ -972,8 +1028,14 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
         applyAliasPolicy(QFileInfo(info->executable).absolutePath());
 
 #if defined(Q_OS_LINUX)
-    // Valve LD_PRELOAD only when the install does not already ship OF.me overlay DLLs.
-    appendSteamOverlayEnvironment(info, fakeAppId, overlayDir);
+    // Valve LD_PRELOAD only when the install does not already ship OF.me overlay
+    // DLLs - unless this game is opted in to the overlay, SOFL-style.
+    appendSteamOverlayEnvironment(info, fakeAppId, overlayDir, forceOverlay);
+
+    // SOFL refuses to launch at all without the Steam client ("STEAMNOTSTARTED"):
+    // the preloaded overlay has nothing to attach to otherwise.
+    if (forceOverlay && !isSteamClientRunning())
+        tryStartSteamClient();
 #endif
 }
 
