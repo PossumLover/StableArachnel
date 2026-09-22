@@ -235,6 +235,13 @@ The watchdog fix was verified separately with a temporary 45s main-thread stall
 (since reverted): the process survived, the report carried a real backtrace, and
 the watchdog logged `[hang] main thread resumed after ~53s`.
 
+## Working notes
+
+Longer-lived notes live in [`docs/fork/`](docs/fork/README.md): the method for
+diagnosing a game that will not launch, how the Steam compatibility layers
+actually work, and the still-open shift+tab overlay investigation with its
+ruled-out list.
+
 ## Known, not fixed
 
 - The stall itself. `LaunchController::launchGame` does its prep in a
