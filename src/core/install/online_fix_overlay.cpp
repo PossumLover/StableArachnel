@@ -304,8 +304,9 @@ void appendSteamOverlayEnvironment(LaunchInfo* info, const QString& fakeSteamId,
     const QString existing = info->environmentExtras.value(QStringLiteral("LD_PRELOAD"));
     info->environmentExtras.insert(QStringLiteral("LD_PRELOAD"),
                                    existing.isEmpty() ? preload : existing + QLatin1Char(':') + preload);
+    // SOFL and Steam both set "1" here; a strict == "1" check rejects "true".
     info->environmentExtras.insert(QStringLiteral("ENABLE_VK_LAYER_VALVE_steam_overlay_1"),
-                                   QStringLiteral("true"));
+                                   QStringLiteral("1"));
 }
 #endif
 
@@ -926,15 +927,12 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
     else
         info->environmentExtras.remove(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"));
 
-#if defined(Q_OS_LINUX)
-    // SOFL sets this unconditionally; harmless on X11, and Proton needs it to use
-    // the Wayland backend natively instead of going through XWayland.
-    if (qgetenv("XDG_SESSION_TYPE").toLower() == QByteArrayLiteral("wayland")
-        && !info->environmentExtras.contains(QStringLiteral("PROTON_ENABLE_WAYLAND"))) {
-        info->environmentExtras.insert(QStringLiteral("PROTON_ENABLE_WAYLAND"),
-                                       QStringLiteral("1"));
-    }
-#endif
+    // Do NOT set PROTON_ENABLE_WAYLAND here. SOFL's Games.ini carries
+    // `nativeWayland=` (empty) and the live process shows PROTON_ENABLE_WAYLAND=
+    // with no value - i.e. the native Wayland backend is OFF, and the game goes
+    // through XWayland. Valve's gameoverlayrenderer hooks the X11/GL/Vulkan
+    // presentation path, so turning the Wayland backend on is a plausible way to
+    // lose the overlay. Setting it to "1" was a misreading of that config.
 
     QString fakeAppId = QStringLiteral("480");
     const QString steamFixIni = QDir(overlayDir).filePath(QStringLiteral("SteamFix.ini"));

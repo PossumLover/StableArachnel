@@ -291,7 +291,16 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
                 continue;
             if (it.key() == QStringLiteral("LD_PRELOAD")) {
                 const QString existing = resolved.environment.value(QStringLiteral("LD_PRELOAD"));
-                QString added = filterOverlayPreloadForHost(it.value().trimmed(), gameBits);
+                // pressure-vessel copies the overlay into the container and rewrites
+                // LD_PRELOAD as /tmp/pressure-vessel-libs-*/${LIB}/gameoverlayrenderer.so,
+                // where ${LIB} resolves per architecture. Filtering to the game's bitness
+                // first hands it only half the pair; SOFL passes both.
+                const bool insideSteamRuntime =
+                    pluginInfo.environmentExtras.value(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"))
+                    == QStringLiteral("1");
+                QString added = insideSteamRuntime
+                                    ? it.value().trimmed()
+                                    : filterOverlayPreloadForHost(it.value().trimmed(), gameBits);
                 while (added.startsWith(QLatin1Char(':')))
                     added.remove(0, 1);
                 if (added.isEmpty()) {
