@@ -914,7 +914,13 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
     // gameoverlayrenderer.so has to resolve its dependencies against the same
     // container Steam built it for - which is the most likely reason forcing the
     // overlay outside it produced "Failed to load steam overlay dll (126)".
-    if (forceOverlay)
+    // Wrapping in the runtime is its own variable and its own risk: it changes the
+    // program Arachnel spawns, so a failure there looks identical to the game
+    // quitting. Keep it opt-in via the environment rather than riding along with
+    // the overlay toggle.
+    const bool useSteamRuntime =
+        forceOverlay && qgetenv("ARACHNEL_OVERLAY_STEAM_RUNTIME") == QByteArrayLiteral("1");
+    if (useSteamRuntime)
         info->environmentExtras.insert(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"),
                                        QStringLiteral("1"));
     else
@@ -1015,8 +1021,12 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
     const bool onlineFixMe = ovDir.exists(QStringLiteral("OnlineFix.ini"))
                              || ovDir.exists(QStringLiteral("OnlineFix.dll"))
                              || ovDir.exists(QStringLiteral("OnlineFix64.dll"));
+    // GameOverlayRenderer*.dll is a Windows-side alias for the repack's OWN
+    // SteamOverlay DLL. It is unrelated to LD_PRELOADing Valve's Linux
+    // gameoverlayrenderer.so, and SOFL plants no such alias. Forcing the Valve
+    // overlay must not change this policy.
     auto applyAliasPolicy = [&](const QString& dir) {
-        if (onlineFixMe && !forceOverlay)
+        if (onlineFixMe)
             stripOfMeOverlayAlias(dir);
         else
             plantOverlayAlias(dir);
