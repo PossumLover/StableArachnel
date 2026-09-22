@@ -68,11 +68,51 @@ its built-in id — `AppID does not match`, clean exit.
 and `[Hashes]`. A 68-byte ini produced `Failed to load OnlineFix64.dll from the
 list. Error code 126`; filling in the structure cleared it.
 
-`[Hashes] 0=<128 hex>` is **not** a checksum of any shipped file — it does not
-match the SHA-512 of `steam_api64.dll`, `steam_api.dll`, the game exe,
-`OnlineFix64.dll` or `winmm.dll`. It is internal to Online Fix and cannot be
-synthesised for a new game. Reference copies live in `~/Downloads/OnlineFix Example/`
-and `~/Downloads/Unsteam Example/`.
+## "Self-protection failed. Error code: 4" and `[Hashes]`
+
+`OnlineFix64.dll` refuses some games with a blocking dialog,
+`Self-protection failed.\nError code: 4`, before the game's engine starts.
+It is tied to the per-game `[Hashes]` entry in `OnlineFix.ini`:
+
+- Removing `[Hashes]` from a **working** game (How to Fish) reproduces the dialog
+  exactly, and Unity never starts.
+- The value is per game (How to Fish and Machine Party run the same 13,401,600-byte
+  DLL with different hashes) and is **not derivable**: no match across 337 install
+  files x SHA-512 / SHA3-512 / BLAKE2b-512, nor 132 derivations from app ids and
+  titles. Best guess, unconfirmed because the DLL is packed: an authorization token
+  Online Fix issues per game, checked for titles the DLL was not built to accept.
+- **A missing hash does not by itself mean error 4.** Teardown, Satisfactory, BOKURA,
+  Far Far West, Core Keeper and Enshrouded all run with Online Fix and no hash,
+  multiplayer included. Never act on "no hash"; act on the error.
+
+The only place the real value exists is the game's own Online Fix release (archive
+password `online-fix.me`, per SOFL's extractor).
+
+## SteamFix: the fallback when Online Fix refuses a game
+
+SteamFix (`SteamFix64.dll` + its **own** 23 KB `winmm.dll`, which reads `winmm.txt`)
+is a separate emulator with no `[Hashes]` and no self-protection. Its ini is generic:
+app ids, `[Misc] Overlay`, `[Interfaces]`. Cities: Skylines II goes from the error
+dialog to its main menu on it.
+
+Arachnel does this automatically (8ebc26a):
+
+1. `WINEDEBUG=-all,+msgbox` puts dialog text in `launch-<id>.log`.
+2. For 60s after launch the watcher scans that log for `Self-protection failed`.
+   The dialog *blocks* rather than exits, so no exit-based check ever saw it.
+3. `convertOnlineFixToSteamFix()` moves every Online Fix file beside the exe and in
+   the install root to `<AppData>/backups/<id>-onlinefix-<time>/` with a
+   `RESTORE.txt`, installs the kit beside the exe, writes `winmm.txt` and a
+   `SteamFix.ini` with the game's real app id, then relaunches.
+
+The kit is **not** in the repo (third-party binary). Arachnel reads it from
+`<AppData>/kits/steamfix/` and says where to put one if it is missing. The one on
+Rose's box came from Big Walk (`SteamFix64.dll` md5 `5430fcd5`, 1,428,480 bytes).
+64-bit only; 32-bit games are refused rather than half-converted.
+
+**Target the directory of the executable that actually runs.** The first test
+converted `Launcher/` because the watcher took the plugin's executable (Paradox's
+bootstrapper) over the per-game override that `resolveLaunch()` really runs.
 
 **Keep the loader and the DLLs version-matched.** A 13,820,928-byte
 `OnlineFix64.dll` with a mismatched `winmm.dll`/ini gives error 126; the matching

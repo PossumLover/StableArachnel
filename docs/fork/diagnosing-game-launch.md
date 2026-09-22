@@ -3,6 +3,25 @@
 The method below found a black screen, a 4.5 s quit and a UI freeze without
 guessing once. Work top to bottom; each step is cheap and rules out a whole layer.
 
+## 0. Let the session drive: launch, probe, stop
+
+A session can run games itself instead of asking for each launch:
+
+```sh
+JamesGames --launch <gameId>                    # real launch through the running Arachnel
+scripts/dev/launch-probe.sh <gameId> --headless # replay it invisibly, collect logs, stop it
+scripts/dev/launch-probe.sh <gameId> --headless --winedebug +msgbox   # read dialogs too
+```
+
+Every real launch writes `launch-<id>.replay.sh`. The probe replays it — optionally
+inside `gamescope --backend headless` (real GPU, nothing on screen) — collects every
+log the game wrote during the run, and stops it by an `ARACHNEL_PROBE=<token>` tag in
+the process environment, never by name. Replays skip Arachnel's rewrites and
+fallbacks, so the thing being tested stays put between runs.
+
+`--winedebug +msgbox` is how a headless run reads a dialog:
+`trace:msgbox:MSGBOX_OnInit L"Self-protection failed.\nError code: 4"`.
+
 ## 1. Separate the layers before touching any config
 
 A launch has three independent layers, and they fail differently:
