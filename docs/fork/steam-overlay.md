@@ -65,6 +65,49 @@ Sets `LD_PRELOAD` (arch-filtered), `ENABLE_VK_LAYER_VALVE_steam_overlay_1=true`,
 `SteamOverlayGameId`, starts the Steam client if it is not up. Program is Proton
 directly. Both How to Fish and Machine Party launch; no overlay.
 
+## The Steam Linux Runtime: use steamrt4, never sniper
+
+Wrapping in `SteamLinuxRuntime_sniper` kills the launch in ~1.3 s with no output.
+The cause has nothing to do with the overlay: the `proton` script runs *inside*
+the container, and current Proton builds do `from typing import Self` in
+`vulkan.py`, which needs Python 3.11+.
+
+```
+ImportError: cannot import name 'Self' from 'typing' (/usr/lib/python3.9/typing.py)
+```
+
+| runtime | Python | runs GE-Proton11 / Proton-CachyOS |
+|---|---|---|
+| `SteamLinuxRuntime_sniper` | 3.9.2 | no — ImportError before Wine starts |
+| `SteamLinuxRuntime_soldier` | older | no |
+| `SteamLinuxRuntime_4` | 3.13.5 | **yes** |
+
+`findSteamLinuxRuntime()` now prefers `SteamLinuxRuntime_4`. Verified by running
+the exact failing command against steamrt4: ProtonFixes ran, Fossilize
+initialised, the game stayed up.
+
+Reproduce in one line (it exits in about a second when it is broken):
+
+```sh
+cd "<game dir>" && env STEAM_COMPAT_DATA_PATH=<prefix> \
+  STEAM_COMPAT_CLIENT_INSTALL_PATH=~/.local/share/Steam \
+  <runtime>/run "<proton>" run "<game>.exe" 2>&1 | tail
+```
+
+## Open: SOFL references sniper and bundles a Proton that cannot run in it
+
+`FilesWorker.phb` contains `./steamapps/common/SteamLinuxRuntime_sniper/run`, and
+SOFL ships `protons/GE-Proton11-7-x86_64`, whose `vulkan.py` has the same
+`from typing import Self`. Those two cannot both be in play the way it is written,
+so something about how SOFL actually invokes the runtime is still not understood.
+Settle it with ground truth rather than more `strings`: launch a game through
+SOFL, then
+
+```sh
+pgrep -af proton                      # what is actually in the process tree
+tr '\0' '\n' < /proc/<pid>/environ    # the real environment
+```
+
 ## What to try next, one at a time
 
 1. `ARACHNEL_OVERLAY_STEAM_RUNTIME=1` with the toggle on — the container is the

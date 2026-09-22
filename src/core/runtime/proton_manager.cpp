@@ -526,8 +526,14 @@ QString ProtonManager::findSteamLinuxRuntime() const
 #if !defined(Q_OS_LINUX)
     return {};
 #else
-    // Prefer Sniper (1628350), then Soldier — used only when explicitly requested.
+    // Newest first. This order is about Python, not features: the proton script
+    // runs INSIDE the container, and current Proton builds (GE-Proton11,
+    // Proton-CachyOS) do `from typing import Self` in vulkan.py, which needs
+    // Python 3.11+. Sniper ships 3.9.2 and soldier is older still, so Proton dies
+    // on an ImportError before Wine ever starts - the game looks like it quit
+    // instantly. steamrt4 ships Python 3.13, where the same launch works.
     const QStringList runtimeNames = {
+        QStringLiteral("SteamLinuxRuntime_4"),
         QStringLiteral("SteamLinuxRuntime_sniper"),
         QStringLiteral("SteamLinuxRuntime_soldier"),
         QStringLiteral("SteamLinuxRuntime"),
