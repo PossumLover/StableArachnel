@@ -915,12 +915,16 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
     // gameoverlayrenderer.so has to resolve its dependencies against the same
     // container Steam built it for - which is the most likely reason forcing the
     // overlay outside it produced "Failed to load steam overlay dll (126)".
-    // Wrapping in the runtime is its own variable and its own risk: it changes the
-    // program Arachnel spawns, so a failure there looks identical to the game
-    // quitting. Keep it opt-in via the environment rather than riding along with
-    // the overlay toggle.
+    // The overlay only works inside the Steam Linux Runtime: pressure-vessel is
+    // what copies gameoverlayrenderer.so into the container and rewrites
+    // LD_PRELOAD with the ${LIB} token. So the toggle implies the runtime.
+    //
+    // This rode behind ARACHNEL_OVERLAY_STEAM_RUNTIME=1 for a while because
+    // wrapping games killed them - but that was sniper's Python 3.9 refusing to
+    // run modern Proton, fixed by preferring steamrt4. The env var still forces
+    // the runtime on for a game whose overlay toggle is off, for testing.
     const bool useSteamRuntime =
-        forceOverlay && qgetenv("ARACHNEL_OVERLAY_STEAM_RUNTIME") == QByteArrayLiteral("1");
+        forceOverlay || qgetenv("ARACHNEL_OVERLAY_STEAM_RUNTIME") == QByteArrayLiteral("1");
     if (useSteamRuntime)
         info->environmentExtras.insert(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"),
                                        QStringLiteral("1"));
