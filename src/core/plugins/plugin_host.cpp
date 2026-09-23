@@ -397,6 +397,14 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
         return false;
 
     auto* loaded = new LoadedPlugin();
+    // Every rejection below tears down the same way. Past arachnel_plugin_create the
+    // instance is deliberately not destroyed (see unloadPlugin: destroying a loaded
+    // catalog can crash inside the DSO); only the library goes.
+    auto abandon = [&loaded]() {
+        loaded->library.unload();
+        delete loaded;
+        return false;
+    };
     loaded->rootPath = dirPath;
     loaded->library.setFileName(libraryPath);
 
@@ -499,9 +507,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
         setLoadRejectReason(QCoreApplication::translate(
             "Core", "%1 is missing required plugin exports. Reinstall from the store.")
                                 .arg(displayName));
-        loaded->library.unload();
-        delete loaded;
-        return false;
+        return abandon();
     }
     const int exportedApi = apiVersionFn();
     if (exportedApi < ARACHNEL_PLUGIN_API_VERSION_MIN
@@ -514,9 +520,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
                                 .arg(exportedApi)
                                 .arg(ARACHNEL_PLUGIN_API_VERSION_MIN)
                                 .arg(ARACHNEL_PLUGIN_API_VERSION));
-        loaded->library.unload();
-        delete loaded;
-        return false;
+        return abandon();
     }
 
     const int coreEntrySize = static_cast<int>(sizeof(CatalogEntry));
@@ -531,9 +535,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
             logDiagnostic(QStringLiteral(
                               "Plugin rejected (API 4 requires catalog_json exports): %1 from %2")
                               .arg(id, libraryPath));
-            loaded->library.unload();
-            delete loaded;
-            return false;
+            return abandon();
         }
         loaded->catalogJsonFn = catalogJsonFn;
         loaded->catalogJsonFreeFn = catalogJsonFreeFn;
@@ -582,9 +584,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
                         .arg(coreEntrySize)
                         .arg(exportedApi)
                         .arg(libraryPath));
-                loaded->library.unload();
-                delete loaded;
-                return false;
+                return abandon();
             }
         } else {
             logDiagnostic(QStringLiteral(
@@ -614,9 +614,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
                               .arg(pluginEntrySize)
                               .arg(coreEntrySize)
                               .arg(libraryPath));
-            loaded->library.unload();
-            delete loaded;
-            return false;
+            return abandon();
         }
         layoutTrusted = true;
         logDiagnostic(QStringLiteral(
@@ -632,9 +630,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
                           "Plugin rejected (catalog_entry_size missing): %1 from %2 (API %3)")
                           .arg(id, libraryPath)
                           .arg(exportedApi));
-        loaded->library.unload();
-        delete loaded;
-        return false;
+        return abandon();
     }
 
     loaded->instance = createFn(dirPath.toUtf8().constData());
@@ -644,24 +640,16 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
     if (!loaded->instance) {
         setLoadRejectReason(QCoreApplication::translate("Core", "%1 failed to start.")
                                 .arg(displayName));
-        loaded->library.unload();
-        delete loaded;
-        return false;
+        return abandon();
     }
 
     // --- vtable layout -------------------------------------------------------
     // apiVersion does not describe where the virtuals sit, and 86b028f moved one
     // without bumping anything. Establish the revision explicitly.
-    int pluginRevision = interfaceRevisionFn ? interfaceRevisionFn() : 0;
-    if (pluginRevision <= 0) {
-        // No export: infer from the CatalogEntry vintage, since the commit that
-        // moved the virtual is the same one that shrank the struct.
-        pluginRevision = (catalogEntrySizeFn && catalogEntrySizeFn() == kCatalogEntrySizeRev1)
-                             ? 1
-                             : ARACHNEL_PLUGIN_INTERFACE_REVISION;
-    }
-    loaded->interfaceRevision = pluginRevision;
-
+    // The revision comes from, in order: the plugin's own export, the revision in its
+    // ABI size table, and last an inference from the CatalogEntry vintage (the commit
+    // that moved the virtual is the same one that shrank the struct).
+    int sizesRevision = 0;
     if (abiSizesFn) {
         ArachnelAbiSizes pluginSizes{};
         abiSizesFn(&pluginSizes);
@@ -701,13 +689,20 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
                               .arg(QLatin1String(check.name), id)
                               .arg(check.plugin)
                               .arg(check.core));
-            loaded->library.unload();
-            delete loaded;
-            return false;
+            return abandon();
         }
-        if (interfaceRevisionFn == nullptr && pluginSizes.interfaceRevision > 0)
-            loaded->interfaceRevision = static_cast<int>(pluginSizes.interfaceRevision);
+        sizesRevision = static_cast<int>(pluginSizes.interfaceRevision);
     }
+
+    int pluginRevision = interfaceRevisionFn ? interfaceRevisionFn() : 0;
+    if (pluginRevision <= 0)
+        pluginRevision = sizesRevision;
+    if (pluginRevision <= 0) {
+        pluginRevision = (catalogEntrySizeFn && catalogEntrySizeFn() == kCatalogEntrySizeRev1)
+                             ? 1
+                             : ARACHNEL_PLUGIN_INTERFACE_REVISION;
+    }
+    loaded->interfaceRevision = pluginRevision;
 
     if (loaded->interfaceRevision != ARACHNEL_PLUGIN_INTERFACE_REVISION) {
         if (loaded->interfaceRevision == 1) {
@@ -735,9 +730,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
                               .arg(loaded->interfaceRevision)
                               .arg(ARACHNEL_PLUGIN_INTERFACE_REVISION)
                               .arg(id));
-            loaded->library.unload();
-            delete loaded;
-            return false;
+            return abandon();
         }
     }
 
