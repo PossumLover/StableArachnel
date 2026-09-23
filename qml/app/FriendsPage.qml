@@ -14,6 +14,33 @@ Item {
     readonly property int cardRadius: MD.Token.shape.corner.extra_large
     readonly property bool emptyState: Core.social.friends.count === 0
 
+    // Ticks once a minute so "Last seen 5 min ago" does not freeze.
+    property real now: Date.now()
+    Timer {
+        interval: 60000
+        running: root.visible
+        repeat: true
+        onTriggered: root.now = Date.now()
+    }
+
+    function relativeTime(iso, nowMs) {
+        const t = Date.parse(iso || "")
+        if (isNaN(t))
+            return ""
+        const minutes = Math.floor(Math.max(0, nowMs - t) / 60000)
+        if (minutes < 1)
+            return qsTr("just now")
+        if (minutes < 60)
+            return qsTr("%1 min ago").arg(minutes)
+        const hours = Math.floor(minutes / 60)
+        if (hours < 24)
+            return qsTr("%1 h ago").arg(hours)
+        const days = Math.floor(hours / 24)
+        if (days < 30)
+            return qsTr("%1 d ago").arg(days)
+        return new Date(t).toLocaleDateString()
+    }
+
     function submitInvite(code) {
         const digits = String(code).replace(/[^0-9]/g, "")
         if (digits.length !== 6)
@@ -288,8 +315,16 @@ Item {
                             required property bool online
                             required property string currentGameId
                             required property string currentGameTitle
+                            required property string currentGameCoverUrl
+                            required property string lastSeenAt
                             required property string suggestedGameId
+                            required property string suggestedGameTitle
+                            required property string suggestedAt
                             required property int index
+
+                            readonly property bool playing: online && currentGameId.length > 0
+                            readonly property bool gameInstalled:
+                                playing && Core.isEntryPlayable(currentGameId)
 
                             Layout.fillWidth: true
                             spacing: 0
@@ -302,22 +337,38 @@ Item {
                                 Layout.bottomMargin: MD.Token.spacing.small
                                 spacing: MD.Token.spacing.medium
 
-                                MD.ElevationRectangle {
-                                    Layout.preferredWidth: MD.Token.spacing.extra_large
-                                    Layout.preferredHeight: MD.Token.spacing.extra_large
-                                    radius: MD.Token.shape.corner.full
-                                    color: friendItem.online ? MD.Token.color.primary_container
-                                                             : MD.Token.color.surface_container_high
-                                    elevation: MD.Token.elevation.level0
+                                // Their game's cover while they play; the initial otherwise.
+                                Item {
+                                    Layout.preferredWidth: friendItem.playing ? 72 : MD.Token.spacing.extra_large
+                                    Layout.preferredHeight: friendItem.playing ? 34 : MD.Token.spacing.extra_large
+                                    Layout.alignment: Qt.AlignVCenter
 
-                                    MD.Label {
-                                        anchors.centerIn: parent
-                                        text: friendItem.nickname.length
-                                              ? friendItem.nickname.charAt(0).toUpperCase()
-                                              : "?"
-                                        typescale: MD.Token.typescale.title_small
-                                        color: friendItem.online ? MD.Token.color.on_primary_container
-                                                                 : MD.Token.color.on_surface_variant
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        visible: !friendItem.playing || cover.status !== Image.Ready
+                                        radius: friendItem.playing ? MD.Token.shape.corner.small
+                                                                   : MD.Token.shape.corner.full
+                                        color: friendItem.online ? MD.Token.color.primary_container
+                                                                 : MD.Token.color.surface_container_high
+
+                                        MD.Label {
+                                            anchors.centerIn: parent
+                                            text: friendItem.nickname.length
+                                                  ? friendItem.nickname.charAt(0).toUpperCase() : "?"
+                                            typescale: MD.Token.typescale.title_small
+                                            color: friendItem.online ? MD.Token.color.on_primary_container
+                                                                     : MD.Token.color.on_surface_variant
+                                        }
+                                    }
+
+                                    Image {
+                                        id: cover
+                                        anchors.fill: parent
+                                        visible: friendItem.playing && status === Image.Ready
+                                        source: friendItem.playing ? friendItem.currentGameCoverUrl : ""
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                        smooth: true
                                     }
                                 }
 
@@ -334,11 +385,13 @@ Item {
 
                                     MD.Label {
                                         Layout.fillWidth: true
-                                        text: friendItem.online
-                                              ? ((friendItem.currentGameTitle || "").length
-                                                 ? qsTr("Playing %1").arg(friendItem.currentGameTitle)
-                                                 : qsTr("Online"))
-                                              : qsTr("Offline")
+                                        text: friendItem.playing
+                                              ? qsTr("Playing %1").arg(friendItem.currentGameTitle || qsTr("a game"))
+                                              : friendItem.online
+                                                ? qsTr("Online")
+                                                : (friendItem.lastSeenAt.length
+                                                   ? qsTr("Last seen %1").arg(root.relativeTime(friendItem.lastSeenAt, root.now))
+                                                   : qsTr("Offline"))
                                         elide: Text.ElideRight
                                         color: friendItem.online ? MD.Token.color.primary
                                                                  : MD.Token.color.on_surface_variant
@@ -347,16 +400,57 @@ Item {
                                 }
 
                                 MD.Button {
-                                    visible: (friendItem.currentGameId || "").length > 0
-                                    text: qsTr("Open")
-                                    mdState.type: MD.Enum.BtText
-                                    onClicked: root.openGame(friendItem.currentGameId)
+                                    visible: friendItem.playing
+                                    text: friendItem.gameInstalled ? qsTr("Play") : qsTr("View")
+                                    mdState.type: friendItem.gameInstalled ? MD.Enum.BtFilledTonal : MD.Enum.BtText
+                                    onClicked: friendItem.gameInstalled
+                                               ? Core.launchGame(friendItem.currentGameId)
+                                               : root.openGame(friendItem.currentGameId)
+                                }
+
+                                MD.IconButton {
+                                    mdState.type: MD.Enum.IBtStandard
+                                    icon.name: MD.Token.icon.share
+                                    onClicked: suggestDialog.openFor(friendItem.friendId, friendItem.nickname)
+                                }
+
+                                MD.IconButton {
+                                    mdState.type: MD.Enum.IBtStandard
+                                    icon.name: MD.Token.icon.edit
+                                    onClicked: renameDialog.openFor(friendItem.friendId, friendItem.nickname)
                                 }
 
                                 MD.IconButton {
                                     mdState.type: MD.Enum.IBtStandard
                                     icon.name: MD.Token.icon.delete
                                     onClicked: Core.removeFriendById(friendItem.friendId)
+                                }
+                            }
+
+                            // What they last suggested to you - the relay delivers it, the
+                            // page never showed it.
+                            RowLayout {
+                                Layout.fillWidth: true
+                                Layout.leftMargin: MD.Token.spacing.extra_large + MD.Token.spacing.medium
+                                Layout.rightMargin: MD.Token.spacing.extra_small
+                                Layout.bottomMargin: MD.Token.spacing.small
+                                visible: friendItem.suggestedGameId.length > 0
+                                spacing: MD.Token.spacing.small
+
+                                MD.Label {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Suggested %1 · %2")
+                                          .arg(friendItem.suggestedGameTitle || qsTr("a game"))
+                                          .arg(root.relativeTime(friendItem.suggestedAt, root.now))
+                                    elide: Text.ElideRight
+                                    color: MD.Token.color.on_surface_variant
+                                    typescale: MD.Token.typescale.body_small
+                                }
+
+                                MD.Button {
+                                    text: qsTr("View")
+                                    mdState.type: MD.Enum.BtText
+                                    onClicked: root.openGame(friendItem.suggestedGameId)
                                 }
                             }
 
@@ -367,6 +461,86 @@ Item {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    MD.Dialog {
+        id: renameDialog
+        property string friendId: ""
+        title: qsTr("Rename friend")
+        modal: true
+        width: Math.min(400, root.width > 0 ? root.width - 48 : 400)
+
+        function openFor(id, nickname) {
+            friendId = id
+            renameField.text = nickname
+            open()
+            renameField.forceActiveFocus()
+            renameField.selectAll()
+        }
+        function commit() {
+            const name = renameField.text.trim()
+            if (name.length > 0)
+                Core.renameFriendById(friendId, name)
+            close()
+        }
+
+        ColumnLayout {
+            width: renameDialog.width - renameDialog.horizontalPadding * 2
+            spacing: MD.Token.spacing.medium
+
+            MD.TextField {
+                id: renameField
+                Layout.fillWidth: true
+                onAccepted: renameDialog.commit()
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                MD.Button {
+                    text: qsTr("Cancel")
+                    mdState.type: MD.Enum.BtText
+                    onClicked: renameDialog.close()
+                }
+                MD.Button {
+                    text: qsTr("Save")
+                    mdState.type: MD.Enum.BtFilledTonal
+                    onClicked: renameDialog.commit()
+                }
+            }
+        }
+    }
+
+    MD.Dialog {
+        id: suggestDialog
+        property string friendId: ""
+        property string friendName: ""
+        title: qsTr("Suggest a game to %1").arg(friendName)
+        modal: true
+        width: Math.min(440, root.width > 0 ? root.width - 48 : 440)
+
+        function openFor(id, name) {
+            friendId = id
+            friendName = name
+            open()
+        }
+
+        ListView {
+            width: suggestDialog.width - suggestDialog.horizontalPadding * 2
+            height: Math.min(contentHeight, 360)
+            clip: true
+            model: Core.library
+
+            delegate: MD.ItemDelegate {
+                required property string gameId
+                required property string title
+                width: ListView.view.width
+                text: title
+                onClicked: {
+                    Core.suggestGameToFriend(suggestDialog.friendId, gameId)
+                    suggestDialog.close()
                 }
             }
         }

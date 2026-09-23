@@ -72,13 +72,57 @@ QHash<int, QByteArray> FriendsModel::roleNames() const
     };
 }
 
+namespace {
+
+// Playing first, then online, then offline by most recently seen - the people you
+// could join right now at the top.
+int presenceRank(const FriendEntry& entry)
+{
+    if (entry.online && !entry.currentGameId.isEmpty())
+        return 0;
+    return entry.online ? 1 : 2;
+}
+
+bool sameRow(const FriendEntry& a, const FriendEntry& b)
+{
+    return a.friendId == b.friendId && a.nickname == b.nickname && a.online == b.online
+        && a.currentGameId == b.currentGameId && a.currentGameTitle == b.currentGameTitle
+        && a.currentGameCoverUrl == b.currentGameCoverUrl && a.lastSeenAt == b.lastSeenAt
+        && a.suggestedGameId == b.suggestedGameId && a.suggestedGameTitle == b.suggestedGameTitle
+        && a.suggestedCoverUrl == b.suggestedCoverUrl && a.suggestedAt == b.suggestedAt;
+}
+
+} // namespace
+
 void FriendsModel::setFriends(QVector<FriendEntry> friends)
 {
     std::sort(friends.begin(), friends.end(), [](const FriendEntry& a, const FriendEntry& b) {
-        if (a.online != b.online)
-            return a.online && !b.online;
+        const int ra = presenceRank(a);
+        const int rb = presenceRank(b);
+        if (ra != rb)
+            return ra < rb;
+        if (ra == 2 && a.lastSeenAt != b.lastSeenAt)
+            return a.lastSeenAt > b.lastSeenAt; // ISO-8601 sorts as text
         return QString::localeAwareCompare(a.nickname, b.nickname) < 0;
     });
+
+    // Presence polls every few seconds. Same people in the same order: update the
+    // changed rows in place instead of resetting, so delegates (and anything being
+    // typed into them) survive the poll.
+    bool sameOrder = friends.size() == m_friends.size();
+    for (int i = 0; sameOrder && i < friends.size(); ++i)
+        sameOrder = friends.at(i).friendId == m_friends.at(i).friendId;
+    if (sameOrder) {
+        for (int i = 0; i < friends.size(); ++i) {
+            if (sameRow(friends.at(i), m_friends.at(i)))
+                continue;
+            m_friends[i] = friends.at(i);
+            const QModelIndex idx = index(i, 0);
+            emit dataChanged(idx, idx);
+        }
+        return;
+    }
+
     beginResetModel();
     m_friends = std::move(friends);
     endResetModel();
