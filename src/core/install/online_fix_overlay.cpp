@@ -963,6 +963,17 @@ int healOnlineFixLayoutForExecutable(const QString& installPath, const QString& 
     if (exeDir.isEmpty() || !QFileInfo::exists(exeDir))
         return 0;
 
+    // A SteamFix layer beside the executable is a different emulator on purpose - it is
+    // what convertOnlineFixToSteamFix() leaves when Online Fix refused the game. Never
+    // copy Online Fix back in next to it from some other folder that still has a set
+    // (Cities: Skylines II keeps one under Launcher/ for Paradox's launcher).
+    {
+        const QDir dir(exeDir);
+        if (dir.exists(QStringLiteral("SteamFix64.dll")) || dir.exists(QStringLiteral("SteamFix32.dll"))
+            || dir.exists(QStringLiteral("SteamFix.ini")))
+            return 0;
+    }
+
     // Find the directory that actually holds the fix, and stop if it is already the
     // executable's own.
     QString sourceDir;
