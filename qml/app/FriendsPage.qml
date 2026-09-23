@@ -527,22 +527,70 @@ Item {
             open()
         }
 
-        ListView {
+        ColumnLayout {
             width: suggestDialog.width - suggestDialog.horizontalPadding * 2
-            height: Math.min(contentHeight, 360)
+            spacing: MD.Token.spacing.small
+
+        MD.Label {
+            Layout.fillWidth: true
+            text: qsTr("Pick a game from your library. %1 will see it on their Friends page.")
+                  .arg(suggestDialog.friendName)
+            wrapMode: Text.WordWrap
+            color: MD.Token.color.on_surface_variant
+            typescale: MD.Token.typescale.body_medium
+        }
+
+        ListView {
+            Layout.fillWidth: true
+            Layout.preferredHeight: Math.min(contentHeight, 360)
             clip: true
             model: Core.library
 
-            delegate: MD.ItemDelegate {
+            // Explicit row: QmlMaterial's ItemDelegate is a bare stub with no content
+            // item, so its text never drew - the rows were clickable but blank.
+            delegate: Rectangle {
+                id: gameRow
                 required property string gameId
                 required property string title
+                required property string coverUrl
                 width: ListView.view.width
-                text: title
-                onClicked: {
-                    Core.suggestGameToFriend(suggestDialog.friendId, gameId)
-                    suggestDialog.close()
+                height: 48
+                radius: MD.Token.shape.corner.small
+                color: rowHover.hovered ? MD.Token.color.surface_container_high : "transparent"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: MD.Token.spacing.small
+                    anchors.rightMargin: MD.Token.spacing.small
+                    spacing: MD.Token.spacing.medium
+
+                    Image {
+                        Layout.preferredWidth: 64
+                        Layout.preferredHeight: 30
+                        source: gameRow.coverUrl
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        visible: status === Image.Ready
+                    }
+
+                    MD.Label {
+                        Layout.fillWidth: true
+                        text: gameRow.title
+                        elide: Text.ElideRight
+                        typescale: MD.Token.typescale.body_large
+                        color: MD.Token.color.on_surface
+                    }
+                }
+
+                HoverHandler { id: rowHover }
+                TapHandler {
+                    onTapped: {
+                        Core.suggestGameToFriend(suggestDialog.friendId, gameRow.gameId)
+                        suggestDialog.close()
+                    }
                 }
             }
+        }
         }
     }
 }
