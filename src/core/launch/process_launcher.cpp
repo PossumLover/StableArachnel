@@ -1,6 +1,7 @@
 #include "process_launcher.h"
 
 #include "crash_log.h"
+#include "file_utils.h"
 #include "process_tracker.h"
 
 #include <QCoreApplication>
@@ -338,11 +339,8 @@ void writeReplayScript(const ResolvedLaunch& launch, const QString& workDir,
         script += QStringLiteral(" \\\n  ") + s;
     script += QStringLiteral(" \\\n  ") + command.join(QLatin1Char(' ')) + QLatin1Char('\n');
 
-    QFile file(scriptPath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
+    if (!writeTextFile(scriptPath, script))
         return;
-    file.write(script.toUtf8());
-    file.close();
     // Owner-only: the environment diff can carry paths and ids worth not sharing.
     QFile::setPermissions(scriptPath, QFileDevice::ReadOwner | QFileDevice::WriteOwner
                                           | QFileDevice::ExeOwner);

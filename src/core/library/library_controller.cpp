@@ -12,6 +12,7 @@
 #include "job_status.h"
 #include "job_store.h"
 #include "library_store.h"
+#include "launch_resolver.h"
 #include "online_fix_overlay.h"
 #include "unsteam_overlay.h"
 #include <QRegularExpression>
@@ -379,14 +380,10 @@ void LibraryController::setGameUnsteamEnabled(const QString& entryId, bool enabl
             // between test accounts). real_app_id is what the GAME is shown, and has to
             // be its own: titles that check it - How to Fish exits with "AppId Reported =
             // 480, AppId Expected = 4001890" - refuse to run otherwise.
-            QString realAppId = existing->steamAppId.trimmed();
-            if (realAppId.isEmpty()) {
-                static const QRegularExpression steamId(QStringLiteral("^steam-(\\d+)$"));
-                const QRegularExpressionMatch match = steamId.match(entryId);
-                if (match.hasMatch())
-                    realAppId = match.captured(1);
-            }
-            const QString exe = findGameExecutableInTree(existing->installPath, existing->title);
+            const QString realAppId = realSteamAppId(*existing);
+            // The executable a launch will actually run (override first), so Unsteam goes
+            // beside the same exe the launch path heals and watches.
+            const QString exe = chooseLaunchExecutable(LaunchInfo{}, *existing);
             // Loader by default: the winmm proxy loads on these games but never takes
             // over the Steam API, so the game keeps talking to the real client.
             if (!installUnsteamOverlay(existing->installPath, exe, realAppId, QString(),

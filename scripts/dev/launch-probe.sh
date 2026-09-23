@@ -31,11 +31,11 @@ while [ $# -gt 0 ]; do
         --headless) headless=1; shift ;;
         --keep) keep=1; shift ;;
         --winedebug) winedebug="$2"; shift 2 ;;
-        -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
+        -h|--help) sed -n '2,/^set -uo/{/^#/s/^# \{0,1\}//p}' "$0"; exit 0 ;;
         *) id="$1"; shift ;;
     esac
 done
-[ -n "$id" ] || { echo "usage: $0 <gameId> [--seconds N] [--headless] [--keep]" >&2; exit 2; }
+[ -n "$id" ] || { echo "usage: $0 <gameId> [--seconds N] [--headless] [--keep] [--winedebug CHANNELS]" >&2; exit 2; }
 
 replay="$DATA/launch-$id.replay.sh"
 [ -f "$replay" ] || { echo "no $replay - launch $id once from Arachnel first" >&2; exit 1; }
@@ -44,16 +44,10 @@ replay="$DATA/launch-$id.replay.sh"
 compat=$(grep -oE "STEAM_COMPAT_DATA_PATH=[^']*" "$replay" | head -1 | cut -d= -f2-)
 workdir=$(sed -n "s/^cd '\(.*\)' || exit 1$/\1/p" "$replay" | head -1)
 
-# pids whose environment carries a given NAME=value
+# pids whose environment carries a given NAME=value. One grep over every environ
+# (entries are NUL-separated, hence -z); unreadable or vanished pids are skipped.
 pids_with_env() {
-    local needle="$1" p
-    for p in /proc/[0-9]*; do
-        [ -r "$p/environ" ] || continue
-        # Processes come and go during the scan; the redirection itself can fail.
-        if { tr '\0' '\n' < "$p/environ"; } 2>/dev/null | grep -qxF "$needle"; then
-            echo "${p#/proc/}"
-        fi
-    done
+    grep -lzxF -- "$1" /proc/[0-9]*/environ 2>/dev/null | sed -n 's|^/proc/\([0-9]*\)/environ$|\1|p'
 }
 
 if [ -n "$compat" ] && [ -n "$(pids_with_env "STEAM_COMPAT_DATA_PATH=$compat")" ]; then

@@ -163,11 +163,7 @@ void ensureSteamFixWinmmTxt(const QString& dir, int bits)
         if (current.compare(wanted, Qt::CaseInsensitive) == 0)
             return;
     }
-    QFile out(path);
-    if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
-        return;
-    out.write(wanted.toUtf8());
-    out.write("\n");
+    writeTextFile(path, wanted + QLatin1Char('\n'));
 }
 
 QString buildOverlayWineDllOverrides(const QString& overlayDir)
@@ -287,9 +283,9 @@ void appendSteamOverlayEnvironment(LaunchInfo* info, const QString& fakeSteamId,
     info->environmentExtras.insert(QStringLiteral("SteamGameId"), overlayId);
     info->environmentExtras.insert(QStringLiteral("SteamOverlayGameId"), overlayId);
 
-    // OF.me ships SteamOverlay32/64 next to the game. Forcing Valve's
-    // gameoverlayrenderer on top makes Steam show "Failed to load steam overlay
-    // dll" (126) on 32-bit titles and can trip OF.me self-protection.
+    // By default stand Valve's overlay down for installs that ship their own overlay
+    // DLL. Forcing it works only inside the Steam Linux Runtime (see
+    // applyOnlineFixLaunchInfo); outside it the preload failed with error 126.
     if (!forceValveOverlay
         && (dirHasBundledSteamOverlayDll(overlayDir)
             || QDir(overlayDir).exists(QStringLiteral("OnlineFix.dll"))
@@ -356,7 +352,8 @@ void ensureRealAppIdInIni(const QString& overlayDir, const QString& realAppId)
     }
 }
 
-bool dirHasActiveOverlay(const QDir& dir)
+/** A live fix DLL (a winmm.dll that belongs to Unsteam does not count). */
+bool dirHasActiveOverlayDll(const QDir& dir)
 {
     for (const QString& name : overlayDllNames()) {
         if (name == QStringLiteral("winmm.dll") && winmmBelongsToUnsteam(dir))
@@ -364,7 +361,12 @@ bool dirHasActiveOverlay(const QDir& dir)
         if (dir.exists(name))
             return true;
     }
-    return dir.exists(QStringLiteral("SteamFix.ini")) || dir.exists(QStringLiteral("OnlineFix.ini"))
+    return false;
+}
+
+bool dirHasActiveOverlay(const QDir& dir)
+{
+    return dirHasActiveOverlayDll(dir) || dir.exists(QStringLiteral("SteamFix.ini")) || dir.exists(QStringLiteral("OnlineFix.ini"))
         || dir.exists(QStringLiteral("winmm.txt")) || dir.exists(QStringLiteral("dlllist.txt"));
 }
 
@@ -466,8 +468,8 @@ QStringList findOverlayDirs(const QString& installPath)
         if (depth > 6)
             continue;
         // Skip known non-game trees by path segment.
-        const QStringList parts = rel.split(QRegularExpression(QStringLiteral("[/\\\\]")),
-                                            Qt::SkipEmptyParts);
+        static const QRegularExpression pathSeparator(QStringLiteral("[/\\\\]"));
+        const QStringList parts = rel.split(pathSeparator, Qt::SkipEmptyParts);
         bool skip = false;
         for (const QString& part : parts) {
             if (shouldSkipOverlayScanDir(part)) {
@@ -607,12 +609,22 @@ bool isSteamClientRunning()
     }
     CloseHandle(snap);
     return found;
+#elif defined(Q_OS_LINUX)
+    // Same exact-name match as `pgrep -x steam`, read straight from /proc: this runs
+    // on the GUI thread during launch, and spawning pidof/pgrep with a 3s wait each
+    // cost up to 6s there.
+    QDirIterator it(QStringLiteral("/proc"), QDir::Dirs | QDir::NoDotAndDotDot);
+    while (it.hasNext()) {
+        const QString pidDir = it.next();
+        if (!it.fileName().front().isDigit())
+            continue;
+        QFile comm(pidDir + QStringLiteral("/comm"));
+        if (comm.open(QIODevice::ReadOnly) && comm.readAll().trimmed() == "steam")
+            return true;
+    }
+    return false;
 #else
     QProcess process;
-    process.start(QStringLiteral("pidof"), {QStringLiteral("steam")});
-    if (process.waitForFinished(3000) && process.exitStatus() == QProcess::NormalExit
-        && process.exitCode() == 0 && !process.readAllStandardOutput().trimmed().isEmpty())
-        return true;
     process.start(QStringLiteral("pgrep"), {QStringLiteral("-x"), QStringLiteral("steam")});
     return process.waitForFinished(3000) && process.exitStatus() == QProcess::NormalExit
         && process.exitCode() == 0;
@@ -680,15 +692,7 @@ OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath)
         state.overlayDir = dirs.first();
         for (const QString& path : dirs) {
             const QDir dir(path);
-            bool hasActiveDll = false;
-            for (const QString& name : overlayDllNames()) {
-                if (name == QStringLiteral("winmm.dll") && winmmBelongsToUnsteam(dir))
-                    continue;
-                if (dir.exists(name)) {
-                    hasActiveDll = true;
-                    break;
-                }
-            }
+            const bool hasActiveDll = dirHasActiveOverlayDll(dir);
             const bool hasDisabled = dirHasDisabledOverlay(dir);
             // Default on: live DLLs, or FakeAppId mode (ini/txt + steam_appid) when nothing was
             // renamed off. Disable renames both DLLs and steam_appid.txt.
@@ -810,13 +814,16 @@ bool convertOnlineFixToSteamFix(const QString& gameId, const QString& installPat
     // Move - never delete - every Online Fix file, active or parked, out of the
     // install. Leaving them in a subfolder is not enough: the layout healer copies
     // missing fix files from any folder holding winmm.dll + dlllist.txt.
-    static const QStringList kOnlineFixFiles = {
-        QStringLiteral("winmm.dll"),          QStringLiteral("dlllist.txt"),
-        QStringLiteral("OnlineFix64.dll"),    QStringLiteral("OnlineFix.dll"),
-        QStringLiteral("OnlineFix.ini"),      QStringLiteral("SteamOverlay64.dll"),
-        QStringLiteral("SteamOverlay32.dll"), QStringLiteral("StubDRM64.dll"),
-        QStringLiteral("StubDRM32.dll"),
-    };
+    // overlayDllNames() minus SteamFix/EpicFix (not Online Fix), plus Online Fix's own
+    // ini and load list - derived, so a DLL added there is moved here too.
+    static const QStringList kOnlineFixFiles = []() {
+        QStringList files{QStringLiteral("OnlineFix.ini"), QStringLiteral("dlllist.txt")};
+        for (const QString& name : overlayDllNames()) {
+            if (!name.startsWith(QStringLiteral("SteamFix")) && !name.startsWith(QStringLiteral("EpicFix")))
+                files.append(name);
+        }
+        return files;
+    }();
     const QString backupRoot =
         QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
         + QStringLiteral("/backups/") + gameId + QStringLiteral("-onlinefix-")
@@ -831,7 +838,7 @@ bool convertOnlineFixToSteamFix(const QString& gameId, const QString& installPat
     for (int i = 0; i < dirs.size(); ++i) {
         const QDir src(dirs.at(i));
         const bool holdsOnlineFix = src.exists(QStringLiteral("OnlineFix64.dll"))
-                                    || src.exists(QStringLiteral("OnlineFix64.dll.arachnel-off"))
+                                    || src.exists(QStringLiteral("OnlineFix64.dll") + QLatin1String(kDisabledSuffix))
                                     || src.exists(QStringLiteral("OnlineFix.ini"))
                                     || src.exists(QStringLiteral("dlllist.txt"));
         if (!holdsOnlineFix)
@@ -841,7 +848,7 @@ bool convertOnlineFixToSteamFix(const QString& gameId, const QString& installPat
         if (!QDir().mkpath(dst))
             return fail(QCoreApplication::translate("Core", "Could not create %1").arg(dst));
         for (const QString& name : kOnlineFixFiles) {
-            for (const QString& variant : {name, name + QStringLiteral(".arachnel-off")}) {
+            for (const QString& variant : {name, name + QLatin1String(kDisabledSuffix)}) {
                 const QString from = src.filePath(variant);
                 if (!QFileInfo::exists(from))
                     continue;
@@ -864,28 +871,26 @@ bool convertOnlineFixToSteamFix(const QString& gameId, const QString& installPat
             return fail(QCoreApplication::translate("Core", "Could not copy %1").arg(name));
     }
 
-    auto writeText = [](const QString& path, const QString& text) {
-        QFile out(path);
-        if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
-            return false;
-        out.write(text.toUtf8());
-        return true;
-    };
+    QString writeError;
     // SteamFix's winmm.dll loads what winmm.txt lists (not dlllist.txt).
-    writeText(QDir(exeDir).filePath(QStringLiteral("winmm.txt")), QStringLiteral("SteamFix64.dll\n"));
+    if (!writeTextFile(QDir(exeDir).filePath(QStringLiteral("winmm.txt")),
+                       QStringLiteral("SteamFix64.dll\n"), &writeError))
+        return fail(writeError);
     // Same shape as the SteamFix.ini that runs Big Walk and Cities: Skylines II.
     // RealAppId is what the game sees (it checks its own id); FakeAppId is what
     // Steam sees.
-    writeText(QDir(exeDir).filePath(QStringLiteral("SteamFix.ini")),
+    if (!writeTextFile(QDir(exeDir).filePath(QStringLiteral("SteamFix.ini")),
               QStringLiteral("[Main]\nRealAppId=%1\nFakeAppId=%2\nBuildId=0\n\n"
                              "[Misc]\nOverlay=true\nFilterLobby=false\n\n"
                              "[Interfaces]\nApps=true\nFriends=true\nUser=true\nInventory=true\n"
                              "Stats=true\nStorage=true\nUtils=true\nWorkshop=false\n\n"
                              "[DLC]\n0=dlc\n")
-                  .arg(appId, fakeAppId));
+                           .arg(appId, fakeAppId),
+                       &writeError))
+        return fail(writeError);
 
     if (movedCount > 0) {
-        writeText(backupRoot + QStringLiteral("/RESTORE.txt"),
+        writeTextFile(backupRoot + QStringLiteral("/RESTORE.txt"),
                   QStringLiteral("Online Fix files moved out of %1 by Arachnel when it switched\n"
                                  "the game to SteamFix after \"Self-protection failed\".\n\n"
                                  "To go back: delete SteamFix64.dll, SteamFix.ini, winmm.txt and\n"
@@ -920,11 +925,8 @@ bool setSteamOverlayForced(const QString& installPath, bool forced)
         return QFile::exists(marker) ? QFile::remove(marker) : true;
     if (QFileInfo::exists(marker))
         return true;
-    QFile file(marker);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text))
-        return false;
-    file.write("Valve shift+tab overlay forced on for this game (Arachnel).\n");
-    return true;
+    return writeTextFile(marker,
+                         QStringLiteral("Valve shift+tab overlay forced on for this game (Arachnel).\n"));
 }
 
 QVariantMap onlineFixOverlayInfo(const QString& installPath)
@@ -1055,26 +1057,12 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
 
     const bool forceOverlay = steamOverlayForced(installPath);
 
-    // Proton + WINEDLLOVERRIDES is enough for Online Fix. Do not wrap in legacy
-    // steam-runtime/run.sh: that helper often exits after fork, so the launcher
-    // thinks the game died immediately while Wine may still be starting.
-    //
-    // The modern Steam Linux Runtime ("1") is a different thing and does not
-    // fork away. SOFL always runs inside it, and a preloaded
-    // gameoverlayrenderer.so has to resolve its dependencies against the same
-    // container Steam built it for - which is the most likely reason forcing the
-    // overlay outside it produced "Failed to load steam overlay dll (126)".
-    // The overlay only works inside the Steam Linux Runtime: pressure-vessel is
-    // what copies gameoverlayrenderer.so into the container and rewrites
-    // LD_PRELOAD with the ${LIB} token. So the toggle implies the runtime.
-    //
-    // This rode behind ARACHNEL_OVERLAY_STEAM_RUNTIME=1 for a while because
-    // wrapping games killed them - but that was sniper's Python 3.9 refusing to
-    // run modern Proton, fixed by preferring steamrt4. The env var still forces
-    // the runtime on for a game whose overlay toggle is off, for testing.
-    const bool useSteamRuntime =
-        forceOverlay || qgetenv("ARACHNEL_OVERLAY_STEAM_RUNTIME") == QByteArrayLiteral("1");
-    if (useSteamRuntime)
+    // Plain Proton is enough for Online Fix. The Valve overlay, when forced, needs the
+    // modern Steam Linux Runtime ("1"): pressure-vessel copies gameoverlayrenderer.so
+    // into the container and rewrites LD_PRELOAD with the ${LIB} token, and a preload
+    // outside it failed with error 126. (Never the legacy steam-runtime/run.sh: it
+    // exits after fork, which reads as the game quitting.)
+    if (forceOverlay)
         info->environmentExtras.insert(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"),
                                        QStringLiteral("1"));
     else
@@ -1106,13 +1094,9 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
     auto ensureSteamAppIdFile = [&fakeAppId](const QString& dir) {
         if (dir.isEmpty() || !QDir(dir).exists())
             return;
-        const QString appIdFile = QDir(dir).filePath(QStringLiteral("steam_appid.txt"));
-        QFile out(appIdFile);
-        if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate))
-            return;
-        out.write(fakeAppId.toUtf8());
-        if (!fakeAppId.endsWith(QLatin1Char('\n')))
-            out.write("\n");
+        writeTextFile(QDir(dir).filePath(QStringLiteral("steam_appid.txt")),
+                      fakeAppId.endsWith(QLatin1Char('\n')) ? fakeAppId
+                                                          : fakeAppId + QLatin1Char('\n'));
     };
     // Let the fix layer do the translating rather than doing it from outside. A SteamFix
     // repack ships RealAppId alongside FakeAppId and presents the real id to the game

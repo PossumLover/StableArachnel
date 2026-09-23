@@ -40,6 +40,20 @@ struct LaunchOptions {
 
 LaunchOptions parseLaunchOptions(const QString& text);
 
+/**
+ * The executable resolveLaunch() will run: the per-game override unless it names an
+ * excluded helper, else the plugin's executable, else the install-tree scan. Everything
+ * that must agree with the launch - where the fix layer goes, which process the watcher
+ * tracks, where steam_api is provisioned - asks this rather than re-deciding. They used
+ * to disagree: for Paradox titles the plugin reports the launcher bootstrapper, so the
+ * layout heal targeted Launcher/ while the game ran from the install root.
+ */
+QString chooseLaunchExecutable(const LaunchInfo& pluginInfo, const LibraryGame& game,
+                               bool* fromOverride = nullptr);
+
+/** The game's real Steam app id: steamAppId, else the digits of a `steam-<n>` game id. */
+QString realSteamAppId(const LibraryGame& game);
+
 ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& game,
                              const SettingsStore& settings, ProtonManager* protonManager = nullptr);
 

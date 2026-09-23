@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QDirIterator>
+#include <QDebug>
 #include <QFile>
 #include <QFileInfo>
 #include <QIODevice>
@@ -463,6 +464,20 @@ int healWindowsInstallLayout(const QString& installPath)
     }
     return moved;
 #endif
+}
+
+bool writeTextFile(const QString& path, const QString& text, QString* errorOut)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)
+        || file.write(text.toUtf8()) < 0) {
+        const QString why = QStringLiteral("%1: %2").arg(path, file.errorString());
+        qWarning().noquote() << "cannot write" << why;
+        if (errorOut)
+            *errorOut = why;
+        return false;
+    }
+    return true;
 }
 
 } // namespace arachnel::core

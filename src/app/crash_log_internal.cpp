@@ -851,12 +851,11 @@ void linuxSignalHandler(int signal, siginfo_t* info, void* context)
     // ARACHNEL_CRASH_COREDUMP=1 set, hand the signal back to the default handler so the
     // kernel writes a core (systemd-coredump picks it up) that can be opened later with
     // full symbols. Off by default - cores of this process are hundreds of megabytes.
-    // SA_RESETHAND already restored the default disposition for this signal, so re-raising
-    // dumps core rather than re-entering here.
     if (qEnvironmentVariableIntValue("ARACHNEL_CRASH_COREDUMP") == 1) {
         // sigaction() blocks the signal for the duration of its own handler, so a plain
-        // raise() here would only mark it pending and _exit() below would win. Unblock it
-        // first; SA_RESETHAND already restored the default disposition, so this dumps core.
+        // raise() would only mark it pending and _exit() below would win. Unblock it
+        // first; SA_RESETHAND already restored the default disposition, so re-raising
+        // dumps core rather than re-entering here.
         sigset_t unblock;
         sigemptyset(&unblock);
         sigaddset(&unblock, signal);
@@ -904,16 +903,13 @@ void reportUiHang(int hungSeconds)
     // main thread may be stuck holding it inside writeLine().
     const QString headline = QStringLiteral("[%1] HANG: %2")
                                  .arg(QDateTime::currentDateTime().toString(Qt::ISODate), summary);
+    // crash.log is only ever written from these report paths, so it needs no lock;
+    // run.log does, and only gets the headline if the lock is free.
+    appendToFile(crashLogPath(), headline);
+    appendToFile(crashLogPath(), report.details);
     if (g_logMutex.tryLock(500)) {
-        appendToFile(crashLogPath(), headline);
-        appendToFile(crashLogPath(), report.details);
         appendToFile(runLogPath(), headline);
         g_logMutex.unlock();
-    } else {
-        // crash.log is only ever written from these report paths, so an
-        // unlocked append here cannot interleave with normal logging.
-        appendToFile(crashLogPath(), headline);
-        appendToFile(crashLogPath(), report.details);
     }
 
     // Opt back into the old behaviour (crash dialog + kill) if someone wants it.

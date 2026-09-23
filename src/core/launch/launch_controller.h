@@ -92,8 +92,10 @@ private:
     void stopSteamShim();
 
     bool m_onlineFixFallbackUsed = false;
-    /** Self-protection scan already acted (or found nothing) for this launch. */
+    /** Self-protection scan is done for this launch (acted, or nothing to scan). */
     bool m_selfProtectionHandled = false;
+    /** How far into the launch log the self-protection scan has read. */
+    qint64 m_selfProtectionScanOffset = 0;
     /** steam.exe stub kept alive beside an Unsteam game; see startSteamShim(). */
     QProcess* m_steamShim = nullptr;
     bool m_relaunchWithoutOnlineFix = false;

@@ -10,7 +10,6 @@
 #include <QStyleHints>
 #include <QString>
 #include <QTimer>
-#include <cstdio>
 
 #if defined(Q_OS_UNIX)
 #include <sys/resource.h>
@@ -89,6 +88,14 @@ void applyTranslations(QQmlApplicationEngine& engine, QCoreApplication& app)
                          translations.applyLanguage(core.settings()->uiLanguage());
                          core.jobs()->refreshLocalizedText();
                      });
+}
+
+void launchFromCli(const QString& gameId)
+{
+    if (gameId.isEmpty())
+        return;
+    arachnel::logDiagnostic(QStringLiteral("[cli] launch requested: %1").arg(gameId));
+    arachnel::core::CoreController::instance().launchGame(gameId);
 }
 
 #if defined(Q_OS_UNIX)
@@ -184,12 +191,7 @@ int main(int argc, char* argv[])
         QObject::connect(singleInstance, &arachnel::SingleInstanceGuard::messageReceived, &app,
                          [](const QString& url) {
                              if (url.startsWith(kCliLaunchPrefix)) {
-                                 const QString id = url.mid(kCliLaunchPrefix.size()).trimmed();
-                                 if (!id.isEmpty()) {
-                                     arachnel::logDiagnostic(
-                                         QStringLiteral("[cli] launch requested: %1").arg(id));
-                                     arachnel::core::CoreController::instance().launchGame(id);
-                                 }
+                                 launchFromCli(url.mid(kCliLaunchPrefix.size()).trimmed());
                                  return;
                              }
                              arachnel::core::CoreController::instance().requestDeepLink(url);
@@ -197,10 +199,7 @@ int main(int argc, char* argv[])
 
         if (!cliLaunchId.isEmpty()) {
             // Started cold with --launch: give the library and plugins time to load.
-            QTimer::singleShot(8000, &app, [cliLaunchId]() {
-                arachnel::logDiagnostic(QStringLiteral("[cli] launch requested: %1").arg(cliLaunchId));
-                arachnel::core::CoreController::instance().launchGame(cliLaunchId);
-            });
+            QTimer::singleShot(8000, &app, [cliLaunchId]() { launchFromCli(cliLaunchId); });
         }
 
         if (!launchLink.isEmpty())
@@ -248,9 +247,7 @@ int main(int argc, char* argv[])
 
         exitCode = app.exec();
 
-        // Tear down QML while Core is still alive, then shut Core down, then
-        // destroy the engine. Destroying QQmlEngine while plugins/sessions are
-        // mid-teardown caused free(): invalid size on Linux (NixOS AppImage).
+        // Tear down QML while Core is still alive, then shut Core down.
         arachnel::markApplicationShuttingDown();
         const QList<QObject*> roots = engine.rootObjects();
         for (QObject* root : roots)
@@ -260,20 +257,14 @@ int main(int argc, char* argv[])
         if (!crashDialogMode)
             arachnel::core::CoreController::instance().prepareShutdown();
 
-        // Leave without unwinding the QQmlEngine. prepareShutdown() has already flushed
-        // jobs, settings and library, stopped the sessions and unloaded the plugins, so
-        // nothing below this point can still persist anything - but running
-        // ~QQmlEngine afterwards reliably aborts with "free(): invalid size" inside
-        // libQt6Qml, tearing down QML objects whose native plugin code is already gone.
-        // The comment above was an earlier attempt at fixing that by ordering alone; it
-        // is not enough. Every close became a crash (and, with core dumps armed, a
-        // 294 MB core), so stop unwinding once the work is done and let the kernel
-        // reclaim the rest.
+        // Then leave without unwinding the QQmlEngine. prepareShutdown() has already
+        // flushed jobs, settings and library, stopped the sessions and unloaded the
+        // plugins, but ~QQmlEngine reliably aborts with "free(): invalid size" inside
+        // libQt6Qml, tearing down QML objects whose native plugin code is already gone -
+        // ordering the teardown alone did not fix it. Every close was a crash (and, with
+        // core dumps armed, a 294 MB core). This is the only way out of main().
         arachnel::logRunFinished(exitCode);
         std::fflush(nullptr);
         std::_Exit(exitCode);
     }
-
-    arachnel::logRunFinished(exitCode);
-    return exitCode;
 }

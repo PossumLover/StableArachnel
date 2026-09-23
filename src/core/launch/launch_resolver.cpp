@@ -184,41 +184,56 @@ void applyUserLaunchOptions(ResolvedLaunch* resolved, const LaunchOptions& globa
 
 } // namespace
 
-ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& game,
-                             const SettingsStore& settings, ProtonManager* protonManager)
+QString chooseLaunchExecutable(const LaunchInfo& pluginInfo, const LibraryGame& game,
+                               bool* fromOverride)
 {
-    ResolvedLaunch resolved;
+    if (fromOverride)
+        *fromOverride = false;
 
-    QString overrideExe = game.executableOverride.trimmed();
-    if (!overrideExe.isEmpty()
-        && isExcludedGameExecutable(QFileInfo(overrideExe).fileName())) {
-        overrideExe.clear();
+    const QString overrideExe = game.executableOverride.trimmed();
+    if (!overrideExe.isEmpty() && !isExcludedGameExecutable(QFileInfo(overrideExe).fileName())) {
+        if (fromOverride)
+            *fromOverride = true;
+        return overrideExe;
     }
 
-    QString pluginExe = pluginInfo.executable;
-    if (!pluginExe.isEmpty()
-        && isExcludedGameExecutable(QFileInfo(pluginExe).fileName())) {
-        pluginExe.clear();
-    }
+    const QString pluginExe = pluginInfo.executable;
+    if (!pluginExe.isEmpty() && !isExcludedGameExecutable(QFileInfo(pluginExe).fileName()))
+        return pluginExe;
 
     // A plugin can name an executable that is not the game - Paradox titles report their
     // launcher bootstrapper, for instance. Rather than refusing to launch, fall back to
     // the same scan that picks an executable at install time; it scores the real game exe
     // far above a helper sitting in a subdirectory.
-    if (pluginExe.isEmpty() && overrideExe.isEmpty() && !game.installPath.isEmpty())
-        pluginExe = findGameExecutableInTree(game.installPath, game.title);
+    if (!game.installPath.isEmpty())
+        return findGameExecutableInTree(game.installPath, game.title);
+    return {};
+}
 
-    if (pluginExe.isEmpty() && overrideExe.isEmpty())
-        return resolved;
+QString realSteamAppId(const LibraryGame& game)
+{
+    const QString explicitId = game.steamAppId.trimmed();
+    if (!explicitId.isEmpty())
+        return explicitId;
+    static const QRegularExpression steamId(QStringLiteral("^steam-(\\d+)$"));
+    const QRegularExpressionMatch match = steamId.match(game.id);
+    return match.hasMatch() ? match.captured(1) : QString();
+}
 
-    QString executable = overrideExe;
+ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& game,
+                             const SettingsStore& settings, ProtonManager* protonManager)
+{
+    ResolvedLaunch resolved;
+
+    bool fromOverride = false;
+    const QString executable = chooseLaunchExecutable(pluginInfo, game, &fromOverride);
     if (executable.isEmpty())
-        executable = pluginExe;
+        return resolved;
 
     const int gameBits = peImageBits(executable);
 
     QString workDir = pluginInfo.workingDirectory;
-    if (workDir.isEmpty() || !overrideExe.isEmpty())
+    if (workDir.isEmpty() || fromOverride)
         workDir = QFileInfo(executable).absolutePath();
 
     const LaunchOptions globalOptions = parseLaunchOptions(settings.globalLaunchArgs());
@@ -253,6 +268,9 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
         // Skip legacy on NixOS / hosts where steam-runtime breaks /usr/bin/env.
         const QString runtimeMode =
             pluginInfo.environmentExtras.value(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"));
+        // Whether the launch really runs inside the Steam Linux Runtime - not merely
+        // whether it was asked to (it falls back to bare Proton when unusable).
+        bool insideSteamRuntime = false;
         const bool allowLegacy = runtimeMode == QStringLiteral("legacy")
                                  && !hostBreaksWithLegacySteamRuntime();
         if (allowLegacy) {
@@ -269,7 +287,9 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
             if (!steamRuntime.isEmpty() && manager.steamLinuxRuntimeUsable()) {
                 resolved.program = steamRuntime;
                 resolved.arguments = QStringList{proton} + protonArgs;
+                insideSteamRuntime = true;
             } else if (!steamRuntime.isEmpty() && manager.canAaExecSteamProfile()) {
+                insideSteamRuntime = true;
                 resolved.program = QStringLiteral("/usr/bin/aa-exec");
                 resolved.arguments =
                     QStringList{QStringLiteral("-p"), QStringLiteral("steam"), QStringLiteral("--"),
@@ -306,9 +326,6 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
                 // LD_PRELOAD as /tmp/pressure-vessel-libs-*/${LIB}/gameoverlayrenderer.so,
                 // where ${LIB} resolves per architecture. Filtering to the game's bitness
                 // first hands it only half the pair; SOFL passes both.
-                const bool insideSteamRuntime =
-                    pluginInfo.environmentExtras.value(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"))
-                    == QStringLiteral("1");
                 QString added = insideSteamRuntime
                                     ? it.value().trimmed()
                                     : filterOverlayPreloadForHost(it.value().trimmed(), gameBits);

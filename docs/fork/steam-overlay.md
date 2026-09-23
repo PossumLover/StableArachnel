@@ -89,7 +89,8 @@ It does **not** set `STEAM_COMPAT_MOUNTS`, and it plants no Windows-side alias.
 - **Bundling the Steam Linux Runtime with the toggle.** Also e3ed670 → 622e742:
   How to Fish exited in 2.5 s under it. The runtime changes the program Arachnel
   spawns, so its failures look exactly like the game quitting. Now opt-in
-  separately via `ARACHNEL_OVERLAY_STEAM_RUNTIME=1`.
+  separately via `ARACHNEL_OVERLAY_STEAM_RUNTIME=1` (since removed: the toggle
+  implies the runtime once steamrt4 is preferred).
 
 ## Current behaviour with the toggle on
 
@@ -142,7 +143,8 @@ tr '\0' '\n' < /proc/<pid>/environ    # the real environment
 
 ## What to try next, one at a time
 
-1. `ARACHNEL_OVERLAY_STEAM_RUNTIME=1` with the toggle on — the container is the
+1. (Done — this is what worked; the env var has since been removed.)
+   `ARACHNEL_OVERLAY_STEAM_RUNTIME=1` with the toggle on — the container is the
    biggest remaining difference from SOFL, and the one most likely to matter for a
    `.so` Steam built for it.
 2. Launch a game **through SOFL** and dump `/proc/<pid>/environ` of the running

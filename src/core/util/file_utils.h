@@ -28,4 +28,11 @@ int healUnityScriptingAssemblies(const QString& installPath);
 /** Windows PE image bitness: 64, 32, or 0 when the file is not a PE image. */
 int peImageBits(const QString& path);
 
+/**
+ * Replace `path` with `text` (UTF-8, written byte-for-byte). On failure returns false,
+ * fills errorOut, and warns - which lands in run.log - so a write that did not happen
+ * is never silent.
+ */
+bool writeTextFile(const QString& path, const QString& text, QString* errorOut = nullptr);
+
 } // namespace arachnel::core

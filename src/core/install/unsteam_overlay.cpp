@@ -464,12 +464,8 @@ void applyUnsteamLaunchInfo(const QString& installPath, LaunchInfo* info)
 
     // steam_appid.txt is the API's next lookup after the environment, so a stale 480 in
     // the game folder would undo the line above.
-    const QString appIdFile = QDir(state.overlayDir).filePath(QStringLiteral("steam_appid.txt"));
-    QFile out(appIdFile);
-    if (out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        out.write(appId.toUtf8());
-        out.write("\n");
-    }
+    writeTextFile(QDir(state.overlayDir).filePath(QStringLiteral("steam_appid.txt")),
+                  appId + QLatin1Char('\n'));
 }
 
 } // namespace arachnel::core

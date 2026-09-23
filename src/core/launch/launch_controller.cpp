@@ -234,7 +234,9 @@ void LaunchController::markRunning(const LibraryGame& game, qint64 processId,
     m_watchHints = watchHints;
     m_sawGameExecutable = false;
     m_userStopped = false;
-    m_selfProtectionHandled = false;
+    // Only Online Fix raises "Self-protection failed"; nothing to scan otherwise.
+    m_selfProtectionHandled = !watchingOnlineFix;
+    m_selfProtectionScanOffset = 0;
     m_onlineFixWatchUntil =
         watchingOnlineFix ? m_launchStartedAt.addMSecs(kOnlineFixWatchMs) : QDateTime();
     m_timer->setInterval(watchingOnlineFix ? kOnlineFixPollIntervalMs : kPollIntervalMs);
@@ -367,7 +369,7 @@ void LaunchController::handleOnlineFixSelfProtection(const QString& gameId)
                                    : game->executableOverride;
     QString summary;
     QString error;
-    if (!convertOnlineFixToSteamFix(game->id, game->installPath, executable, game->steamAppId,
+    if (!convertOnlineFixToSteamFix(game->id, game->installPath, executable, realSteamAppId(*game),
                                     &summary, &error)) {
         logLine(QCoreApplication::translate("Core", "Could not switch to SteamFix: %1").arg(error));
         if (m_hooks.notice) {
@@ -649,8 +651,15 @@ void LaunchController::pollRunningGame()
         && m_launchStartedAt.msecsTo(QDateTime::currentDateTime()) <= kSelfProtectionScanMs) {
         const QString capturePath = launchLogFilePath();
         QFile capture(capturePath);
-        if (!capturePath.isEmpty() && capture.open(QIODevice::ReadOnly)) {
-            if (capture.readAll().contains("Self-protection failed")) {
+        if (!capturePath.isEmpty() && capture.open(QIODevice::ReadOnly)
+            && capture.size() > m_selfProtectionScanOffset) {
+            // Read only what was written since the last tick, backing up a little so
+            // a match split across two reads is still seen.
+            constexpr qint64 kOverlap = 32;
+            capture.seek(qMax<qint64>(0, m_selfProtectionScanOffset - kOverlap));
+            const QByteArray fresh = capture.readAll();
+            m_selfProtectionScanOffset = capture.pos();
+            if (fresh.contains("Self-protection failed")) {
                 m_selfProtectionHandled = true;
                 const QString gameId = m_gameId;
                 QTimer::singleShot(0, this, [this, gameId]() {
@@ -951,15 +960,7 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
         WineErrorWatchHints watchHints;
         watchHints.installPath = gameCopy.installPath;
         {
-            // Same precedence as resolveLaunch(): the per-game override is what
-            // actually runs. The plugin's executable can be something else entirely -
-            // Paradox titles report their launcher bootstrapper (Cities: Skylines II
-            // reports Launcher/…), and watching that name, or converting its folder
-            // to SteamFix, targets the wrong directory.
-            const QString overrideExe = gameCopy.executableOverride.trimmed();
-            const QString exePath = !overrideExe.isEmpty() && QFileInfo::exists(overrideExe)
-                ? overrideExe
-                : info.executable;
+            const QString exePath = chooseLaunchExecutable(info, gameCopy);
             watchHints.executablePath = exePath;
             watchHints.executableName = QFileInfo(exePath).fileName();
         }
@@ -994,36 +995,24 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
         {
             // Put the fix next to the executable before anything reads it, or the loader
             // is never found and the layer does nothing while reporting itself enabled.
-            const QString exeForFix = !info.executable.isEmpty()
-                ? info.executable
-                : gameCopy.executableOverride;
-            if (const int placed =
-                    healOnlineFixLayoutForExecutable(gameCopy.installPath, exeForFix);
+            // The heal walks the whole install; skip it when there is no fix to place.
+            if (const int placed = overlayBefore.present
+                    ? healOnlineFixLayoutForExecutable(gameCopy.installPath,
+                                                       watchHints.executablePath)
+                    : 0;
                 placed > 0) {
                 logLine(QCoreApplication::translate(
                             "Core", "Online Fix: placed %1 file(s) next to the game executable")
                             .arg(placed));
             }
 
-            QString realAppId = gameCopy.steamAppId.trimmed();
-            if (realAppId.isEmpty()) {
-                static const QRegularExpression steamId(QStringLiteral("^steam-(\\d+)$"));
-                const QRegularExpressionMatch match = steamId.match(gameCopy.id);
-                if (match.hasMatch())
-                    realAppId = match.captured(1);
-            }
-            applyOnlineFixLaunchInfo(gameCopy.installPath, &info, realAppId);
+            applyOnlineFixLaunchInfo(gameCopy.installPath, &info, realSteamAppId(gameCopy));
         }
 
         {
             const OnlineFixOverlayState overlay = detectOnlineFixOverlay(gameCopy.installPath);
 #if defined(Q_OS_LINUX)
-            const bool ofEnabled = overlay.enabled
-                || info.environmentExtras.value(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"))
-                       == QStringLiteral("legacy")
-                || info.environmentExtras.value(QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"))
-                       == QStringLiteral("1");
-            if (ofEnabled)
+            if (overlay.enabled)
                 logLine(QCoreApplication::translate("Core", "Online Fix overlay detected"));
 #endif
 
@@ -1044,12 +1033,9 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
             }
         }
         {
-            QString provisionExe = gameCopy.executableOverride;
-            if (provisionExe.isEmpty())
-                provisionExe = info.executable;
-            if (!provisionExe.isEmpty()) {
-                const QString provisionSummary =
-                    ensureSteamApiDllForExecutable(gameCopy.installPath, provisionExe);
+            if (!watchHints.executablePath.isEmpty()) {
+                const QString provisionSummary = ensureSteamApiDllForExecutable(
+                    gameCopy.installPath, watchHints.executablePath);
                 if (!provisionSummary.isEmpty())
                     logLine(provisionSummary);
             }
@@ -1231,11 +1217,21 @@ void LaunchController::stopSteamShim()
 {
     if (!m_steamShim)
         return;
-    m_steamShim->terminate();
-    if (!m_steamShim->waitForFinished(3000))
-        m_steamShim->kill();
-    m_steamShim->deleteLater();
+    // Hand the process off instead of waiting on it: this runs on every game exit,
+    // on the GUI thread, and waitForFinished() could freeze the UI for 3s. Terminate
+    // now, free it when it exits, kill it if it is still around in 3s.
+    QProcess* shim = m_steamShim;
     m_steamShim = nullptr;
+    if (shim->state() == QProcess::NotRunning) {
+        shim->deleteLater();
+        return;
+    }
+    connect(shim, &QProcess::finished, shim, &QObject::deleteLater);
+    shim->terminate();
+    QTimer::singleShot(3000, shim, [shim]() {
+        if (shim->state() != QProcess::NotRunning)
+            shim->kill();
+    });
 }
 
 void LaunchController::stopRunningGame()

@@ -178,6 +178,19 @@ bool PluginHost::installFromArach(const QString& archivePath)
         return false;
     }
 
+    // This plugin's own workers still hold ISourcePlugin* into the library, and
+    // an owned download runs for as long as the download does. Waiting on them
+    // would block the GUI thread for minutes or hours, so say so instead - and say
+    // it before copying the bundle or touching the previous backup.
+    if (hasInFlightPluginWorkers(id)) {
+        m_lastError = QCoreApplication::translate(
+            "Core",
+            "%1 is still downloading or installing something. Let it finish or "
+            "cancel it, then install again.")
+                          .arg(id);
+        return false;
+    }
+
     if (resolveLibraryFile(bundleRoot, libraryBase).isEmpty()) {
         m_lastError = QCoreApplication::translate("Core", "Package is missing library %1").arg(
             platformLibraryName(libraryBase));
@@ -251,18 +264,6 @@ bool PluginHost::installFromArach(const QString& archivePath)
         return false;
     }
 
-    // This plugin's own workers still hold ISourcePlugin* into the library, and
-    // an owned download runs for as long as the download does. Waiting on them
-    // here would block the GUI thread for minutes or hours, so say so instead.
-    if (hasInFlightPluginWorkers(id)) {
-        m_lastError = QCoreApplication::translate(
-            "Core",
-            "%1 is still downloading or installing something. Let it finish or "
-            "cancel it, then install again.")
-                          .arg(id);
-        removePathRecursive(stagingRoot);
-        return false;
-    }
 
     // Unlock only this plugin's library before replacing files (do not tear down
     // every other source - that destroyed FreeTP's catalog and crashed on Linux).
