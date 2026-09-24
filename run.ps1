@@ -29,17 +29,19 @@ function Resolve-ArachnelPackageVersion {
     }
     Push-Location $ROOT
     try {
-        $desc = & git describe --tags --match 'v*' --dirty 2>$null
-        if ($LASTEXITCODE -eq 0 -and $desc) {
-            $v = $desc.Trim()
-            if ($v.StartsWith('v') -or $v.StartsWith('V')) { $v = $v.Substring(1) }
-            if ($v -and $v -ne 'dev') { return $v }
-        }
-        $tag = & git describe --tags --match 'v*' --abbrev=0 2>$null
-        if ($LASTEXITCODE -eq 0 -and $tag) {
-            $v = $tag.Trim()
-            if ($v.StartsWith('v') -or $v.StartsWith('V')) { $v = $v.Substring(1) }
-            if ($v) { return $v }
+        # Must match the derivation in CMakeLists.txt exactly. This value is exported
+        # as $env:ARACHNEL_VERSION below, and CMake treats that as the CI path and
+        # skips its own git logic - so whatever this returns is what ships.
+        #
+        # Commits since the tag become a fourth number (v0.1.48 + 17 -> 0.1.48.17),
+        # never a -17-gHASH suffix: the stable update channel ranks a suffixed
+        # version BELOW the plain tag, so a Windows build 17 commits past v0.1.48
+        # would keep offering v0.1.48 - an older build - as an update. run.sh never
+        # sets the variable, which is why Linux was already getting 0.1.48.17.
+        $desc = & git describe --tags --long --match 'v[0-9]*' 2>$null
+        if ($LASTEXITCODE -eq 0 -and $desc -and ($desc.Trim() -match '^v([0-9.]+)-([0-9]+)-g')) {
+            if ([int]$Matches[2] -eq 0) { return $Matches[1] }
+            return "$($Matches[1]).$($Matches[2])"
         }
     } finally {
         Pop-Location
