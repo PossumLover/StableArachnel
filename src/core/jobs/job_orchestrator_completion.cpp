@@ -422,9 +422,11 @@ bool looksLikeRefusedDownload(const QString& path, QString* messageOut)
     const QByteArray head = file.read(kMaxSuspiciousBytes);
     file.close();
 
+    // XZ is FD 37 7A 58 5A. Hex escapes are greedy, so "\xFD7zXZ" parsed as \xFD7
+    // (out of range, truncated) and never matched a real .xz - spell the 7 as \x37.
     static const QList<QByteArray> archiveMagic = {
         QByteArrayLiteral("PK"), QByteArrayLiteral("Rar!"), QByteArrayLiteral("7z"),
-        QByteArrayLiteral("MZ"), QByteArrayLiteral("\x1F\x8B"), QByteArrayLiteral("\xFD7zXZ"),
+        QByteArrayLiteral("MZ"), QByteArrayLiteral("\x1F\x8B"), QByteArrayLiteral("\xFD\x37zXZ"),
         QByteArrayLiteral("ustar"),
     };
     for (const QByteArray& magic : archiveMagic) {
