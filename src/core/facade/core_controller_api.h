@@ -133,6 +133,8 @@
     Q_INVOKABLE void suggestGameToFriends(const QStringList& friendIds, const QString& entryId);
     Q_INVOKABLE void toggleBookmark(const QString& entryId);
     Q_INVOKABLE void requestDeepLink(const QString& rawOrUrl);
+    /** Dev: save the whole first window to a PNG (used by AppWindow's --screenshot). */
+    Q_INVOKABLE bool saveWindowScreenshot(const QString& path) const;
     Q_INVOKABLE void consumePendingDeepLink();
     Q_INVOKABLE void forceActivateMainWindow();
     Q_INVOKABLE void requestCatalogCover(const QString&);

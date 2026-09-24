@@ -4,6 +4,8 @@
 
 #include <QClipboard>
 #include <QGuiApplication>
+#include <QImage>
+#include <QQuickWindow>
 #include <QUrl>
 
 namespace arachnel::core {
@@ -49,6 +51,17 @@ void CoreController::toggleBookmark(const QString& entryId)
     if (sourceName.isEmpty())
         sourceName = info.value(QStringLiteral("sourceId")).toString();
     m_settings.toggleBookmark(id, title, coverUrl, sourceName);
+}
+
+bool CoreController::saveWindowScreenshot(const QString& path) const
+{
+    // grabWindow() renders exactly what the window draws, every layer included -
+    // Item.grabToImage() from QML misses layered/separately-rendered pages.
+    for (QWindow* window : QGuiApplication::topLevelWindows()) {
+        if (auto* quick = qobject_cast<QQuickWindow*>(window))
+            return quick->grabWindow().save(path);
+    }
+    return false;
 }
 
 void CoreController::requestDeepLink(const QString& rawOrUrl)

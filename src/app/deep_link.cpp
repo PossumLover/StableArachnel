@@ -24,6 +24,11 @@ namespace {
 
 QString localServerName()
 {
+    // ARACHNEL_INSTANCE lets a sandboxed dev/test copy (scripts, screenshots) run
+    // beside the user's real instance instead of silently handing off to it.
+    const QString suffix = qEnvironmentVariable("ARACHNEL_INSTANCE").trimmed();
+    if (!suffix.isEmpty())
+        return QStringLiteral("Arachnel-Arachnel-single-instance-") + suffix;
     return QStringLiteral("Arachnel-Arachnel-single-instance");
 }
 
