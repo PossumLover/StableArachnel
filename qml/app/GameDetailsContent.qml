@@ -17,6 +17,10 @@ Item {
         launchLogDialog.openForGame(page.gameId)
     }
 
+    MeadowTones {
+        id: toneKey
+    }
+
     Connections {
         target: Core
         function onLaunchSessionEnded(gameId, elapsedMs, suppressQuickExitLog) {
@@ -116,394 +120,462 @@ Item {
                 width: flick.width
                 spacing: MD.Token.spacing.large
 
-                RowLayout {
+                // A soft, tinted panel with a flowering spray on the right, like the
+                // library's "Recently played" card.
+                Item {
                     Layout.fillWidth: true
                     Layout.leftMargin: MD.Token.spacing.large
                     Layout.rightMargin: MD.Token.spacing.large
-                    spacing: MD.Token.spacing.large
+                    Layout.preferredHeight: heroRow.implicitHeight + 2 * MD.Token.spacing.large
 
-                    GamePoster {
-                        Layout.preferredWidth: 220
-                        Layout.preferredHeight: 293
-                        Layout.alignment: Qt.AlignTop
-                        source: page.info.coverUrl ?? ""
-                        fallbackText: (page.info.title ?? "?").charAt(0)
-                        cornerRadius: MD.Token.shape.corner.extra_large
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: MD.Token.shape.corner.extra_large
+                        color: MD.Token.color.surface_container
                     }
 
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignTop
-                        spacing: MD.Token.spacing.medium
-
-                        MD.Label {
-                            Layout.fillWidth: true
-                            text: page.info.title ?? ""
-                            typescale: MD.Token.typescale.headline_medium
-                            wrapMode: Text.WordWrap
-                        }
-
-                    // Genres/categories as a single-row chip strip (Steam dumps dozens of tags).
-                    Flickable {
-                        id: genreStrip
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: genreRow.implicitHeight
-                        visible: genreTokens.length > 0
-                        clip: true
-                        contentWidth: genreRow.implicitWidth
-                        contentHeight: height
-                        flickableDirection: Flickable.HorizontalFlick
-                        boundsBehavior: Flickable.StopAtBounds
-                        interactive: contentWidth > width
-
-                        readonly property var genreTokens: {
-                            const raw = (page.info.genres ?? "").toString().split(",")
-                            const out = []
-                            for (let i = 0; i < raw.length; ++i) {
-                                const t = raw[i].trim()
-                                // DRM has its own status chip below.
-                                if (t.length && t.toLowerCase() !== "drm")
-                                    out.push(t)
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: MD.Token.shape.corner.extra_large
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop {
+                                position: 0.0
+                                color: MD.Util.transparent(MD.Token.color.primary, 0.10)
                             }
-                            return out
-                        }
-
-                        Row {
-                            id: genreRow
-                            spacing: MD.Token.spacing.extra_small
-
-                            Repeater {
-                                model: genreStrip.genreTokens
-
-                                MD.AssistChip {
-                                    required property var modelData
-                                    text: modelData
-                                }
+                            GradientStop {
+                                position: 1.0
+                                color: MD.Util.transparent(MD.Token.color.tertiary, 0.10)
                             }
                         }
                     }
 
-                    Flow {
-                        Layout.fillWidth: true
-                        spacing: MD.Token.spacing.small
-
-                        MD.AssistChip {
-                            text: page.sourceLabel
-                            icon.name: MD.Token.icon.storefront
-                        }
-                        MD.AssistChip {
-                            text: "v" + (page.info.version ?? "")
-                            icon.name: MD.Token.icon.tag
-                        }
-                        MD.AssistChip {
-                            visible: !!(page.info.sizeLabel)
-                            text: page.info.sizeLabel ?? ""
-                            icon.name: MD.Token.icon.hard_drive
-                        }
-                        MD.AssistChip {
-                            visible: !!(page.info.hasDrm)
-                            text: qsTr("DRM")
-                            icon.name: MD.Token.icon.shield
-                            elevated: true
-                            mdState.backgroundColor: MD.Token.color.error_container
-                            mdState.textColor: MD.Token.color.on_error_container
-                            mdState.iconColor: MD.Token.color.on_error_container
-                            mdState.outlineColor: MD.Token.color.error_container
-                        }
-                        MD.AssistChip {
-                            visible: !!(page.info.hasAddons) || ((page.info.installedComponentCount ?? 0) > 0)
-                                     || ((page.info.componentCount ?? 0) > 0)
-                            text: {
-                                const installed = page.info.installedComponentCount ?? 0
-                                const total = page.info.componentCount ?? 0
-                                if (page.playable && total > 0)
-                                    return qsTr("%n add-ons", "", total)
-                                return qsTr("%n add-ons", "", page.info.addonCount ?? total)
-                            }
-                            icon.name: MD.Token.icon.extension
-                            onClicked: {
-                                if (page.playable)
-                                    gameSettingsSheet.openForGame(page.gameId)
-                            }
-                        }
-                        MD.AssistChip {
-                            visible: !!(page.info.hasWorkshop)
-                            text: qsTr("Workshop")
-                            icon.name: MD.Token.icon.handyman
-                        }
-                        MD.AssistChip {
-                            text: page.info.installKindLabel ?? ""
-                            icon.name: MD.Token.icon.install_desktop
-                        }
-                        MD.AssistChip {
-                            visible: page.installSourceCount <= 1
-                                     && (page.info.sourceId ?? "") === "steamidra"
-                            text: qsTr("Steam CDN · Online Fix")
-                            icon.name: MD.Token.icon.check_circle
-                            elevated: true
-                            mdState.backgroundColor: MD.Token.color.tertiary_container
-                            mdState.textColor: MD.Token.color.on_tertiary_container
-                            mdState.iconColor: MD.Token.color.on_tertiary_container
-                            mdState.outlineColor: MD.Token.color.tertiary_container
-                            onClicked: page.openSteamidraTrust()
-                        }
-                        MD.AssistChip {
-                            visible: !!(page.info.hasUpdate)
-                            text: qsTr("Update available")
-                            icon.name: MD.Token.icon.update
-                            elevated: true
-                            mdState.backgroundColor: MD.Token.color.tertiary_container
-                            mdState.textColor: MD.Token.color.on_tertiary_container
-                            mdState.iconColor: MD.Token.color.on_tertiary_container
-                            mdState.outlineColor: MD.Token.color.tertiary_container
-                        }
+                    MD.Image {
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        height: Math.min(parent.height, 300)
+                        width: Math.min(parent.width * 0.45, height * 900 / 420)
+                        radius: MD.Token.shape.corner.extra_large
+                        source: MD.Token.isDarkTheme ? "qrc:/art/hero-spray-dark.png"
+                                                     : "qrc:/art/hero-spray-light.png"
+                        fillMode: Image.PreserveAspectCrop
+                        horizontalAlignment: Image.AlignRight
+                        verticalAlignment: Image.AlignBottom
+                        sourceSize.width: 900
+                        opacity: MD.Token.isDarkTheme ? 0.7 : 0.85
                     }
 
                     RowLayout {
-                        Layout.fillWidth: true
-                        spacing: MD.Token.spacing.small
-                        visible: (page.info.sourcePageUrl ?? "").length > 0
-                                 || (page.info.sourceWebsiteUrl ?? "").length > 0
-                                 || (page.info.steamStoreUrl ?? "").length > 0
-                                 || (Core.sources.repositoryUrlFor(page.info.sourceId ?? "") || "").length > 0
-                                 || (Core.sources.catalogUrlFor(page.info.sourceId ?? "") || "").length > 0
-                                 || (page.gameId || "").length > 0
+                        id: heroRow
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: MD.Token.spacing.large
+                        spacing: MD.Token.spacing.large
 
-                        MD.Button {
-                            visible: (page.gameId || "").length > 0
-                            text: qsTr("Share")
-                            icon.name: MD.Token.icon.share
-                            mdState.type: MD.Enum.BtText
-                            onClicked: shareDialog.open()
+                        GamePoster {
+                            Layout.preferredWidth: 220
+                            Layout.preferredHeight: 293
+                            Layout.alignment: Qt.AlignTop
+                            source: page.info.coverUrl ?? ""
+                            fallbackText: (page.info.title ?? "?").charAt(0)
+                            cornerRadius: MD.Token.shape.corner.extra_large
                         }
 
-                        MD.Button {
-                            visible: (page.info.sourcePageUrl ?? "").length > 0
-                                     || (page.info.sourceWebsiteUrl ?? "").length > 0
-                            text: (page.info.sourcePageUrl ?? "").length > 0
-                                  ? qsTr("Source page")
-                                  : qsTr("Source website")
-                            icon.name: MD.Token.icon.open_in_new
-                            mdState.type: MD.Enum.BtText
-                            onClicked: Core.openExternalUrl(
-                                (page.info.sourcePageUrl ?? "").length > 0
-                                    ? page.info.sourcePageUrl
-                                    : page.info.sourceWebsiteUrl)
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            Layout.alignment: Qt.AlignTop
+                            spacing: MD.Token.spacing.medium
+
+                            MD.Label {
+                                Layout.fillWidth: true
+                                text: page.info.title ?? ""
+                                typescale: MD.Token.typescale.headline_medium
+                                wrapMode: Text.WordWrap
+                            }
+
+                        // Genres/categories as a single-row chip strip (Steam dumps dozens of tags).
+                        Flickable {
+                            id: genreStrip
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: genreRow.implicitHeight
+                            visible: genreTokens.length > 0
+                            clip: true
+                            contentWidth: genreRow.implicitWidth
+                            contentHeight: height
+                            flickableDirection: Flickable.HorizontalFlick
+                            boundsBehavior: Flickable.StopAtBounds
+                            interactive: contentWidth > width
+
+                            readonly property var genreTokens: {
+                                const raw = (page.info.genres ?? "").toString().split(",")
+                                const out = []
+                                for (let i = 0; i < raw.length; ++i) {
+                                    const t = raw[i].trim()
+                                    // DRM has its own status chip below.
+                                    if (t.length && t.toLowerCase() !== "drm")
+                                        out.push(t)
+                                }
+                                return out
+                            }
+
+                            Row {
+                                id: genreRow
+                                spacing: MD.Token.spacing.extra_small
+
+                                Repeater {
+                                    model: genreStrip.genreTokens
+
+                                    MD.AssistChip {
+
+                                        font.capitalization: Font.MixedCase
+                                        required property var modelData
+                                        required property int index
+                                        // Olive, rose, apricot, sage, olive...
+                                        readonly property int tone: [1, 2, 3, 0][index % 4]
+                                        text: modelData
+                                        elevated: true
+                                        mdState.backgroundColor: toneKey.containerFor(tone)
+                                        mdState.outlineColor: toneKey.containerFor(tone)
+                                        mdState.textColor: toneKey.inkFor(tone)
+                                    }
+                                }
+                            }
                         }
 
-                        MD.Button {
-                            visible: (page.info.steamStoreUrl ?? "").length > 0
-                            text: qsTr("Steam")
-                            icon.name: MD.Token.icon.open_in_new
-                            mdState.type: MD.Enum.BtText
-                            onClicked: Core.openExternalUrl(page.info.steamStoreUrl)
-                        }
-
-                        MD.Button {
-                            visible: (Core.sources.repositoryUrlFor(page.info.sourceId ?? "") || "").length > 0
-                            text: qsTr("Plugin source")
-                            icon.name: MD.Token.icon.open_in_new
-                            mdState.type: MD.Enum.BtText
-                            onClicked: Core.openExternalUrl(
-                                Core.sources.repositoryUrlFor(page.info.sourceId ?? ""))
-                        }
-
-                        MD.Button {
-                            visible: (Core.sources.catalogUrlFor(page.info.sourceId ?? "") || "").length > 0
-                            text: qsTr("Catalog URL")
-                            icon.name: MD.Token.icon.open_in_new
-                            mdState.type: MD.Enum.BtText
-                            onClicked: Core.openExternalUrl(
-                                Core.sources.catalogUrlFor(page.info.sourceId ?? ""))
-                        }
-                    }
-
-                    MD.Label {
-                        Layout.fillWidth: true
-                        visible: page.readyToInstall && !page.installFailed
-                                 && (page.info.sourceId ?? "") !== "steamidra"
-                        text: Messages.gameInstallTorrentHint
-                        wrapMode: Text.WordWrap
-                        color: MD.Token.color.on_surface_variant
-                        typescale: MD.Token.typescale.body_medium
-                    }
-
-                    MD.Label {
-                        Layout.fillWidth: true
-                        visible: page.readyToInstall && !page.installFailed
-                                 && (page.info.sourceId ?? "") === "steamidra"
-                        text: qsTr("Ready to download from Steam CDN. Online Fix can be included when needed.")
-                        wrapMode: Text.WordWrap
-                        color: MD.Token.color.on_surface_variant
-                        typescale: MD.Token.typescale.body_medium
-                    }
-
-                    MD.Label {
-                        Layout.fillWidth: true
-                        visible: page.downloadFailed || page.installFailed
-                        text: page.downloadJob.detail
-                              || (page.downloadFailed ? qsTr("Download failed")
-                                                      : qsTr("Install failed"))
-                        wrapMode: Text.WordWrap
-                        color: MD.Token.color.error
-                        typescale: MD.Token.typescale.body_medium
-                    }
-
-                    MD.Label {
-                        Layout.fillWidth: true
-                        visible: page.canManualInstall
-                        text: qsTr("JamesGames can't install this one for you. Run the installer from the download folder, then press the folder button below and pick the folder you installed it into.")
-                        wrapMode: Text.WordWrap
-                        color: MD.Token.color.on_surface_variant
-                        typescale: MD.Token.typescale.body_medium
-                    }
-
-                    ColumnLayout {
-                        spacing: MD.Token.spacing.extra_small
-
-                        RowLayout {
+                        Flow {
+                            Layout.fillWidth: true
                             spacing: MD.Token.spacing.small
 
-                            MD.Button {
-                                Layout.alignment: Qt.AlignVCenter
-                                visible: page.playable
-                                enabled: !page.runtimeSetupActive
+                            MD.AssistChip {
+
+                                font.capitalization: Font.MixedCase
+                                text: page.sourceLabel
+                                icon.name: MD.Token.icon.storefront
+                            }
+                            MD.AssistChip {
+                                font.capitalization: Font.MixedCase
+                                text: "v" + (page.info.version ?? "")
+                                icon.name: MD.Token.icon.tag
+                            }
+                            MD.AssistChip {
+                                font.capitalization: Font.MixedCase
+                                visible: !!(page.info.sizeLabel)
+                                text: page.info.sizeLabel ?? ""
+                                icon.name: MD.Token.icon.hard_drive
+                            }
+                            MD.AssistChip {
+                                font.capitalization: Font.MixedCase
+                                visible: !!(page.info.hasDrm)
+                                text: qsTr("DRM")
+                                icon.name: MD.Token.icon.shield
+                                elevated: true
+                                mdState.backgroundColor: MD.Token.color.error_container
+                                mdState.textColor: MD.Token.color.on_error_container
+                                mdState.iconColor: MD.Token.color.on_error_container
+                                mdState.outlineColor: MD.Token.color.error_container
+                            }
+                            MD.AssistChip {
+                                font.capitalization: Font.MixedCase
+                                visible: !!(page.info.hasAddons) || ((page.info.installedComponentCount ?? 0) > 0)
+                                         || ((page.info.componentCount ?? 0) > 0)
                                 text: {
-                                    if (page.isRunning)
-                                        return qsTr("Stop")
-                                    if (page.runtimeSetupActive)
-                                        return Core.runtimeSetupStatus.length > 0
-                                               ? Core.runtimeSetupStatus
-                                               : qsTr("Preparing…")
-                                    return qsTr("Play")
+                                    const installed = page.info.installedComponentCount ?? 0
+                                    const total = page.info.componentCount ?? 0
+                                    if (page.playable && total > 0)
+                                        return qsTr("%n add-ons", "", total)
+                                    return qsTr("%n add-ons", "", page.info.addonCount ?? total)
                                 }
-                                icon.name: page.isRunning || page.runtimeSetupActive
-                                         ? "" : MD.Token.icon.play_arrow
-                                mdState.type: MD.Enum.BtFilled
-                                mdState.backgroundColor: page.isRunning
-                                                     ? MD.Token.color.error
-                                                     : MD.Token.color.primary
-                                mdState.textColor: page.isRunning
-                                                   ? MD.Token.color.on_error
-                                                   : MD.Token.color.on_primary
-                                onClicked: page.isRunning
-                                             ? Core.stopRunningGame()
-                                             : Core.launchGame(page.gameId)
-                            }
-
-                            DownloadProgressButton {
-                                id: downloadAction
-                                Layout.alignment: Qt.AlignVCenter
-                                visible: page.canManageDownload
-                                embedDetail: false
-                                progress: page.downloadJob.progress ?? 0
-                                bytesDownloaded: Number(page.effectiveDownloaded) || 0
-                                totalBytes: Number(page.downloadTotalBytes) || 0
-                                detail: page.downloadJob.detail ?? ""
-                                downloading: page.downloadActive
-                                paused: page.downloadPaused
-                                completed: false
-                                readyToInstall: page.readyToInstall
-                                downloadFailed: page.downloadFailed
-                                installFailed: page.installFailed
-                                installing: page.isInstalling
-                                onActivated: {
-                                    if (page.downloadFailed)
-                                        Core.retryJob(page.downloadJob.jobId)
-                                    else if (page.installFailed || page.readyToInstall)
-                                        Core.retryInstall(page.downloadJob.jobId)
-                                    else
-                                        page.beginInstall()
-                                }
-                                onPauseToggleRequested: Core.toggleJobPause(page.downloadJob.jobId)
-                                onCancelRequested: Core.cancelJob(page.downloadJob.jobId)
-                            }
-
-                            MD.IconButton {
-                                Layout.alignment: Qt.AlignVCenter
-                                visible: page.canManualInstall
-                                mdState.type: MD.Enum.IBtStandard
-                                icon.name: MD.Token.icon.folder_open
-                                onClicked: Core.confirmManualInstall(page.downloadJob.jobId)
-
-                                MD.ToolTip {
-                                    visible: parent.hovered
-                                    text: qsTr("Already installed it yourself? Pick the folder.")
-                                }
-                            }
-
-                            MD.IconButton {
-                                Layout.alignment: Qt.AlignVCenter
-                                readonly property bool favorited: {
-                                    const ids = Core.settings.bookmarkedEntryIds
-                                    return ids.indexOf(page.gameId) >= 0
-                                }
-                                checked: favorited
-                                mdState.type: MD.Enum.IBtOutlined
-                                icon.name: MD.Token.icon.favorite
-                                Accessible.name: favorited
-                                                 ? qsTr("Remove from favorites")
-                                                 : qsTr("Add to favorites")
-                                onClicked: Core.toggleBookmark(page.gameId)
-                            }
-
-                            MD.IconButton {
-                                Layout.alignment: Qt.AlignVCenter
-                                visible: hasLaunchLog
-                                mdState.type: MD.Enum.IBtOutlined
-                                icon.name: MD.Token.icon.receipt_long
-                                Accessible.name: qsTr("Launch log")
-                                onClicked: openLaunchLog()
-                            }
-
-                            MD.Button {
-                                Layout.alignment: Qt.AlignVCenter
-                                visible: page.playable
-                                         || page.downloadComplete
-                                         || page.inLibrary
-                                text: qsTr("Delete")
-                                icon.name: MD.Token.icon.delete
-                                mdState.type: MD.Enum.BtOutlined
-                                onClicked: removeDialog.open()
-                            }
-
-                            MD.IconButton {
-                                Layout.alignment: Qt.AlignVCenter
-                                visible: page.playable
-                                         || page.downloadComplete
-                                         || page.inLibrary
-                                mdState.type: MD.Enum.IBtOutlined
-                                icon.name: MD.Token.icon.settings
-                                onClicked: gameSettingsSheet.openForGame(page.gameId)
-                            }
-
-                            MD.Button {
-                                Layout.alignment: Qt.AlignVCenter
-                                visible: page.installed && !!(page.info.hasUpdate) && !page.downloadJob.inProgress
-                                text: qsTr("Update")
-                                icon.name: MD.Token.icon.update
-                                mdState.type: MD.Enum.BtFilledTonal
+                                icon.name: MD.Token.icon.extension
                                 onClicked: {
-                                    if (Core.catalogUpdateHasDlcRisk(page.gameId))
-                                        dlcUpdateRiskDialog.openForGame(page.gameId)
-                                    else
-                                        Core.updateCatalogEntry(page.gameId)
+                                    if (page.playable)
+                                        gameSettingsSheet.openForGame(page.gameId)
                                 }
+                            }
+                            MD.AssistChip {
+                                font.capitalization: Font.MixedCase
+                                visible: !!(page.info.hasWorkshop)
+                                text: qsTr("Workshop")
+                                icon.name: MD.Token.icon.handyman
+                            }
+                            MD.AssistChip {
+                                font.capitalization: Font.MixedCase
+                                text: page.info.installKindLabel ?? ""
+                                icon.name: MD.Token.icon.install_desktop
+                            }
+                            MD.AssistChip {
+                                font.capitalization: Font.MixedCase
+                                visible: page.installSourceCount <= 1
+                                         && (page.info.sourceId ?? "") === "steamidra"
+                                text: qsTr("Steam CDN · Online Fix")
+                                icon.name: MD.Token.icon.check_circle
+                                elevated: true
+                                mdState.backgroundColor: MD.Token.color.tertiary_container
+                                mdState.textColor: MD.Token.color.on_tertiary_container
+                                mdState.iconColor: MD.Token.color.on_tertiary_container
+                                mdState.outlineColor: MD.Token.color.tertiary_container
+                                onClicked: page.openSteamidraTrust()
+                            }
+                            MD.AssistChip {
+                                font.capitalization: Font.MixedCase
+                                visible: !!(page.info.hasUpdate)
+                                text: qsTr("Update available")
+                                icon.name: MD.Token.icon.update
+                                elevated: true
+                                mdState.backgroundColor: MD.Token.color.tertiary_container
+                                mdState.textColor: MD.Token.color.on_tertiary_container
+                                mdState.iconColor: MD.Token.color.on_tertiary_container
+                                mdState.outlineColor: MD.Token.color.tertiary_container
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: MD.Token.spacing.small
+                            visible: (page.info.sourcePageUrl ?? "").length > 0
+                                     || (page.info.sourceWebsiteUrl ?? "").length > 0
+                                     || (page.info.steamStoreUrl ?? "").length > 0
+                                     || (Core.sources.repositoryUrlFor(page.info.sourceId ?? "") || "").length > 0
+                                     || (Core.sources.catalogUrlFor(page.info.sourceId ?? "") || "").length > 0
+                                     || (page.gameId || "").length > 0
+
+                            MD.Button {
+                                visible: (page.gameId || "").length > 0
+                                text: qsTr("Share")
+                                icon.name: MD.Token.icon.share
+                                mdState.type: MD.Enum.BtText
+                                onClicked: shareDialog.open()
+                            }
+
+                            MD.Button {
+                                visible: (page.info.sourcePageUrl ?? "").length > 0
+                                         || (page.info.sourceWebsiteUrl ?? "").length > 0
+                                text: (page.info.sourcePageUrl ?? "").length > 0
+                                      ? qsTr("Source page")
+                                      : qsTr("Source website")
+                                icon.name: MD.Token.icon.open_in_new
+                                mdState.type: MD.Enum.BtText
+                                onClicked: Core.openExternalUrl(
+                                    (page.info.sourcePageUrl ?? "").length > 0
+                                        ? page.info.sourcePageUrl
+                                        : page.info.sourceWebsiteUrl)
+                            }
+
+                            MD.Button {
+                                visible: (page.info.steamStoreUrl ?? "").length > 0
+                                text: qsTr("Steam")
+                                icon.name: MD.Token.icon.open_in_new
+                                mdState.type: MD.Enum.BtText
+                                onClicked: Core.openExternalUrl(page.info.steamStoreUrl)
+                            }
+
+                            MD.Button {
+                                visible: (Core.sources.repositoryUrlFor(page.info.sourceId ?? "") || "").length > 0
+                                text: qsTr("Plugin source")
+                                icon.name: MD.Token.icon.open_in_new
+                                mdState.type: MD.Enum.BtText
+                                onClicked: Core.openExternalUrl(
+                                    Core.sources.repositoryUrlFor(page.info.sourceId ?? ""))
+                            }
+
+                            MD.Button {
+                                visible: (Core.sources.catalogUrlFor(page.info.sourceId ?? "") || "").length > 0
+                                text: qsTr("Catalog URL")
+                                icon.name: MD.Token.icon.open_in_new
+                                mdState.type: MD.Enum.BtText
+                                onClicked: Core.openExternalUrl(
+                                    Core.sources.catalogUrlFor(page.info.sourceId ?? ""))
                             }
                         }
 
                         MD.Label {
                             Layout.fillWidth: true
-                            visible: downloadAction.visible && downloadAction.transferDetailVisible
-                            text: downloadAction.transferLine
-                            color: MD.Token.color.primary
-                            typescale: MD.Token.typescale.label_large
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
+                            visible: page.readyToInstall && !page.installFailed
+                                     && (page.info.sourceId ?? "") !== "steamidra"
+                            text: Messages.gameInstallTorrentHint
+                            wrapMode: Text.WordWrap
+                            color: MD.Token.color.on_surface_variant
+                            typescale: MD.Token.typescale.body_medium
+                        }
+
+                        MD.Label {
+                            Layout.fillWidth: true
+                            visible: page.readyToInstall && !page.installFailed
+                                     && (page.info.sourceId ?? "") === "steamidra"
+                            text: qsTr("Ready to download from Steam CDN. Online Fix can be included when needed.")
+                            wrapMode: Text.WordWrap
+                            color: MD.Token.color.on_surface_variant
+                            typescale: MD.Token.typescale.body_medium
+                        }
+
+                        MD.Label {
+                            Layout.fillWidth: true
+                            visible: page.downloadFailed || page.installFailed
+                            text: page.downloadJob.detail
+                                  || (page.downloadFailed ? qsTr("Download failed")
+                                                          : qsTr("Install failed"))
+                            wrapMode: Text.WordWrap
+                            color: MD.Token.color.error
+                            typescale: MD.Token.typescale.body_medium
+                        }
+
+                        MD.Label {
+                            Layout.fillWidth: true
+                            visible: page.canManualInstall
+                            text: qsTr("JamesGames can't install this one for you. Run the installer from the download folder, then press the folder button below and pick the folder you installed it into.")
+                            wrapMode: Text.WordWrap
+                            color: MD.Token.color.on_surface_variant
+                            typescale: MD.Token.typescale.body_medium
+                        }
+
+                        ColumnLayout {
+                            spacing: MD.Token.spacing.extra_small
+
+                            RowLayout {
+                                spacing: MD.Token.spacing.small
+
+                                MD.Button {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    visible: page.playable
+                                    enabled: !page.runtimeSetupActive
+                                    text: {
+                                        if (page.isRunning)
+                                            return qsTr("Stop")
+                                        if (page.runtimeSetupActive)
+                                            return Core.runtimeSetupStatus.length > 0
+                                                   ? Core.runtimeSetupStatus
+                                                   : qsTr("Preparing…")
+                                        return qsTr("Play")
+                                    }
+                                    icon.name: page.isRunning || page.runtimeSetupActive
+                                             ? "" : MD.Token.icon.play_arrow
+                                    mdState.type: MD.Enum.BtFilled
+                                    mdState.backgroundColor: page.isRunning
+                                                         ? MD.Token.color.error
+                                                         : MD.Token.color.primary
+                                    mdState.textColor: page.isRunning
+                                                       ? MD.Token.color.on_error
+                                                       : MD.Token.color.on_primary
+                                    onClicked: page.isRunning
+                                                 ? Core.stopRunningGame()
+                                                 : Core.launchGame(page.gameId)
+                                }
+
+                                DownloadProgressButton {
+                                    id: downloadAction
+                                    Layout.alignment: Qt.AlignVCenter
+                                    visible: page.canManageDownload
+                                    embedDetail: false
+                                    progress: page.downloadJob.progress ?? 0
+                                    bytesDownloaded: Number(page.effectiveDownloaded) || 0
+                                    totalBytes: Number(page.downloadTotalBytes) || 0
+                                    detail: page.downloadJob.detail ?? ""
+                                    downloading: page.downloadActive
+                                    paused: page.downloadPaused
+                                    completed: false
+                                    readyToInstall: page.readyToInstall
+                                    downloadFailed: page.downloadFailed
+                                    installFailed: page.installFailed
+                                    installing: page.isInstalling
+                                    onActivated: {
+                                        if (page.downloadFailed)
+                                            Core.retryJob(page.downloadJob.jobId)
+                                        else if (page.installFailed || page.readyToInstall)
+                                            Core.retryInstall(page.downloadJob.jobId)
+                                        else
+                                            page.beginInstall()
+                                    }
+                                    onPauseToggleRequested: Core.toggleJobPause(page.downloadJob.jobId)
+                                    onCancelRequested: Core.cancelJob(page.downloadJob.jobId)
+                                }
+
+                                MD.IconButton {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    visible: page.canManualInstall
+                                    mdState.type: MD.Enum.IBtStandard
+                                    icon.name: MD.Token.icon.folder_open
+                                    onClicked: Core.confirmManualInstall(page.downloadJob.jobId)
+
+                                    MD.ToolTip {
+                                        visible: parent.hovered
+                                        text: qsTr("Already installed it yourself? Pick the folder.")
+                                    }
+                                }
+
+                                MD.IconButton {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    readonly property bool favorited: {
+                                        const ids = Core.settings.bookmarkedEntryIds
+                                        return ids.indexOf(page.gameId) >= 0
+                                    }
+                                    checked: favorited
+                                    mdState.type: MD.Enum.IBtOutlined
+                                    icon.name: MD.Token.icon.favorite
+                                    Accessible.name: favorited
+                                                     ? qsTr("Remove from favorites")
+                                                     : qsTr("Add to favorites")
+                                    onClicked: Core.toggleBookmark(page.gameId)
+                                }
+
+                                MD.IconButton {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    visible: hasLaunchLog
+                                    mdState.type: MD.Enum.IBtOutlined
+                                    icon.name: MD.Token.icon.receipt_long
+                                    Accessible.name: qsTr("Launch log")
+                                    onClicked: openLaunchLog()
+                                }
+
+                                MD.Button {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    visible: page.playable
+                                             || page.downloadComplete
+                                             || page.inLibrary
+                                    text: qsTr("Delete")
+                                    icon.name: MD.Token.icon.delete
+                                    mdState.type: MD.Enum.BtOutlined
+                                    onClicked: removeDialog.open()
+                                }
+
+                                MD.IconButton {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    visible: page.playable
+                                             || page.downloadComplete
+                                             || page.inLibrary
+                                    mdState.type: MD.Enum.IBtOutlined
+                                    icon.name: MD.Token.icon.settings
+                                    onClicked: gameSettingsSheet.openForGame(page.gameId)
+                                }
+
+                                MD.Button {
+                                    Layout.alignment: Qt.AlignVCenter
+                                    visible: page.installed && !!(page.info.hasUpdate) && !page.downloadJob.inProgress
+                                    text: qsTr("Update")
+                                    icon.name: MD.Token.icon.update
+                                    mdState.type: MD.Enum.BtFilledTonal
+                                    onClicked: {
+                                        if (Core.catalogUpdateHasDlcRisk(page.gameId))
+                                            dlcUpdateRiskDialog.openForGame(page.gameId)
+                                        else
+                                            Core.updateCatalogEntry(page.gameId)
+                                    }
+                                }
+                            }
+
+                            MD.Label {
+                                Layout.fillWidth: true
+                                visible: downloadAction.visible && downloadAction.transferDetailVisible
+                                text: downloadAction.transferLine
+                                color: MD.Token.color.primary
+                                typescale: MD.Token.typescale.label_large
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
+                            }
                         }
                     }
                 }
-            }
+
+                }
 
             MD.ElevationRectangle {
                 Layout.fillWidth: true
@@ -547,9 +619,21 @@ Item {
                     anchors.margins: MD.Token.spacing.large
                     spacing: MD.Token.spacing.medium
 
-                    MD.Label {
-                        text: qsTr("Description")
-                        typescale: MD.Token.typescale.title_medium
+                    RowLayout {
+                        spacing: MD.Token.spacing.small
+
+                        ToneBadge {
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            iconSize: 18
+                            iconName: MD.Token.icon.menu_book
+                            tone: 1
+                        }
+
+                        MD.Label {
+                            text: qsTr("Description")
+                            typescale: MD.Token.typescale.title_medium
+                        }
                     }
 
                     MD.Label {

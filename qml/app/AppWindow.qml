@@ -37,13 +37,15 @@ MD.ApplicationWindow {
     }
     onWidthChanged: windowClassTimer.restart()
 
-    // Dev: `--screenshot <file.png> [--page <index>] [--delay <ms>]` opens a page,
-    // waits for covers and animations to settle, saves the window and quits. Used
-    // to review the look headless (QT_QPA_PLATFORM=offscreen) without a display.
+    // Dev: `--screenshot <file.png> [--page <index>] [--open <view>] [--delay <ms>]`
+    // opens a page, waits for covers and animations to settle, saves the window and
+    // quits. <view> is `settings`, `settings:<section>` or `details:<gameId>`. Used to
+    // review the look headless (see scripts/dev/screenshot.sh).
     Timer {
         id: screenshotTimer
         property string path: ""
         property int page: -1
+        property string view: ""
         property int stage: 0
         repeat: false
         onTriggered: {
@@ -51,6 +53,19 @@ MD.ApplicationWindow {
                 root.goToPage(page)
                 stage = 1
                 interval = 2500
+                start()
+                return
+            }
+            if (stage <= 1 && view.length > 0) {
+                const sep = view.indexOf(":")
+                const kind = sep < 0 ? view : view.slice(0, sep)
+                const arg = sep < 0 ? "" : view.slice(sep + 1)
+                if (kind === "settings")
+                    settingsSheet.openSection(arg)
+                else if (kind === "details")
+                    root.openGameDetails(arg, false)
+                stage = 2
+                interval = 3500
                 start()
                 return
             }
@@ -67,6 +82,9 @@ MD.ApplicationWindow {
             const pageAt = args.indexOf("--page")
             if (pageAt >= 0 && pageAt + 1 < args.length)
                 page = parseInt(args[pageAt + 1])
+            const viewAt = args.indexOf("--open")
+            if (viewAt >= 0 && viewAt + 1 < args.length)
+                view = args[viewAt + 1]
             const delayAt = args.indexOf("--delay")
             interval = (delayAt >= 0 && delayAt + 1 < args.length) ? parseInt(args[delayAt + 1]) : 6000
             start()

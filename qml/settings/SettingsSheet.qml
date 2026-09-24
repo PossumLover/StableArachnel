@@ -17,6 +17,11 @@ MD.BottomSheet {
         open()
     }
 
+    function openSection(sectionId) {
+        settingsPage.prepareOpen(sectionId, false)
+        open()
+    }
+
     function openPlugins() {
         settingsPage.prepareOpen("plugins", false)
         open()

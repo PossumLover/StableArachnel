@@ -72,10 +72,23 @@ ColumnLayout {
         }
     }
 
-    MD.Label {
+    RowLayout {
         Layout.fillWidth: true
-        text: qsTr("Screenshots")
-        typescale: MD.Token.typescale.title_medium
+        spacing: MD.Token.spacing.small
+
+        ToneBadge {
+            implicitWidth: 32
+            implicitHeight: 32
+            iconSize: 18
+            iconName: MD.Token.icon.photo_library
+            tone: 2
+        }
+
+        MD.Label {
+            Layout.fillWidth: true
+            text: qsTr("Screenshots")
+            typescale: MD.Token.typescale.title_medium
+        }
     }
 
     ListView {

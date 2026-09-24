@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Screenshot a page of JamesGames headless, from a sandboxed data copy.
 #
-#   scripts/dev/screenshot.sh <out.png> [page] [delay-ms]
+#   scripts/dev/screenshot.sh <out.png> [page] [delay-ms] [view]
 #
 #   page      0 Library  1 Discover  2 Catalog  3 Friends  4 Favorites  5 Downloads
 #   delay-ms  how long to let covers and animations settle (default 12000)
+#   view      opened on top of the page: settings, settings:<section>
+#             (appearance, storage, updates, launch, plugins, sources, friends, about)
+#             or details:<gameId>
 #
 # Uses SANDBOX (default: $TMPDIR/jg-shot) as XDG_DATA_HOME / XDG_CONFIG_HOME, seeded
 # once from your real data and config - so the real library is never written to -
@@ -15,6 +18,7 @@ set -uo pipefail
 out="${1:?usage: $0 <out.png> [page] [delay-ms]}"
 page="${2:-0}"
 delay="${3:-12000}"
+view="${4:-}"
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 sandbox="${SANDBOX:-${TMPDIR:-/tmp}/jg-shot}"
 real_data="$HOME/.local/share/Arachnel/Arachnel"
@@ -53,7 +57,7 @@ for try in 1 2 3; do
         XDG_DATA_HOME="$sandbox/data" XDG_CONFIG_HOME="$sandbox/config" \
         QT_QPA_PLATFORM=xcb QSG_RHI_BACKEND=vulkan \
         QT_QML_MATERIAL_IMPORT_PATH="$root/build/qml_modules" \
-        "$app" --screenshot "$out" --page "$page" --delay "$delay" > "$sandbox/last-run.log" 2>&1
+        "$app" --screenshot "$out" --page "$page" --delay "$delay" ${view:+--open "$view"} > "$sandbox/last-run.log" 2>&1
     [ -f "$out" ] && { echo "$out"; exit 0; }
     echo "try $try failed ($(grep -m1 '^Summary' "$sandbox/data/Arachnel/Arachnel/crash-report-latest.txt" 2>/dev/null || echo 'no crash report'))" >&2
 done
