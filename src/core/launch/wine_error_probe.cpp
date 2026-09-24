@@ -220,6 +220,24 @@ BOOL CALLBACK enumDialogWindows(HWND hwnd, LPARAM lparam)
 #endif
 
 #if defined(ARACHNEL_HAVE_X11)
+/**
+ * Swallow X errors for the duration of a scan.
+ *
+ * The scan walks other programs' windows, and any of them can be destroyed between
+ * XQueryTree listing it and XGetWindowProperty reading it - which is exactly what
+ * happens when the game being watched dies. That produces BadWindow, and Xlib's
+ * DEFAULT error handler reacts by calling exit(). Arachnel then quit from inside
+ * pollRunningGame(), ran its static destructors, and deadlocked in ~PluginHost ->
+ * waitForCatalogAddonEnrich() waiting on a worker that would never run: a frozen
+ * window that never came back (seen 2026-09-24 when Core Keeper crashed).
+ *
+ * A failed read already returns non-Success and is handled as "not a dialog".
+ */
+int ignoreXError(Display*, XErrorEvent*)
+{
+    return 0;
+}
+
 bool windowIsDialog(Display* dpy, Window win, Atom typeAtom, Atom dialogAtom)
 {
     Atom actualType = None;
@@ -408,6 +426,8 @@ bool wineErrorDialogVisible(qint64 launchProcessId, const WineErrorWatchHints& h
     Display* dpy = XOpenDisplay(nullptr);
     if (!dpy)
         return false;
+    // Process-wide in Xlib, so put the previous handler back when done.
+    XErrorHandler previousHandler = XSetErrorHandler(ignoreXError);
     const Window root = DefaultRootWindow(dpy);
     const Atom pidAtom = XInternAtom(dpy, "_NET_WM_PID", True);
     const Atom typeAtom = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", True);
@@ -418,6 +438,8 @@ bool wineErrorDialogVisible(qint64 launchProcessId, const WineErrorWatchHints& h
         found = scanWindowTree(dpy, root, pids, hints, pidAtom, typeAtom, dialogAtom, netNameAtom,
                                0);
     }
+    XSync(dpy, False); // deliver any pending error to ignoreXError, not the old handler
+    XSetErrorHandler(previousHandler);
     XCloseDisplay(dpy);
     return found;
 #else
