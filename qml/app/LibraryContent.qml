@@ -48,15 +48,34 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         gradient: Gradient {
+                            orientation: Gradient.Horizontal
                             GradientStop {
                                 position: 0.0
                                 color: MD.Util.transparent(MD.Token.color.primary, 0.10)
                             }
                             GradientStop {
                                 position: 1.0
-                                color: "transparent"
+                                color: MD.Util.transparent(MD.Token.color.tertiary, 0.10)
                             }
                         }
+                    }
+
+                    // Flowering stems and a low sun, framing the cover art on the right.
+                    Image {
+                        anchors.right: parent.right
+                        // Sit beside the cover art (right ~130px), not underneath it.
+                        anchors.rightMargin: 120
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: Math.min(parent.width * 0.62, height * 900 / 420)
+                        source: MD.Token.isDarkTheme ? "qrc:/art/hero-spray-dark.png"
+                                                     : "qrc:/art/hero-spray-light.png"
+                        fillMode: Image.PreserveAspectCrop
+                        horizontalAlignment: Image.AlignRight
+                        verticalAlignment: Image.AlignBottom
+                        sourceSize.width: 900
+                        opacity: MD.Token.isDarkTheme ? 0.8 : 0.95
+                        smooth: true
                     }
 
                     RowLayout {
@@ -231,6 +250,7 @@ Item {
                     title: qsTr("Sources")
                     value: String(Core.sources.enabledCount)
                     iconName: MD.Token.icon.storefront
+                    tone: 1
                 }
 
                 StatCard {
@@ -238,6 +258,7 @@ Item {
                     title: qsTr("Tasks")
                     value: String(Core.jobs.count)
                     iconName: MD.Token.icon.downloading
+                    tone: 2
                 }
 
                 StatCard {
@@ -245,6 +266,7 @@ Item {
                     title: qsTr("Updates")
                     value: String(Core.library.updateCount())
                     iconName: MD.Token.icon.update
+                    tone: 3
                 }
             }
 

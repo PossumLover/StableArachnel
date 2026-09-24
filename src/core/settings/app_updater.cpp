@@ -181,7 +181,7 @@ void AppUpdater::checkForUpdates(bool notifyIfUpToDate)
 
     setLastError({});
     setChecking(true);
-    setStatusText(QCoreApplication::translate("Core", "Checking for Arachnel updates…"));
+    setStatusText(QCoreApplication::translate("Core", "Checking for JamesGames updates…"));
 
     const QUrl apiUrl(QString::fromUtf8(m_includePreReleases ? kGithubReleasesList
                                                              : kGithubLatestRelease));
@@ -336,13 +336,13 @@ void AppUpdater::handleReleaseObject(const QJsonObject& release, bool notifyIfUp
     if (available) {
         if (release.value(QStringLiteral("prerelease")).toBool(false)) {
             setStatusText(
-                QCoreApplication::translate("Core", "Arachnel %1 (pre-release) is available")
+                QCoreApplication::translate("Core", "JamesGames %1 (pre-release) is available")
                     .arg(tag));
         } else {
-            setStatusText(QCoreApplication::translate("Core", "Arachnel %1 is available").arg(tag));
+            setStatusText(QCoreApplication::translate("Core", "JamesGames %1 is available").arg(tag));
         }
     } else if (cmp >= 0) {
-        setStatusText(QCoreApplication::translate("Core", "Arachnel is up to date (%1)")
+        setStatusText(QCoreApplication::translate("Core", "JamesGames is up to date (%1)")
                           .arg(currentVersion()));
         Q_UNUSED(notifyIfUpToDate);
     } else {
@@ -380,7 +380,7 @@ void AppUpdater::startDownload(const QUrl& url)
     m_downloadProgress = 0;
     m_downloadBytesTotal = 0;
     emit downloadProgressChanged();
-    setStatusText(QCoreApplication::translate("Core", "Downloading Arachnel update…"));
+    setStatusText(QCoreApplication::translate("Core", "Downloading JamesGames update…"));
 
     const QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     QDir().mkpath(tempDir);
@@ -470,7 +470,7 @@ void AppUpdater::startDownload(const QUrl& url)
 
         m_downloadProgress = 100;
         emit downloadProgressChanged();
-        setStatusText(QCoreApplication::translate("Core", "Updating Arachnel…"));
+        setStatusText(QCoreApplication::translate("Core", "Updating JamesGames…"));
 
         QString launchError;
         if (!launchInstaller(targetPath, &launchError)) {
@@ -588,7 +588,7 @@ bool AppUpdater::launchInstaller(const QString& installerPath, QString* errorOut
     if (targetDir.isEmpty()) {
         if (errorOut) {
             *errorOut = QCoreApplication::translate(
-                "Core", "Could not find an Arachnel install folder to update");
+                "Core", "Could not find an JamesGames install folder to update");
         }
         return false;
     }
@@ -613,7 +613,7 @@ bool AppUpdater::launchInstaller(const QString& installerPath, QString* errorOut
         || pid == 0) {
         if (errorOut) {
             *errorOut = QCoreApplication::translate("Core",
-                                                    "Could not start the Arachnel installer");
+                                                    "Could not start the JamesGames installer");
         }
         return false;
     }

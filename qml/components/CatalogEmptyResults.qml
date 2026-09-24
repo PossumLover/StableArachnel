@@ -28,15 +28,14 @@ Item {
             color: MD.Token.color.surface_container_high
         }
 
-        SpiderWebMark {
+        MeadowMark {
+            variant: "spray"
             width: 260
             height: 260
             anchors.verticalCenter: parent.verticalCenter
             anchors.right: parent.right
             anchors.rightMargin: -130
-            strokeColor: MD.Token.color.primary
-            strokeWidth: 2.5
-            opacity: 0.18
+            opacity: 0.55
         }
 
         ColumnLayout {

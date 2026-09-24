@@ -1,9 +1,75 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="JamesGames">
-  <rect width="512" height="512" rx="92.2" fill="#141218"/>
-  <circle cx="256.00" cy="256.00" r="199.68" fill="#E8DEF8"/>
-  <!-- A bare "J": the stem, and the hook swept left along the same stroke weight. -->
-  <path d="M 322 140 L 322 300 A 74 74 0 0 1 174 300"
-        fill="none" stroke="#49454F" stroke-width="34"
-        stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Painted grain: fractal noise multiplied into the fill, clipped to the shape. -->
+    <filter id="paint" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+      <!-- broad, soft mottling: pigment pooling unevenly -->
+      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" seed="3" result="mottle"/>
+      <feColorMatrix in="mottle" type="matrix" values="0 0 0 0 0.5  0 0 0 0 0.47  0 0 0 0 0.44  0 0 0 -0.9 0.62" result="mottleA"/>
+      <feComposite in="mottleA" in2="SourceAlpha" operator="in" result="mottleIn"/>
+      <feBlend in="SourceGraphic" in2="mottleIn" mode="soft-light" result="pooled"/>
+      <!-- fine paper grain, low contrast -->
+      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="7" result="noise"/>
+      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.52  0 0 0 0 0.48  0 0 0 -0.7 0.42" result="speck"/>
+      <feComposite in="speck" in2="SourceAlpha" operator="in" result="grain"/>
+      <feBlend in="pooled" in2="grain" mode="multiply"/>
+    </filter>
+    <!-- Slightly wobbly, hand-cut edges. -->
+    <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4" result="w"/>
+      <feDisplacementMap in="SourceGraphic" in2="w" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <radialGradient id="sun" cx="42%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#FDD9A3"/>
+      <stop offset="0.55" stop-color="#FCB575"/>
+      <stop offset="1" stop-color="#F29A6A"/>
+    </radialGradient>
+    <linearGradient id="leafA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7E9C7E"/><stop offset="1" stop-color="#435A4D"/>
+    </linearGradient>
+    <linearGradient id="leafB" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8E9A5A"/><stop offset="1" stop-color="#5F6A42"/>
+    </linearGradient>
+    <clipPath id="disc"><circle cx="256" cy="256" r="236"/></clipPath>
+  </defs>
+
+  <!-- cream plate with a soft sun -->
+  <circle cx="256" cy="256" r="244" fill="#F4EEE3"/>
+  <g clip-path="url(#disc)" filter="url(#paint)">
+    <circle cx="256" cy="244" r="138" fill="url(#sun)" filter="url(#rough)"/>
+    <!-- rolling hill -->
+    <path d="M-10 392 C 90 330, 180 348, 260 372 S 430 356, 530 318 L 530 530 L -10 530 Z" fill="#C79A90"/>
+    <path d="M-10 430 C 110 380, 220 398, 300 414 S 450 400, 530 380 L 530 530 L -10 530 Z" fill="#5E7D66"/>
+  </g>
+
+  <g filter="url(#paint)">
+    <!-- stem -->
+    <path d="M250 430 C 246 360, 262 300, 286 236" stroke="#435A4D" stroke-width="13" stroke-linecap="round" fill="none"/>
+    <!-- leaves -->
+    <path d="M258 350 C 200 346, 160 312, 150 264 C 206 262, 248 294, 258 350 Z" fill="url(#leafA)" filter="url(#rough)"/>
+    <path d="M262 338 C 326 338, 374 300, 390 244 C 322 240, 272 280, 262 338 Z" fill="url(#leafB)" filter="url(#rough)"/>
+    <!-- leaf veins -->
+    <path d="M254 344 C 222 330, 188 304, 162 272" stroke="#F4EEE3" stroke-opacity="0.45" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M268 332 C 306 322, 350 290, 380 250" stroke="#F4EEE3" stroke-opacity="0.45" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- five-petal flower -->
+    <g transform="translate(290 206)" filter="url(#rough)">
+      <g fill="#D99A94">
+        <ellipse cx="0" cy="-40" rx="25" ry="36"/>
+        <ellipse cx="0" cy="-40" rx="25" ry="36" transform="rotate(72)"/>
+        <ellipse cx="0" cy="-40" rx="25" ry="36" transform="rotate(144)"/>
+        <ellipse cx="0" cy="-40" rx="25" ry="36" transform="rotate(216)"/>
+        <ellipse cx="0" cy="-40" rx="25" ry="36" transform="rotate(288)"/>
+      </g>
+      <g fill="#F2C2B8" opacity="0.8">
+        <ellipse cx="0" cy="-36" rx="11" ry="20"/>
+        <ellipse cx="0" cy="-36" rx="11" ry="20" transform="rotate(72)"/>
+        <ellipse cx="0" cy="-36" rx="11" ry="20" transform="rotate(144)"/>
+        <ellipse cx="0" cy="-36" rx="11" ry="20" transform="rotate(216)"/>
+        <ellipse cx="0" cy="-36" rx="11" ry="20" transform="rotate(288)"/>
+      </g>
+      <circle r="17" fill="#F6B26B"/>
+      <circle r="8" fill="#C9803F"/>
+    </g>
+  </g>
+  <!-- thin warm rim -->
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#E7DCCB" stroke-width="8"/>
 </svg>

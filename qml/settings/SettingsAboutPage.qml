@@ -159,7 +159,7 @@ Flickable {
 
                 MD.Label {
                     Layout.fillWidth: true
-                    text: qsTr("Deletes settings, download history, caches, plugins, and Proton from the app folder. Game files on your disks stay. Arachnel will quit afterward.")
+                    text: qsTr("Deletes settings, download history, caches, plugins, and Proton from the app folder. Game files on your disks stay. JamesGames will quit afterward.")
                     wrapMode: Text.WordWrap
                     color: MD.Token.color.on_surface_variant
                     typescale: MD.Token.typescale.body_small

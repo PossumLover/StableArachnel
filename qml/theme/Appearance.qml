@@ -9,9 +9,13 @@ Item {
 
     property bool applying: false
 
-    readonly property int defaultThemeMode: MD.Enum.Dark
-    readonly property int defaultPaletteType: MD.Enum.PaletteMonochrome
-    readonly property string defaultAccentColor: "#8E8E93"
+    // Meadow: sage, olive and dusty rose on warm cream (hand-picked, not generated
+    // from the accent - see cmake/patch-qml-material-win.cmake). Light by default.
+    readonly property int defaultThemeMode: MD.Enum.Light
+    readonly property int defaultPaletteType: MD.Enum.PaletteMeadow
+    readonly property string defaultAccentColor: "#435A4D"
+    // Bump to move existing installs onto a new default look once.
+    readonly property int currentLookRevision: 1
 
     Settings {
         id: store
@@ -19,6 +23,7 @@ Item {
         property int themeMode: root.defaultThemeMode
         property int paletteType: root.defaultPaletteType
         property string accentColor: root.defaultAccentColor
+        property int lookRevision: 0
     }
 
     readonly property int themeMode: store.themeMode
@@ -28,6 +33,12 @@ Item {
     function apply() {
         if (store.accentColor === "#D4D4D4")
             store.accentColor = root.defaultAccentColor
+        if (store.lookRevision < root.currentLookRevision) {
+            // One-time move to the Meadow look. Keep the user's light/dark choice.
+            store.paletteType = root.defaultPaletteType
+            store.accentColor = root.defaultAccentColor
+            store.lookRevision = root.currentLookRevision
+        }
 
         MD.Token.color.useSysColorSM = false
         MD.Token.color.useSysAccentColor = false

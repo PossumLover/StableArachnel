@@ -37,6 +37,42 @@ MD.ApplicationWindow {
     }
     onWidthChanged: windowClassTimer.restart()
 
+    // Dev: `--screenshot <file.png> [--page <index>] [--delay <ms>]` opens a page,
+    // waits for covers and animations to settle, saves the window and quits. Used
+    // to review the look headless (QT_QPA_PLATFORM=offscreen) without a display.
+    Timer {
+        id: screenshotTimer
+        property string path: ""
+        property int page: -1
+        property int stage: 0
+        repeat: false
+        onTriggered: {
+            if (stage === 0 && page >= 0) {
+                root.goToPage(page)
+                stage = 1
+                interval = 2500
+                start()
+                return
+            }
+            const ok = Core.saveWindowScreenshot(screenshotTimer.path)
+            console.info("[screenshot] " + (ok ? "saved " : "FAILED ") + screenshotTimer.path)
+            Qt.quit()
+        }
+        Component.onCompleted: {
+            const args = Qt.application.arguments
+            const at = args.indexOf("--screenshot")
+            if (at < 0 || at + 1 >= args.length)
+                return
+            path = args[at + 1]
+            const pageAt = args.indexOf("--page")
+            if (pageAt >= 0 && pageAt + 1 < args.length)
+                page = parseInt(args[pageAt + 1])
+            const delayAt = args.indexOf("--delay")
+            interval = (delayAt >= 0 && delayAt + 1 < args.length) ? parseInt(args[delayAt + 1]) : 6000
+            start()
+        }
+    }
+
     property int pageIndex: 0
     property bool detailsOpen: pageStack.depth > 1
     property string detailsGameId: ""
@@ -543,6 +579,24 @@ MD.ApplicationWindow {
                         layer.effect: MD.RoundClip {
                             corners: mainPane.corners
                             size: Qt.vector2d(mainPaneClip.width, mainPaneClip.height)
+                        }
+
+                        // Painted rolling hills along the bottom of every page, behind
+                        // the content: it shows between cards and at the end of lists.
+                        Image {
+                            id: meadowHills
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.bottom: parent.bottom
+                            height: Math.min(220, parent.height * 0.26)
+                            source: MD.Token.isDarkTheme ? "qrc:/art/hills-dark.png"
+                                                           : "qrc:/art/hills-light.png"
+                            fillMode: Image.PreserveAspectCrop
+                            verticalAlignment: Image.AlignBottom
+                            horizontalAlignment: Image.AlignLeft
+                            sourceSize.width: 2400
+                            opacity: MD.Token.isDarkTheme ? 0.85 : 0.9
+                            smooth: true
                         }
 
                         ColumnLayout {

@@ -316,7 +316,7 @@ bool PluginHost::installFromArach(const QString& archivePath)
                           : QCoreApplication::translate(
                                 "Core",
                                 "Plugin files were copied but the library failed to load. "
-                                "Update Arachnel, or rebuild the plugin for this app version.");
+                                "Update JamesGames, or rebuild the plugin for this app version.");
         if (!g_lastPluginLoadError.isEmpty() && !m_lastError.contains(g_lastPluginLoadError))
             m_lastError += QStringLiteral(" (") + g_lastPluginLoadError + QLatin1Char(')');
         emit pluginsChanged();

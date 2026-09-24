@@ -9,6 +9,17 @@ Item {
     property string title: ""
     property string value: ""
     property string iconName: ""
+    // 0 sage (primary), 1 olive (secondary), 2 dusty rose (tertiary), 3 apricot sun.
+    property int tone: 0
+
+    readonly property color _chipColor: tone === 1 ? MD.Token.color.secondary_container
+                                       : tone === 2 ? MD.Token.color.tertiary_container
+                                       : tone === 3 ? (MD.Token.isDarkTheme ? "#6B4A30" : "#FBDDB9")
+                                       : MD.Token.color.primary_container
+    readonly property color _chipInk: tone === 1 ? MD.Token.color.on_secondary_container
+                                     : tone === 2 ? MD.Token.color.on_tertiary_container
+                                     : tone === 3 ? (MD.Token.isDarkTheme ? "#FCD7B0" : "#6E4318")
+                                     : MD.Token.color.on_primary_container
 
     implicitHeight: 88
     Layout.fillWidth: true
@@ -30,14 +41,14 @@ Item {
                 Layout.preferredHeight: 48
                 Layout.alignment: Qt.AlignVCenter
                 radius: MD.Token.shape.corner.full
-                color: MD.Token.color.primary_container
+                color: root._chipColor
                 elevation: MD.Token.elevation.level0
 
                 MD.Icon {
                     anchors.centerIn: parent
                     name: root.iconName
                     size: 24
-                    color: MD.Token.color.on_primary_container
+                    color: root._chipInk
                 }
             }
 

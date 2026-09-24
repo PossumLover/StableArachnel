@@ -39,7 +39,7 @@ Item {
 
                 MD.Label {
                     Layout.fillWidth: true
-                    text: qsTr("Downloading Arachnel update…")
+                    text: qsTr("Downloading JamesGames update…")
                     typescale: MD.Token.typescale.title_medium
                 }
 

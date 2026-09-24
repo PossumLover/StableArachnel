@@ -24,20 +24,15 @@ MD.Pane {
         anchors.bottomMargin: MD.Token.spacing.medium
         spacing: MD.Token.spacing.extra_small
 
-        MD.ElevationRectangle {
+        // The meadow emblem: a sprout and a rose flower in front of the sun.
+        Image {
             Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: 48
-            Layout.preferredHeight: 48
-            radius: MD.Token.shape.corner.extra_large
-            color: MD.Token.color.primary_container
-            elevation: MD.Token.elevation.level0
-
-            MD.Label {
-                anchors.centerIn: parent
-                text: "J"
-                color: MD.Token.color.on_primary_container
-                typescale: MD.Token.typescale.headline_medium
-            }
+            Layout.preferredWidth: 52
+            Layout.preferredHeight: 52
+            source: "qrc:/art/emblem-small.png"
+            sourceSize: Qt.size(128, 128)
+            smooth: true
+            mipmap: true
 
             MouseArea {
                 anchors.fill: parent

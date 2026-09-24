@@ -183,6 +183,32 @@ qt_add_resources(arachnel_app "arachnel_app_icons"
 )
 
 # MinGW i686 runtime for Steamless.CLI.exe under Wine Mono (Linux only at runtime).
+# Nunito (SIL OFL 1.1, resources/fonts/OFL.txt): the UI typeface. Static weights
+# baked from Google Fonts' variable font, subset to Latin + Cyrillic.
+qt_add_resources(arachnel_app "arachnel_fonts"
+    PREFIX "/fonts"
+    BASE "resources/fonts"
+    FILES
+        resources/fonts/Nunito-Regular.ttf
+        resources/fonts/Nunito-Medium.ttf
+        resources/fonts/Nunito-SemiBold.ttf
+        resources/fonts/Nunito-Bold.ttf
+)
+
+qt_add_resources(arachnel_app "arachnel_art"
+    PREFIX "/art"
+    BASE "resources/art"
+    FILES
+        resources/art/emblem.png
+        resources/art/emblem-small.png
+        resources/art/hills-light.png
+        resources/art/hills-dark.png
+        resources/art/hero-spray-light.png
+        resources/art/hero-spray-dark.png
+        resources/art/vignette-light.png
+        resources/art/vignette-dark.png
+)
+
 qt_add_resources(arachnel_app "arachnel_steamless"
     PREFIX "/steamless"
     BASE "${CMAKE_CURRENT_SOURCE_DIR}/resources/steamless"

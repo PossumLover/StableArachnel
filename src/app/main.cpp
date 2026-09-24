@@ -1,5 +1,7 @@
 #include <QCoreApplication>
 #include <QDir>
+#include <QFont>
+#include <QFontDatabase>
 #include <QIcon>
 #include <QPixmapCache>
 #include <QQmlApplicationEngine>
@@ -156,6 +158,21 @@ int main(int argc, char* argv[])
     }();
     if (!windowIcon.isNull())
         app.setWindowIcon(windowIcon);
+
+    // Nunito everywhere: QmlMaterial draws all text from the application font.
+    {
+        bool loaded = false;
+        for (const char* weight : {"Regular", "Medium", "SemiBold", "Bold"}) {
+            loaded |= QFontDatabase::addApplicationFont(
+                          QStringLiteral(":/fonts/Nunito-%1.ttf").arg(QLatin1String(weight)))
+                      >= 0;
+        }
+        if (loaded) {
+            QFont uiFont = QGuiApplication::font();
+            uiFont.setFamilies({QStringLiteral("Nunito")});
+            QGuiApplication::setFont(uiFont);
+        }
+    }
 
     arachnel::core::registerCoreTypes();
     QPixmapCache::setCacheLimit(24 * 1024);

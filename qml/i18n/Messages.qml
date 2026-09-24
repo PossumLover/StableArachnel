@@ -16,13 +16,13 @@ QtObject {
 
     readonly property string settingsSourcesAddHint: qsTr("Add a catalog and paste the JSON link.")
 
-    readonly property string settingsSourceFormDesc: qsTr("Paste a catalog JSON URL. Arachnel loads the game list from that link.")
+    readonly property string settingsSourceFormDesc: qsTr("Paste a catalog JSON URL. JamesGames loads the game list from that link.")
 
-    readonly property string settingsWeblateHint: qsTr("Missing your language? Help translate Arachnel on <a href=\"%1\">Weblate</a>.")
+    readonly property string settingsWeblateHint: qsTr("Missing your language? Help translate JamesGames on <a href=\"%1\">Weblate</a>.")
 
     readonly property string settingsPluginsInstallHint: qsTr("Use Install plugin below and pick a .arach file.")
 
-    readonly property string settingsPluginsDesc: qsTr("Arachnel has no games until you install a plugin. Each plugin is a source: it fills Catalog and handles download, install, and Play.")
+    readonly property string settingsPluginsDesc: qsTr("JamesGames has no games until you install a plugin. Each plugin is a source: it fills Catalog and handles download, install, and Play.")
 
     readonly property string libraryEmptySubtitle: qsTr("Your library is empty. Install a plugin, pick a game in Catalog, and it will appear here.")
 
@@ -34,7 +34,7 @@ QtObject {
 
     readonly property string gameInstallTorrentHint: qsTr("Download finished. Click Install to set up the game.")
 
-    readonly property string steamidraTrustMarkdown: qsTr("### Where do the files come from?\n\nGame **chunks** are downloaded from the **Valve Steam CDN** - the same CDN Steam uses for depot files.\n\n### What is Online Fix?\n\nMany multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugin can include it so the game runs and goes online without a Store purchase license check.\n\n### What is *not* from Valve?\n\n- Depot **keys** and **manifests** come from the plugin relay (not the Steam Store).\n- This is **not** the same as buying the game on Steam.\n- Arachnel does **not** claim antivirus clearance or Valve endorsement.")
+    readonly property string steamidraTrustMarkdown: qsTr("### Where do the files come from?\n\nGame **chunks** are downloaded from the **Valve Steam CDN** - the same CDN Steam uses for depot files.\n\n### What is Online Fix?\n\nMany multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugin can include it so the game runs and goes online without a Store purchase license check.\n\n### What is *not* from Valve?\n\n- Depot **keys** and **manifests** come from the plugin relay (not the Steam Store).\n- This is **not** the same as buying the game on Steam.\n- JamesGames does **not** claim antivirus clearance or Valve endorsement.")
 
     readonly property string catalogPipelineDesc: qsTr("Browse games from your catalogs and sources.")
 

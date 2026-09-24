@@ -37,8 +37,8 @@ ColumnLayout {
                     update: function(value) { Core.settings.autoCheckUpdates = value }
                 },
                 {
-                    title: qsTr("Check for Arachnel updates"),
-                    body: qsTr("Check for new Arachnel versions automatically."),
+                    title: qsTr("Check for JamesGames updates"),
+                    body: qsTr("Check for new JamesGames versions automatically."),
                     checked: Core.settings.autoCheckAppUpdates,
                     update: function(value) { Core.settings.autoCheckAppUpdates = value }
                 }

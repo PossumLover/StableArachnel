@@ -543,7 +543,7 @@ void CoreController::initializeServices()
                     return;
                 // History only - AppUpdateSheet in QML owns the prompt UX.
                 m_notifications.add(
-                    QCoreApplication::translate("Core", "Arachnel %1 is available").arg(latestVersion),
+                    QCoreApplication::translate("Core", "JamesGames %1 is available").arg(latestVersion),
                     QStringLiteral("info"));
             });
     connect(m_appUpdater, &AppUpdater::installerLaunchRequested, this, [this]() {

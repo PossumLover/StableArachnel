@@ -49,7 +49,7 @@ MD.Dialog {
 
         MD.Label {
             Layout.fillWidth: true
-            text: qsTr("Arachnel steps and the game's own output.")
+            text: qsTr("JamesGames steps and the game's own output.")
             color: MD.Token.color.on_surface_variant
             typescale: MD.Token.typescale.body_medium
             wrapMode: Text.WordWrap

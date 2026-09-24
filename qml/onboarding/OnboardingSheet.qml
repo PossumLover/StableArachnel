@@ -126,11 +126,10 @@ Item {
                 Layout.topMargin: MD.Token.spacing.large
                 spacing: MD.Token.spacing.small
 
-                SpiderWebMark {
+                MeadowMark {
+                    variant: "emblem"
                     Layout.preferredWidth: 36
                     Layout.preferredHeight: 36
-                    strokeColor: MD.Token.color.primary
-                    strokeWidth: 1.5
                 }
 
                 ColumnLayout {
@@ -139,7 +138,7 @@ Item {
 
                     MD.Label {
                         Layout.fillWidth: true
-                        text: qsTr("Welcome to Arachnel")
+                        text: qsTr("Welcome to JamesGames")
                         typescale: MD.Token.typescale.title_large
                     }
 

@@ -51,15 +51,14 @@ Item {
                     }
                 }
 
-                SpiderWebMark {
+                MeadowMark {
+                    variant: "spray"
                     width: 340
                     height: 340
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
                     anchors.rightMargin: -170
-                    strokeColor: MD.Token.color.primary
-                    strokeWidth: 3
-                    opacity: 0.20
+                    opacity: 0.55
                 }
 
                 ColumnLayout {

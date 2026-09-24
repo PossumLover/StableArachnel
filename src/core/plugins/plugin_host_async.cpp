@@ -269,7 +269,7 @@ QVector<QPair<QString, QString>> PluginHost::incompatibleDiskPlugins() const
             || apiVersion > ARACHNEL_PLUGIN_API_VERSION) {
             reason = QCoreApplication::translate(
                          "Core",
-                         "%1 needs a different Arachnel plugin API. Update the app or reinstall "
+                         "%1 needs a different JamesGames plugin API. Update the app or reinstall "
                          "a matching plugin.")
                          .arg(name);
         } else if (!appVersionInRange(appVersion, minArachnel, maxArachnel)) {
@@ -279,17 +279,17 @@ QVector<QPair<QString, QString>> PluginHost::incompatibleDiskPlugins() const
                 && compareAppVersions(appVersion, maxArachnel.trimmed()) > 0) {
                 reason = QCoreApplication::translate(
                              "Core",
-                             "%1 only supports Arachnel up to %2. Install a newer plugin build.")
+                             "%1 only supports JamesGames up to %2. Install a newer plugin build.")
                              .arg(name, maxArachnel.trimmed());
             } else {
                 reason = QCoreApplication::translate(
-                             "Core", "%1 needs Arachnel %2 or newer. Update the app.")
+                             "Core", "%1 needs JamesGames %2 or newer. Update the app.")
                              .arg(name, needMin);
             }
         } else {
             reason = QCoreApplication::translate(
                          "Core",
-                         "%1 is installed but failed to load. Update Arachnel or reinstall the "
+                         "%1 is installed but failed to load. Update JamesGames or reinstall the "
                          "plugin.")
                          .arg(name);
         }

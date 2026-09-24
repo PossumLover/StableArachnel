@@ -66,15 +66,13 @@ Item {
                 spacing: MD.Token.spacing.medium
                 width: Math.min(parent.width - MD.Token.spacing.large * 2, 420)
 
-                SpiderWebMark {
+                MeadowMark {
                     Layout.alignment: Qt.AlignHCenter
-                    Layout.preferredWidth: 160
-                    Layout.preferredHeight: 160
-                    width: 160
-                    height: 160
-                    strokeColor: MD.Token.color.primary
-                    strokeWidth: 2.5
-                    opacity: 0.35
+                    Layout.preferredWidth: 220
+                    Layout.preferredHeight: 187
+                    width: 220
+                    height: 187
+                    opacity: 1.0
                 }
 
                 MD.Label {
@@ -354,7 +352,7 @@ Item {
                     MD.Label {
                         Layout.fillWidth: true
                         visible: page.canManualInstall
-                        text: qsTr("Arachnel can't install this one for you. Run the installer from the download folder, then press the folder button below and pick the folder you installed it into.")
+                        text: qsTr("JamesGames can't install this one for you. Run the installer from the download folder, then press the folder button below and pick the folder you installed it into.")
                         wrapMode: Text.WordWrap
                         color: MD.Token.color.on_surface_variant
                         typescale: MD.Token.typescale.body_medium

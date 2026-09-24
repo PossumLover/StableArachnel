@@ -14,7 +14,7 @@ MD.Dialog {
     title: {
         const s = (Core.pendingCrashSummary() || "").toLowerCase()
         if (s.indexOf("hang") >= 0 || s.indexOf("not responding") >= 0)
-            return qsTr("Arachnel stopped responding")
+            return qsTr("JamesGames stopped responding")
         return qsTr("Application crashed")
     }
     standardButtons: Dialog.NoButton
