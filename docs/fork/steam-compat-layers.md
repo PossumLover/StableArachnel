@@ -128,3 +128,37 @@ Arachnel stores enable/disable as file renames, not settings:
 - `GameOverlayRenderer*.dll` — a Windows-side **alias** for the repack's own
   `SteamOverlay*.dll`. Unrelated to Valve's Linux `gameoverlayrenderer.so`; Online
   Fix installs strip it, everything else plants it. Do not cross the two.
+
+## Mixed depots: the Linux build installed over the Windows one
+
+steamidra 0.6.18's C++ install path picked depots by depotkit's manifest platform
+*hint* and kept any depot whose hint was 0 ("unknown") — which a plain Linux depot
+is. So a game with a native Linux build gets its Linux depot installed on top of
+the Windows one, on Linux and Windows hosts alike:
+
+```
+depotkit matched 1621691,1621692,4160230 wantOs windows cands 3
+```
+
+Core Keeper's 1621692 is `oslist: linux` (check any app with
+`curl -s https://api.steamcmd.net/v1/info/<appid>`). Every shared file ended up as
+the Linux copy, including the Mono class libraries in `<Game>_Data/Managed`. Under
+Windows Mono those take the Unix code path:
+
+```
+DllNotFoundException: System.Native
+The type initializer for 'System.Random' threw an exception.
+```
+
+Symptom: an endless loading screen (worlds need `System.Random`), later a native
+crash in the Sentry log handler. Tells on disk: `UnityPlayer.so`, `lib*.so` in
+`Plugins/`, and an ELF executable next to the `.exe`.
+
+Fixed in the plugin (steamidra branch `rose-oslist-fix`, commit 080ecd8): depots
+whose Steam `oslist` names another OS are dropped before the hint is consulted.
+**An update cannot repair an affected install** — it overwrites and never deletes
+the Linux files. Uninstall and reinstall.
+
+The plugin fix only protects hosts running the patched build. Official store
+builds still have the bug, and plugin auto-update can replace the patched build
+with a newer official one.
