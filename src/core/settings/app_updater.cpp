@@ -385,7 +385,7 @@ void AppUpdater::startDownload(const QUrl& url)
     const QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     QDir().mkpath(tempDir);
     const QString fileName =
-        QStringLiteral("Arachnel-%1-Setup.exe").arg(m_latestVersion.isEmpty()
+        QStringLiteral("JamesGames-%1-Setup.exe").arg(m_latestVersion.isEmpty()
                                                         ? QStringLiteral("update")
                                                         : m_latestVersion);
     const QString targetPath = QDir(tempDir).absoluteFilePath(fileName);
@@ -503,6 +503,16 @@ QString readUninstallInstallLocation(const QString& uninstallKey)
     return {};
 }
 
+// The binary is JamesGames.exe since 73137a8; installs from before the rename hold
+// arachnel_app.exe until the next installer's [InstallDelete] removes it. Accept
+// either, or an install-dir probe misses and the update is applied to the wrong
+// folder.
+static bool dirHasAppExecutable(const QString& dir)
+{
+    return QFileInfo::exists(dir + QLatin1String("/JamesGames.exe"))
+        || QFileInfo::exists(dir + QLatin1String("/arachnel_app.exe"));
+}
+
 QString resolveUpdateInstallDir(const QString& runningAppDir)
 {
     const QString running = QDir::toNativeSeparators(QDir::cleanPath(runningAppDir));
@@ -515,7 +525,7 @@ QString resolveUpdateInstallDir(const QString& runningAppDir)
         || runningLower.contains(QLatin1String("\\debug"))
         || runningLower.contains(QLatin1String("/debug"));
 
-    if (!unpackaged && QFileInfo::exists(running + QLatin1String("/arachnel_app.exe")))
+    if (!unpackaged && dirHasAppExecutable(running))
         return running;
 
     // Inno AppId uninstall key (per-user lowest privileges).
@@ -523,14 +533,14 @@ QString resolveUpdateInstallDir(const QString& runningAppDir)
         "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\"
         "{A8E3C1B2-4D5F-6A70-8B9C-0D1E2F3A4B5C}_is1"));
     if (!innoDir.isEmpty()
-        && QFileInfo::exists(innoDir + QLatin1String("/arachnel_app.exe")))
+        && dirHasAppExecutable(innoDir))
         return innoDir;
 
     // Legacy Qt SFX uninstall key.
     const QString legacyDir = readUninstallInstallLocation(
         QStringLiteral("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Arachnel"));
     if (!legacyDir.isEmpty()
-        && QFileInfo::exists(legacyDir + QLatin1String("/arachnel_app.exe")))
+        && dirHasAppExecutable(legacyDir))
         return legacyDir;
 
     // Default per-user install location used by Inno ({localappdata}\Programs\Arachnel).
@@ -540,7 +550,7 @@ QString resolveUpdateInstallDir(const QString& runningAppDir)
             ? (QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
                + QStringLiteral("/Programs/Arachnel"))
             : (localAppData + QStringLiteral("/Programs/Arachnel"))));
-    if (QFileInfo::exists(perUser + QLatin1String("/arachnel_app.exe")))
+    if (dirHasAppExecutable(perUser))
         return perUser;
 
     if (!innoDir.isEmpty())

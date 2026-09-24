@@ -370,20 +370,20 @@ Refusing to ship a 'dev' installer.
     $env:ARACHNEL_VERSION = $version
     Write-Host "Installer version: $version" -ForegroundColor Cyan
 
-    if (-not (Test-Path -LiteralPath (Join-Path $DIST_DIR "arachnel_app.exe"))) {
+    if (-not (Test-Path -LiteralPath (Join-Path $DIST_DIR "JamesGames.exe"))) {
         Write-Host "dist-win missing — building release package first ..."
         New-ReleasePackage
     }
 
     $packScript = Join-Path $ROOT "setup\inno\pack-inno.ps1"
-    & $packScript -Version $version -DistDir $DIST_DIR -OutputPath (Join-Path $ROOT "Arachnel-Setup.exe")
+    & $packScript -Version $version -DistDir $DIST_DIR -OutputPath (Join-Path $ROOT "JamesGames-Setup.exe")
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
 function Get-AppPath {
     $candidates = @(
-        (Join-Path $BUILD_DIR "arachnel_app.exe"),
-        (Join-Path $BUILD_DIR "$BUILD_TYPE\arachnel_app.exe")
+        (Join-Path $BUILD_DIR "JamesGames.exe"),
+        (Join-Path $BUILD_DIR "$BUILD_TYPE\JamesGames.exe")
     )
     foreach ($path in $candidates) {
         if (Test-Path -LiteralPath $path) { return (Resolve-Path -LiteralPath $path).Path }
@@ -593,7 +593,7 @@ function New-ReleasePackage {
 
     $appPath = Get-AppPath
     if (-not (Test-Path -LiteralPath $appPath)) {
-        throw "arachnel_app.exe not found after build."
+        throw "JamesGames.exe not found after build."
     }
 
     if (Test-Path -LiteralPath $DIST_DIR) {
@@ -601,7 +601,7 @@ function New-ReleasePackage {
     }
     New-Item -ItemType Directory -Path $DIST_DIR | Out-Null
 
-    $distExe = Join-Path $DIST_DIR "arachnel_app.exe"
+    $distExe = Join-Path $DIST_DIR "JamesGames.exe"
     Copy-Item -LiteralPath $appPath -Destination $distExe -Force
 
     @"
@@ -652,7 +652,7 @@ Imports=qml
         Copy-Item -LiteralPath $qmlMaterialDll -Destination (Join-Path $DIST_DIR "qml_material.dll") -Force
     }
 
-    $zipName = "Arachnel-win64-$BUILD_TYPE.zip"
+    $zipName = "JamesGames-win64-$BUILD_TYPE.zip"
     $zipPath = Join-Path $ROOT $zipName
     if (Test-Path -LiteralPath $zipPath) {
         Remove-Item -LiteralPath $zipPath -Force
@@ -1006,8 +1006,8 @@ Arachnel dev launcher
   .\run.ps1              configure (if needed) + build + run
   .\run.ps1 --rebuild    clean build-win, then build + run
   .\run.ps1 --run        run without build (exe must exist)
-  .\run.ps1 --package    build Release + create dist-win ZIP (Arachnel-win64-Release.zip)
-  .\run.ps1 --installer  build Arachnel-Setup.exe (Inno + dist-win, Botva2 UI)
+  .\run.ps1 --package    build Release + create dist-win ZIP (JamesGames-win64-Release.zip)
+  .\run.ps1 --installer  build JamesGames-Setup.exe (Inno + dist-win, Botva2 UI)
   .\run.ps1 --release    use Release build type (still runs app unless combined with --package)
   BUILD_TYPE=RelWithDebInfo .\run.ps1 --package   debug symbols in the package (larger ZIP)
 
@@ -1034,7 +1034,7 @@ if (-not $runOnly) {
 
 $APP = Get-AppPath
 if (-not (Test-Path -LiteralPath $APP)) {
-    throw "arachnel_app.exe not found. Run without --run first."
+    throw "JamesGames.exe not found. Run without --run first."
 }
 
 $plan = Get-BuildArgs

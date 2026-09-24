@@ -1,10 +1,17 @@
 ﻿; Arachnel shipping installer. UI = Arachnel-UI.iss (known-good). Install via ReadyToInstall + Next.OnClick.
 ; Build: .\setup\inno\pack-inno.ps1
 
-#define MyAppName "Arachnel"
-#define MyAppExeName "arachnel_app.exe"
-#define MyAppPublisher "Arachnel"
-#define MyAppURL "https://github.com/Arachnel"
+; 73137a8 ships the binary as JamesGames (CMake OUTPUT_NAME). What must NOT follow
+; the rename: the AppId below (in-place upgrades), the install directory (see
+; GetDefaultDir - the updater and the uninstall key both locate installs by it), the
+; arachnel:// scheme in [Registry], and the legacy Uninstall\Arachnel keys in [Code].
+#define MyAppName "JamesGames"
+#define MyAppExeName "JamesGames.exe"
+; Pre-rename binary and shortcut name, removed on upgrade - see [InstallDelete].
+#define LegacyExeName "arachnel_app.exe"
+#define LegacyAppName "Arachnel"
+#define MyAppPublisher "JamesGames"
+#define MyAppURL "https://github.com/PossumLover/StableArachnel"
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0"
 #endif
@@ -19,6 +26,9 @@ AppPublisherURL={#MyAppURL}
 ; Prefer previous Inno dir, else old Qt SFX InstallLocation, else per-user Programs.
 DefaultDirName={code:GetDefaultDir}
 DefaultGroupName={#MyAppName}
+; Otherwise an upgrade reuses the recorded "Arachnel" Start Menu folder and the
+; JamesGames shortcut lands inside it.
+UsePreviousGroup=no
 UsePreviousAppDir=yes
 DisableDirPage=yes
 DisableProgramGroupPage=yes
@@ -26,7 +36,7 @@ DisableReadyPage=yes
 DisableWelcomePage=yes
 AllowNoIcons=yes
 OutputDir=output
-OutputBaseFilename=Arachnel-{#MyAppVersion}-Setup
+OutputBaseFilename={#MyAppName}-{#MyAppVersion}-Setup
 SetupIconFile=..\..\resources\icons\arachnel.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2
@@ -69,6 +79,14 @@ Source: "..\..\dist-win\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdir
 Type: files; Name: "{app}\uninstall.exe"
 Type: files; Name: "{app}\arachnel_setup.exe"
 Type: files; Name: "{app}\arachnel_setup_launcher.exe"
+; Pre-rename install. Left behind, the old binary keeps running two-release-old code
+; from any shortcut that still points at it. InitializeWizard carries an existing
+; desktop shortcut forward before this runs, so removing it does not lose the icon.
+Type: files; Name: "{app}\{#LegacyExeName}"
+Type: files; Name: "{userdesktop}\{#LegacyAppName}.lnk"
+Type: files; Name: "{userprograms}\{#LegacyAppName}\{#LegacyAppName}.lnk"
+Type: files; Name: "{userprograms}\{#LegacyAppName}\Uninstall {#LegacyAppName}.lnk"
+Type: dirifempty; Name: "{userprograms}\{#LegacyAppName}"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Check: WantStartMenuIcon
@@ -189,7 +207,10 @@ begin
   if Legacy <> '' then
     Result := Legacy
   else
-    Result := ExpandConstant('{localappdata}\Programs\{#MyAppName}');
+    { Deliberately the pre-rename folder, not {#MyAppName}: app_updater.cpp's
+      fallback looks for installs under Programs\Arachnel, and every existing
+      install already lives there. }
+    Result := ExpandConstant('{localappdata}\Programs\{#LegacyAppName}');
 end;
 
 procedure RemoveLegacySfxUninstallKey;
@@ -288,7 +309,7 @@ end;
 procedure OnLangEn(hBtn: HWND);
 begin
   LangIsRu := False;
-  WizardForm.Caption := 'Arachnel Setup';
+  WizardForm.Caption := '{#MyAppName} Setup';
   SyncLangPills;
   RefreshPhase;
 end;
@@ -296,7 +317,7 @@ end;
 procedure OnLangRu(hBtn: HWND);
 begin
   LangIsRu := True;
-  WizardForm.Caption := 'Установка Arachnel';
+  WizardForm.Caption := 'Установка {#MyAppName}';
   SyncLangPills;
   RefreshPhase;
 end;
@@ -349,9 +370,9 @@ begin
     StopArmTimer;
     Log('ArmPump gave up page=' + IntToStr(WizardForm.CurPageID));
     if LangIsRu then
-      MsgBox('Не удалось начать установку. Закройте другие копии Arachnel и попробуйте снова.', mbError, MB_OK)
+      MsgBox('Не удалось начать установку. Закройте другие копии {#MyAppName} и попробуйте снова.', mbError, MB_OK)
     else
-      MsgBox('Could not start installation. Close other Arachnel copies and try again.', mbError, MB_OK);
+      MsgBox('Could not start installation. Close other {#MyAppName} copies and try again.', mbError, MB_OK);
     Exit;
   end;
   ParkNext;
@@ -521,13 +542,13 @@ begin
     1:
       begin
         if LangIsRu then begin
-          TitleLabel.Caption := 'Установка Arachnel';
-          BodyLabel.Caption := 'Лаунчер игр с плагинными источниками. Мастер распакует Arachnel на ваш компьютер.';
+          TitleLabel.Caption := 'Установка {#MyAppName}';
+          BodyLabel.Caption := 'Лаунчер игр с плагинными источниками. Мастер распакует {#MyAppName} на ваш компьютер.';
           BtnSetText(hNext, 'Далее');
           BtnSetText(hBack, 'Назад');
         end else begin
-          TitleLabel.Caption := 'Install Arachnel';
-          BodyLabel.Caption := 'Game launcher with plugin-based sources. This wizard unpacks Arachnel to your computer.';
+          TitleLabel.Caption := 'Install {#MyAppName}';
+          BodyLabel.Caption := 'Game launcher with plugin-based sources. This wizard unpacks {#MyAppName} to your computer.';
           BtnSetText(hNext, 'Continue');
           BtnSetText(hBack, 'Back');
         end;
@@ -574,12 +595,12 @@ begin
         WizardForm.ProgressGauge.Visible := False;
         WizardForm.StatusLabel.Visible := False;
         if LangIsRu then begin
-          TitleLabel.Caption := 'Arachnel готов';
+          TitleLabel.Caption := '{#MyAppName} готов';
           BodyLabel.Caption := WizardDirValue;
           BtnSetText(hLaunch, 'Запустить');
           BtnSetText(hNext, 'Готово');
         end else begin
-          TitleLabel.Caption := 'Arachnel is ready';
+          TitleLabel.Caption := '{#MyAppName} is ready';
           BodyLabel.Caption := WizardDirValue;
           BtnSetText(hLaunch, 'Launch');
           BtnSetText(hNext, 'Finish');
@@ -711,6 +732,15 @@ begin
   SkinReady := False;
   LangPage := nil;
 
+  { Upgrading a pre-rename install: the InstallDelete section removes the old
+    desktop shortcut along with arachnel_app.exe. The in-app updater runs /SILENT,
+    which never shows the desktop checkbox, so without this a user who had the
+    icon would silently lose it. Checked here because InitializeWizard runs before
+    InstallDelete does. (No line in here may start with a bracket: ISCC scans for
+    section tags before it parses Code as Pascal, comments included.) }
+  if FileExists(ExpandConstant('{userdesktop}\{#LegacyAppName}.lnk')) then
+    WantDesk := True;
+
   { In-app update (/SILENT): skip Botva skin. Stock Inno progress window + [Run] relaunch. }
   if WizardSilent then
   begin
@@ -726,7 +756,7 @@ begin
   WizardForm.Color := CSurface;
   WizardForm.Font.Name := 'Segoe UI';
   WizardForm.Font.Color := COnSurface;
-  WizardForm.Caption := 'Установка Arachnel';
+  WizardForm.Caption := 'Установка {#MyAppName}';
 
   BackImage := TBitmapImage.Create(WizardForm);
   BackImage.Parent := WizardForm;
@@ -778,7 +808,8 @@ begin
   DeskCheck.Parent := WizardForm;
   DeskCheck.SetBounds(32, 204, 22, 22);
   DeskCheck.Caption := '';
-  DeskCheck.Checked := False;
+  { Pre-ticked when upgrading an install that had a desktop icon (set above). }
+  DeskCheck.Checked := WantDesk;
   DeskCheck.Visible := False;
 
   DeskLabel := TNewStaticText.Create(WizardForm);

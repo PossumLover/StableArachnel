@@ -136,10 +136,10 @@ jobs:
         shell: pwsh
         run: |
           $v = "${{ inputs.version }}"
-          if (-not (Test-Path -LiteralPath Arachnel-Setup.exe)) {
-            throw "Arachnel-Setup.exe missing after --installer"
+          if (-not (Test-Path -LiteralPath JamesGames-Setup.exe)) {
+            throw "JamesGames-Setup.exe missing after --installer"
           }
-          Move-Item -LiteralPath Arachnel-Setup.exe -Destination "Arachnel-$v-Setup.exe" -Force
+          Move-Item -LiteralPath JamesGames-Setup.exe -Destination "JamesGames-$v-Setup.exe" -Force
           # Guard against accidental "dev" stamped into the binary via file name only;
           # the app version comes from ARACHNEL_VERSION during cmake package.
 
@@ -147,7 +147,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: Arachnel-${{ inputs.version }}-Setup.exe
+          path: JamesGames-${{ inputs.version }}-Setup.exe
           if-no-files-found: error
 
   build-linux:
@@ -220,7 +220,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-appimage
-          path: dist-linux/Arachnel-${{ inputs.version }}-x86_64.AppImage
+          path: dist-linux/JamesGames-${{ inputs.version }}-x86_64.AppImage
           if-no-files-found: error
 
   release:
@@ -241,13 +241,13 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release
-          cp "artifacts/windows-installer/Arachnel-${{ inputs.version }}-Setup.exe" release/
-          cp "artifacts/linux-appimage/Arachnel-${{ inputs.version }}-x86_64.AppImage" release/
-          cp "release/Arachnel-${{ inputs.version }}-Setup.exe" release/Arachnel-Setup.exe
-          cp "release/Arachnel-${{ inputs.version }}-x86_64.AppImage" release/Arachnel-x86_64.AppImage
+          cp "artifacts/windows-installer/JamesGames-${{ inputs.version }}-Setup.exe" release/
+          cp "artifacts/linux-appimage/JamesGames-${{ inputs.version }}-x86_64.AppImage" release/
+          cp "release/JamesGames-${{ inputs.version }}-Setup.exe" release/JamesGames-Setup.exe
+          cp "release/JamesGames-${{ inputs.version }}-x86_64.AppImage" release/JamesGames-x86_64.AppImage
           cd release
-          sha256sum Arachnel-${{ inputs.version }}-Setup.exe \
-            Arachnel-${{ inputs.version }}-x86_64.AppImage > checksums.sha256
+          sha256sum JamesGames-${{ inputs.version }}-Setup.exe \
+            JamesGames-${{ inputs.version }}-x86_64.AppImage > checksums.sha256
 
       - name: Generate changelog
         run: bash scripts/ci/generate-changelog.sh "${{ inputs.version }}" RELEASE_NOTES.md
@@ -256,12 +256,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version }}
-          name: Arachnel v${{ inputs.version }}
+          name: JamesGames v${{ inputs.version }}
           body_path: RELEASE_NOTES.md
           prerelease: ${{ inputs.prerelease }}
           files: |
-            release/Arachnel-${{ inputs.version }}-Setup.exe
-            release/Arachnel-${{ inputs.version }}-x86_64.AppImage
-            release/Arachnel-Setup.exe
-            release/Arachnel-x86_64.AppImage
+            release/JamesGames-${{ inputs.version }}-Setup.exe
+            release/JamesGames-${{ inputs.version }}-x86_64.AppImage
+            release/JamesGames-Setup.exe
+            release/JamesGames-x86_64.AppImage
             release/checksums.sha256
