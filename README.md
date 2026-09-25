@@ -30,9 +30,9 @@
 <img src="images/demo.gif" width="800" alt="Arachnel demo — catalog, downloads, library">
 
 
-Game launcher for Windows and Linux.
+This is my fork of Arachnel, all credits go to the original author. My fork is focused on personal use, and improves stability and game compatibility (tested on Linux and Windows). I have moderate coding experience, but this was my first attempt at steam emulation, so it is very heavily vibe coded, so it may be wise to check things over.
 
-The whole point is plug and play. Pick a game, download it, hit Play. On Windows it just runs. On Linux it grabs what it needs (Proton and that kind of stuff) so you don't have to mess with the OS.
+Also, in-app I renamed it to Sprout, as Arachnel is a rather ominous name.
 
 Builds: [Releases](https://github.com/BadKiko/Arachnel/releases)
 
