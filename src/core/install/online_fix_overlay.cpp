@@ -1116,8 +1116,16 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
     // which Arachnel then misreads as "Online Fix quit right after launch" and disables
     // the whole layer. Writing the missing RealAppId in gives the same arrangement that
     // works on Windows, and keeps Steam showing Spacewar.
-    if (!realAppId.trimmed().isEmpty())
-        ensureRealAppIdInIni(overlayDir, realAppId.trimmed());
+    // Every copy of the ini needs it, not just overlayDir: in a nested repack the layer
+    // that loads reads the copy healOnlineFixLayoutForExecutable() put beside the
+    // executable, which is never overwritten afterwards.
+    if (const QString id = realAppId.trimmed(); !id.isEmpty()) {
+        ensureRealAppIdInIni(overlayDir, id);
+        for (const QString& dir : findOverlayDirs(installPath))
+            ensureRealAppIdInIni(dir, id);
+        if (!info->workingDirectory.isEmpty())
+            ensureRealAppIdInIni(info->workingDirectory, id);
+    }
     ensureSteamAppIdFile(overlayDir);
     if (!info->workingDirectory.isEmpty()
         && QFileInfo(info->workingDirectory).absoluteFilePath()
