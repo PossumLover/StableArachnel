@@ -256,6 +256,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version }}
+          # Tag the commit that was built. Left unset, a new tag lands on the default
+          # branch's tip, which is not the build when dispatched from another branch.
+          target_commitish: ${{ github.sha }}
           name: Sprout v${{ inputs.version }}
           body_path: RELEASE_NOTES.md
           prerelease: ${{ inputs.prerelease }}
