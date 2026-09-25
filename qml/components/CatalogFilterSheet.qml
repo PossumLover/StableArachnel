@@ -368,6 +368,37 @@ MD.BottomSheet {
                                 onToggled: root.draftHasAddons = checked
                             }
                         }
+
+                        // A saved preference, not a draft filter: applies at once and
+                        // "Clear all" leaves it alone.
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: MD.Token.spacing.small
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+
+                                MD.Label {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Hide adult games")
+                                    typescale: MD.Token.typescale.body_large
+                                }
+
+                                MD.Label {
+                                    Layout.fillWidth: true
+                                    text: qsTr("Games Steam marks as sexual content. Mature games like Baldur's Gate 3 stay.")
+                                    color: MD.Token.color.on_surface_variant
+                                    typescale: MD.Token.typescale.body_small
+                                    wrapMode: Text.WordWrap
+                                }
+                            }
+
+                            MD.Switch {
+                                checked: Core.settings.hideAdultGames
+                                onToggled: Core.settings.hideAdultGames = checked
+                            }
+                        }
                     }
                 }
 

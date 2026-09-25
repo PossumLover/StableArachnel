@@ -210,6 +210,15 @@ void SettingsStore::setAutoCheckAppUpdates(bool enabled)
     save();
 }
 
+void SettingsStore::setHideAdultGames(bool enabled)
+{
+    if (m_hideAdultGames == enabled)
+        return;
+    m_hideAdultGames = enabled;
+    emit hideAdultGamesChanged();
+    save();
+}
+
 void SettingsStore::setIncludeAppPreReleases(bool enabled)
 {
     if (m_includeAppPreReleases == enabled)

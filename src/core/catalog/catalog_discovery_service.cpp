@@ -1,5 +1,6 @@
 #include "catalog_discovery_service.h"
 
+#include "content_rating_store.h"
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -111,6 +112,14 @@ void CatalogDiscoveryService::clearShelves()
     m_onlineFix->setVisibleIndices({});
 }
 
+void CatalogDiscoveryService::setHideAdult(bool hide)
+{
+    if (m_hideAdult == hide)
+        return;
+    m_hideAdult = hide;
+    reapplyFeed();
+}
+
 QVector<int> CatalogDiscoveryService::indicesForEntryIds(const QStringList& entryIds) const
 {
     QVector<int> indices;
@@ -149,6 +158,8 @@ QVector<int> CatalogDiscoveryService::indicesForEntryIds(const QStringList& entr
     for (const QString& id : entryIds) {
         const int index = resolveIndex(id);
         if (index < 0 || seen.contains(index))
+            continue;
+        if (m_hideAdult && m_ratings && m_ratings->isAdult(m_cache->at(index).steamAppId))
             continue;
         seen.insert(index);
         indices.append(index);

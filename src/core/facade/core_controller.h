@@ -35,6 +35,7 @@ struct GameLaunchTarget;
 
 class CatalogFilterService;
 class CatalogDiscoveryService;
+class ContentRatingStore;
 class CatalogController;
 class CatalogCoverCoordinator;
 class CatalogFeedLoader;

@@ -1,4 +1,5 @@
 #include "core_controller_impl.h"
+#include "content_rating_store.h"
 
 #include "install_heuristics.h"
 
@@ -374,6 +375,10 @@ void CoreController::onCatalogReady()
     const int updates = recalculateLibraryUpdates(false);
     if (m_catalogDiscovery)
         m_catalogDiscovery->onCatalogCacheRebuilt();
+    if (m_contentRatings) {
+        QReadLocker locker(&m_catalogCacheLock);
+        m_contentRatings->requestMissing(m_catalogCache);
+    }
 
     // Recalc on every catalog ready (source switch), but notify / auto-install only once per session.
     if (m_startupLibraryUpdatesHandled)

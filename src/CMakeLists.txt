@@ -36,6 +36,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/catalog/catalog_controller.cpp
     src/core/catalog/catalog_cover_coordinator.cpp
     src/core/catalog/catalog_filter_service.cpp
+    src/core/catalog/content_rating_store.cpp
     src/core/catalog/catalog_genre_normalize.cpp
     src/core/catalog/catalog_search_utils.cpp
     src/core/catalog/catalog_shelf_model.cpp

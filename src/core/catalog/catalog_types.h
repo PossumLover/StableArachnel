@@ -111,6 +111,8 @@ constexpr quint8 kPlayModeTogether = kPlayModeCoop | kPlayModeMulti;
 
 constexpr quint8 kFilterFlagGame = 0x01;
 constexpr quint8 kFilterFlagHasAddons = 0x02;
+/** Steam marks it adult-only sexual content (see ContentRatingStore). */
+constexpr quint8 kFilterFlagAdult = 0x04;
 
 /** Tight row for the 100k filter worker (filled at merge, not from CatalogEntry). */
 struct CatalogFilterRow {

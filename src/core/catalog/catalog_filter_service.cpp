@@ -1,5 +1,7 @@
 #include "catalog_filter_service.h"
 
+#include "content_rating_store.h"
+
 #include "catalog_genre_normalize.h"
 #include "crash_log.h"
 #include "install_kind.h"
@@ -76,6 +78,9 @@ bool CatalogFilterService::rowMatches(const CatalogFilterRow& row, const FilterS
     if ((row.flags & kFilterFlagGame) == 0)
         return false;
 
+    if (snap.hideAdult && (row.flags & kFilterFlagAdult) != 0)
+        return false;
+
     if (snap.checkSource && (snap.sourceMask & (quint32(1) << row.sourceSlot)) == 0)
         return false;
 
@@ -136,6 +141,22 @@ bool CatalogFilterService::rowMatches(const CatalogFilterRow& row, const FilterS
     return true;
 }
 
+CatalogFilterRow CatalogFilterService::rowForEntry(const CatalogEntry& entry, quint8 sourceSlot) const
+{
+    CatalogFilterRow row = catalogFilterRowFromEntry(entry, sourceSlot);
+    if (m_ratings && m_ratings->isAdult(entry.steamAppId))
+        row.flags |= kFilterFlagAdult;
+    return row;
+}
+
+void CatalogFilterService::setHideAdult(bool hide)
+{
+    if (m_hideAdult == hide)
+        return;
+    m_hideAdult = hide;
+    scheduleRefilter();
+}
+
 void CatalogFilterService::rebuildFilterTable()
 {
     auto fill = [this](QVector<CatalogEntry>* cachePtr) {
@@ -167,7 +188,7 @@ void CatalogFilterService::rebuildFilterTable()
             } else {
                 slot = 31;
             }
-            m_rows[i] = catalogFilterRowFromEntry(entry, slot);
+            m_rows[i] = rowForEntry(entry, slot);
             m_searchEntries[i] = CatalogSearchEntry::fromEntry(entry);
             m_titleLowers[i] = entry.titleLower;
             m_presentGenreBits |= entry.genreBits;
@@ -203,7 +224,7 @@ void CatalogFilterService::syncFilterRow(int cacheIndex)
         }
         const CatalogEntry& entry = m_cache->at(cacheIndex);
         const quint8 slot = internSourceSlot(entry.sourceId);
-        row = catalogFilterRowFromEntry(entry, slot);
+        row = rowForEntry(entry, slot);
         searchEntry = CatalogSearchEntry::fromEntry(entry);
         titleLower = entry.titleLower;
         bits = entry.genreBits;
@@ -220,7 +241,7 @@ void CatalogFilterService::syncFilterRow(int cacheIndex)
         }
         const CatalogEntry& entry = m_cache->at(cacheIndex);
         const quint8 slot = internSourceSlot(entry.sourceId);
-        row = catalogFilterRowFromEntry(entry, slot);
+        row = rowForEntry(entry, slot);
         searchEntry = CatalogSearchEntry::fromEntry(entry);
         m_rows[cacheIndex] = row;
         m_searchEntries[cacheIndex] = std::move(searchEntry);
@@ -310,9 +331,10 @@ void CatalogFilterService::applyFilter(const QString& query)
     snap.playModeFilter = m_playModeFilter;
     snap.sourceMask = sourceMask;
     snap.checkSource = checkSource;
+    snap.hideAdult = m_hideAdult;
     snap.sortMode = m_model->sortMode();
     snap.anySideFilter = m_typeFilter >= 0 || m_sizeFilter > 0 || m_recencyFilter > 0
-        || m_hasAddonsFilter || snap.genreBit != 0 || m_playModeFilter > 0 || checkSource;
+        || m_hasAddonsFilter || snap.genreBit != 0 || m_playModeFilter > 0 || checkSource || snap.hideAdult;
 
     QVector<CatalogEntry>* cachePtr = m_cache;
     QReadWriteLock* lock = m_cacheLock;

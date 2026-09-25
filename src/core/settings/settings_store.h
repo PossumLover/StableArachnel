@@ -29,6 +29,9 @@ class SettingsStore : public QObject
                    autoInstallUpdatesChanged)
     Q_PROPERTY(bool autoCheckAppUpdates READ autoCheckAppUpdates WRITE setAutoCheckAppUpdates NOTIFY
                    autoCheckAppUpdatesChanged)
+    /** Hide games Steam marks "Adult Only Sexual Content" / "Frequent Nudity or Sexual Content". */
+    Q_PROPERTY(bool hideAdultGames READ hideAdultGames WRITE setHideAdultGames NOTIFY
+                   hideAdultGamesChanged)
     Q_PROPERTY(bool includeAppPreReleases READ includeAppPreReleases WRITE setIncludeAppPreReleases
                    NOTIFY includeAppPreReleasesChanged)
     Q_PROPERTY(QString uiLanguage READ uiLanguage WRITE setUiLanguage NOTIFY uiLanguageChanged)
@@ -52,6 +55,7 @@ public:
     bool autoCheckUpdates() const { return m_autoCheckUpdates; }
     bool autoInstallUpdates() const { return m_autoInstallUpdates; }
     bool autoCheckAppUpdates() const { return m_autoCheckAppUpdates; }
+    bool hideAdultGames() const { return m_hideAdultGames; }
     bool includeAppPreReleases() const { return m_includeAppPreReleases; }
     QString uiLanguage() const { return m_uiLanguage; }
     bool onboardingCompleted() const { return m_onboardingCompleted; }
@@ -88,6 +92,7 @@ public:
     void setAutoCheckUpdates(bool enabled);
     void setAutoInstallUpdates(bool enabled);
     void setAutoCheckAppUpdates(bool enabled);
+    void setHideAdultGames(bool enabled);
     void setIncludeAppPreReleases(bool enabled);
     void setUiLanguage(const QString& languageCode);
     void setOnboardingCompleted(bool completed);
@@ -120,6 +125,7 @@ signals:
     void autoCheckUpdatesChanged();
     void autoInstallUpdatesChanged();
     void autoCheckAppUpdatesChanged();
+    void hideAdultGamesChanged();
     void includeAppPreReleasesChanged();
     void uiLanguageChanged();
     void onboardingCompletedChanged();
@@ -138,6 +144,7 @@ private:
     bool m_autoCheckUpdates = true;
     bool m_autoInstallUpdates = false;
     bool m_autoCheckAppUpdates = true;
+    bool m_hideAdultGames = true;
     bool m_includeAppPreReleases = false;
     QString m_uiLanguage = QStringLiteral("en");
     bool m_onboardingCompleted = false;

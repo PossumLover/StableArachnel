@@ -17,6 +17,8 @@
 
 namespace arachnel::core {
 
+class ContentRatingStore;
+
 /** Catalog filter + presentation state (type/size/recency/genre/play-mode). */
 class CatalogFilterService : public QObject
 {
@@ -44,6 +46,9 @@ public:
     void setPlayModeFilter(int filter);
     QStringList hiddenSourceIds() const { return m_hiddenSourceIds; }
     void setHiddenSourceIds(QStringList ids);
+    void setContentRatings(const ContentRatingStore* ratings) { m_ratings = ratings; }
+    bool hideAdult() const { return m_hideAdult; }
+    void setHideAdult(bool hide);
     void setSourceHidden(const QString& sourceId, bool hidden);
 
     int activeFilterCount() const;
@@ -80,6 +85,7 @@ private:
         quint32 sourceMask = 0;
         bool checkSource = false;
         int sortMode = 0;
+        bool hideAdult = false;
         bool anySideFilter = false;
     };
 
@@ -112,6 +118,10 @@ private:
     QString m_genreFilter;
     int m_playModeFilter = 0;
     QStringList m_hiddenSourceIds;
+    const ContentRatingStore* m_ratings = nullptr;
+    bool m_hideAdult = true;
+
+    CatalogFilterRow rowForEntry(const CatalogEntry& entry, quint8 sourceSlot) const;
 };
 
 } // namespace arachnel::core

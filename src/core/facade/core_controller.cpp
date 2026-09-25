@@ -9,6 +9,7 @@
 #include "catalog_cover_coordinator.h"
 #include "catalog_filter_service.h"
 #include "catalog_discovery_service.h"
+#include "content_rating_store.h"
 #include "catalog_parser.h"
 #include "cover_image_cache.h"
 #include "file_utils.h"
@@ -243,6 +244,8 @@ CoreController::CoreController(QObject* parent)
     syncLibraryFromStore();
 
     m_catalog.bindSource(&m_catalogCache);
+    if (!m_contentRatings)
+        m_contentRatings = new ContentRatingStore(this);
     if (!m_catalogFilters) {
         m_catalogFilters = new CatalogFilterService(&m_catalog, this);
         m_catalogFilters->setCache(&m_catalogCache);
@@ -251,12 +254,27 @@ CoreController::CoreController(QObject* parent)
                 &CoreController::catalogFiltersChanged);
         connect(m_catalogFilters, &CatalogFilterService::availableGenresChanged, this,
                 &CoreController::availableCatalogGenresChanged);
+        m_catalogFilters->setContentRatings(m_contentRatings);
+        m_catalogFilters->setHideAdult(m_settings.hideAdultGames());
     }
     if (!m_catalogDiscovery) {
         m_catalogDiscovery = new CatalogDiscoveryService(this);
         m_catalogDiscovery->setCache(&m_catalogCache);
         m_catalogDiscovery->setIdIndex(&m_catalogIdToCacheIndex);
+        m_catalogDiscovery->setContentRatings(m_contentRatings);
+        m_catalogDiscovery->setHideAdult(m_settings.hideAdultGames());
     }
+    connect(&m_settings, &SettingsStore::hideAdultGamesChanged, this, [this]() {
+        m_catalogFilters->setHideAdult(m_settings.hideAdultGames());
+        m_catalogDiscovery->setHideAdult(m_settings.hideAdultGames());
+    });
+    // Ratings arrive in the background (first run: a few minutes for the whole
+    // catalog); re-flag rows and re-apply the current view as they do.
+    connect(m_contentRatings, &ContentRatingStore::ratingsChanged, this, [this]() {
+        m_catalogFilters->rebuildFilterTable();
+        m_catalogFilters->scheduleRefilter();
+        m_catalogDiscovery->onCatalogCacheRebuilt();
+    });
     if (m_socialController)
         m_socialController->initialize();
 

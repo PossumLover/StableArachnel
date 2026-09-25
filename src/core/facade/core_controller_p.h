@@ -119,6 +119,7 @@
     QHash<QString, int> m_catalogIdToCacheIndex;
     CatalogFilterService* m_catalogFilters = nullptr;
     CatalogDiscoveryService* m_catalogDiscovery = nullptr;
+    ContentRatingStore* m_contentRatings = nullptr;
     QString m_userNotice;
     int m_userNoticeSerial = 0;
     QString m_pendingDeepLinkGameId;

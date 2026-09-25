@@ -15,6 +15,8 @@ class QNetworkReply;
 
 namespace arachnel::core {
 
+class ContentRatingStore;
+
 /**
  * Discovery shelves from a remote feed JSON (fetched on each refresh).
  */
@@ -35,6 +37,9 @@ public:
     void setCache(QVector<CatalogEntry>* cache);
     /** Optional id -> cache index map (avoids scanning the full catalog per shelf). */
     void setIdIndex(const QHash<QString, int>* idIndex) { m_idIndex = idIndex; }
+    void setContentRatings(const ContentRatingStore* ratings) { m_ratings = ratings; }
+    /** Leave adult-only games off the shelves; re-binds them when it changes. */
+    void setHideAdult(bool hide);
 
     bool loading() const { return m_loading; }
     bool feedLoaded() const { return m_feedLoaded; }
@@ -70,6 +75,8 @@ private:
 
     QVector<CatalogEntry>* m_cache = nullptr;
     const QHash<QString, int>* m_idIndex = nullptr;
+    const ContentRatingStore* m_ratings = nullptr;
+    bool m_hideAdult = true;
     QJsonObject m_feed;
     QStringList m_friendEntryIds;
     bool m_loading = false;

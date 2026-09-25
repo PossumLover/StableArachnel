@@ -28,6 +28,7 @@ void SettingsStore::load()
         emit autoCheckUpdatesChanged();
         emit autoInstallUpdatesChanged();
         emit autoCheckAppUpdatesChanged();
+        emit hideAdultGamesChanged();
         emit includeAppPreReleasesChanged();
         emit uiLanguageChanged();
         emit onboardingCompletedChanged();
@@ -44,6 +45,7 @@ void SettingsStore::load()
     m_autoCheckUpdates = obj.value(QStringLiteral("autoCheckUpdates")).toBool(true);
     m_autoInstallUpdates = obj.value(QStringLiteral("autoInstallUpdates")).toBool(false);
     m_autoCheckAppUpdates = obj.value(QStringLiteral("autoCheckAppUpdates")).toBool(true);
+    m_hideAdultGames = obj.value(QStringLiteral("hideAdultGames")).toBool(true);
     m_includeAppPreReleases = obj.value(QStringLiteral("includeAppPreReleases")).toBool(false);
     m_uiLanguage = obj.value(QStringLiteral("uiLanguage")).toString(QStringLiteral("en")).toLower();
     // Existing installs without the key skip the wizard; only true first launch shows it.
@@ -165,6 +167,7 @@ void SettingsStore::load()
     emit autoCheckUpdatesChanged();
     emit autoInstallUpdatesChanged();
     emit autoCheckAppUpdatesChanged();
+    emit hideAdultGamesChanged();
     emit includeAppPreReleasesChanged();
     emit uiLanguageChanged();
     emit onboardingCompletedChanged();
@@ -184,6 +187,7 @@ void SettingsStore::save()
     obj.insert(QStringLiteral("autoCheckUpdates"), m_autoCheckUpdates);
     obj.insert(QStringLiteral("autoInstallUpdates"), m_autoInstallUpdates);
     obj.insert(QStringLiteral("autoCheckAppUpdates"), m_autoCheckAppUpdates);
+    obj.insert(QStringLiteral("hideAdultGames"), m_hideAdultGames);
     obj.insert(QStringLiteral("includeAppPreReleases"), m_includeAppPreReleases);
     obj.insert(QStringLiteral("uiLanguage"), m_uiLanguage);
     obj.insert(QStringLiteral("onboardingCompleted"), m_onboardingCompleted);
