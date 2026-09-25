@@ -36,7 +36,7 @@ MD.BottomSheet {
             Layout.fillWidth: true
             Layout.leftMargin: MD.Token.spacing.large
             Layout.rightMargin: MD.Token.spacing.large
-            text: qsTr("JamesGames %1 is ready to install. Update now to get the latest fixes and features.")
+            text: qsTr("Sprout %1 is ready to install. Update now to get the latest fixes and features.")
                       .arg(root.pendingVersion.length ? root.pendingVersion
                                                        : (Core.appUpdater ? Core.appUpdater.latestVersion : ""))
             color: MD.Token.color.on_surface_variant

@@ -136,10 +136,10 @@ jobs:
         shell: pwsh
         run: |
           $v = "${{ inputs.version }}"
-          if (-not (Test-Path -LiteralPath JamesGames-Setup.exe)) {
-            throw "JamesGames-Setup.exe missing after --installer"
+          if (-not (Test-Path -LiteralPath SproutLauncher-Setup.exe)) {
+            throw "SproutLauncher-Setup.exe missing after --installer"
           }
-          Move-Item -LiteralPath JamesGames-Setup.exe -Destination "JamesGames-$v-Setup.exe" -Force
+          Move-Item -LiteralPath SproutLauncher-Setup.exe -Destination "SproutLauncher-$v-Setup.exe" -Force
           # Guard against accidental "dev" stamped into the binary via file name only;
           # the app version comes from ARACHNEL_VERSION during cmake package.
 
@@ -147,7 +147,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: JamesGames-${{ inputs.version }}-Setup.exe
+          path: SproutLauncher-${{ inputs.version }}-Setup.exe
           if-no-files-found: error
 
   build-linux:
@@ -220,7 +220,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-appimage
-          path: dist-linux/JamesGames-${{ inputs.version }}-x86_64.AppImage
+          path: dist-linux/SproutLauncher-${{ inputs.version }}-x86_64.AppImage
           if-no-files-found: error
 
   release:
@@ -241,13 +241,13 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release
-          cp "artifacts/windows-installer/JamesGames-${{ inputs.version }}-Setup.exe" release/
-          cp "artifacts/linux-appimage/JamesGames-${{ inputs.version }}-x86_64.AppImage" release/
-          cp "release/JamesGames-${{ inputs.version }}-Setup.exe" release/JamesGames-Setup.exe
-          cp "release/JamesGames-${{ inputs.version }}-x86_64.AppImage" release/JamesGames-x86_64.AppImage
+          cp "artifacts/windows-installer/SproutLauncher-${{ inputs.version }}-Setup.exe" release/
+          cp "artifacts/linux-appimage/SproutLauncher-${{ inputs.version }}-x86_64.AppImage" release/
+          cp "release/SproutLauncher-${{ inputs.version }}-Setup.exe" release/SproutLauncher-Setup.exe
+          cp "release/SproutLauncher-${{ inputs.version }}-x86_64.AppImage" release/SproutLauncher-x86_64.AppImage
           cd release
-          sha256sum JamesGames-${{ inputs.version }}-Setup.exe \
-            JamesGames-${{ inputs.version }}-x86_64.AppImage > checksums.sha256
+          sha256sum SproutLauncher-${{ inputs.version }}-Setup.exe \
+            SproutLauncher-${{ inputs.version }}-x86_64.AppImage > checksums.sha256
 
       - name: Generate changelog
         run: bash scripts/ci/generate-changelog.sh "${{ inputs.version }}" RELEASE_NOTES.md
@@ -256,12 +256,12 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version }}
-          name: JamesGames v${{ inputs.version }}
+          name: Sprout v${{ inputs.version }}
           body_path: RELEASE_NOTES.md
           prerelease: ${{ inputs.prerelease }}
           files: |
-            release/JamesGames-${{ inputs.version }}-Setup.exe
-            release/JamesGames-${{ inputs.version }}-x86_64.AppImage
-            release/JamesGames-Setup.exe
-            release/JamesGames-x86_64.AppImage
+            release/SproutLauncher-${{ inputs.version }}-Setup.exe
+            release/SproutLauncher-${{ inputs.version }}-x86_64.AppImage
+            release/SproutLauncher-Setup.exe
+            release/SproutLauncher-x86_64.AppImage
             release/checksums.sha256

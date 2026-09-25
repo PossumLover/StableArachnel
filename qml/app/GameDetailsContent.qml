@@ -422,7 +422,7 @@ Item {
                         MD.Label {
                             Layout.fillWidth: true
                             visible: page.canManualInstall
-                            text: qsTr("JamesGames can't install this one for you. Run the installer from the download folder, then press the folder button below and pick the folder you installed it into.")
+                            text: qsTr("Sprout can't install this one for you. Run the installer from the download folder, then press the folder button below and pick the folder you installed it into.")
                             wrapMode: Text.WordWrap
                             color: MD.Token.color.on_surface_variant
                             typescale: MD.Token.typescale.body_medium

@@ -68,13 +68,13 @@ jobs:
           mkdir -p release
           gh release download "${{ steps.tag.outputs.tag }}" \
             --dir release \
-            --pattern "JamesGames-*-Setup.exe" \
-            --pattern "JamesGames-*-x86_64.AppImage" \
+            --pattern "SproutLauncher-*-Setup.exe" \
+            --pattern "SproutLauncher-*-x86_64.AppImage" \
             --clobber
-          setup="$(ls release/JamesGames-*-Setup.exe | head -n1)"
-          appimage="$(ls release/JamesGames-*-x86_64.AppImage | head -n1)"
-          cp -f "$setup" release/JamesGames-Setup.exe
-          cp -f "$appimage" release/JamesGames-x86_64.AppImage
+          setup="$(ls release/SproutLauncher-*-Setup.exe | head -n1)"
+          appimage="$(ls release/SproutLauncher-*-x86_64.AppImage | head -n1)"
+          cp -f "$setup" release/SproutLauncher-Setup.exe
+          cp -f "$appimage" release/SproutLauncher-x86_64.AppImage
           ls -lah release/
 
       - name: Upload stable aliases to the release
@@ -83,8 +83,8 @@ jobs:
         run: |
           set -euo pipefail
           gh release upload "${{ steps.tag.outputs.tag }}" \
-            release/JamesGames-Setup.exe \
-            release/JamesGames-x86_64.AppImage \
+            release/SproutLauncher-Setup.exe \
+            release/SproutLauncher-x86_64.AppImage \
             --clobber
 
       - name: VirusTotal scan + badge

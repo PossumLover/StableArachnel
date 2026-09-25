@@ -138,7 +138,7 @@ Item {
 
                     MD.Label {
                         Layout.fillWidth: true
-                        text: qsTr("Welcome to JamesGames")
+                        text: qsTr("Welcome to Sprout")
                         typescale: MD.Token.typescale.title_large
                     }
 

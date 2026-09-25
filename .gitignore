@@ -27,6 +27,9 @@ Arachnel-win64-*.zip
 Arachnel-win64-*/
 Arachnel-Setup.exe
 Arachnel-*-Setup.exe
+SproutLauncher-win64-*.zip
+SproutLauncher-Setup.exe
+SproutLauncher-*-Setup.exe
 
 build-linux/
 dist-linux/

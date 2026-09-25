@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate JamesGames' illustrations as SVG and rasterize them to PNG.
+"""Generate Sprout's illustrations as SVG and rasterize them to PNG.
 
 Original art in a soft painted style: hand-cut edges, pooled pigment and fine
 paper grain, in the Meadow palette (sage, olive, dusty rose, apricot, cream).

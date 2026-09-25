@@ -29,7 +29,7 @@ ColumnLayout {
 
         MD.Label {
             Layout.fillWidth: true
-            text: root.isHangReport ? qsTr("JamesGames stopped responding")
+            text: root.isHangReport ? qsTr("Sprout stopped responding")
                                     : qsTr("Application crashed")
             typescale: MD.Token.typescale.headline_small
         }
@@ -40,8 +40,8 @@ ColumnLayout {
                 if (root.isHangReport)
                     return qsTr("The UI froze. A report was saved with the hung thread stack and recent activity.")
                 if (root.immediateCrash)
-                    return qsTr("JamesGames has crashed.")
-                return qsTr("JamesGames stopped unexpectedly during the last session.")
+                    return qsTr("Sprout has crashed.")
+                return qsTr("Sprout stopped unexpectedly during the last session.")
             }
             wrapMode: Text.WordWrap
             color: MD.Token.color.on_surface_variant
@@ -53,8 +53,8 @@ ColumnLayout {
         Layout.fillWidth: true
         visible: !root.showHeader && root.showSubtitle
         text: root.immediateCrash
-              ? qsTr("JamesGames has crashed.")
-              : qsTr("JamesGames stopped unexpectedly during the last session.")
+              ? qsTr("Sprout has crashed.")
+              : qsTr("Sprout stopped unexpectedly during the last session.")
         wrapMode: Text.WordWrap
         color: MD.Token.color.on_surface_variant
         typescale: MD.Token.typescale.body_medium

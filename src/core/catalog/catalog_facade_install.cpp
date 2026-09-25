@@ -93,7 +93,7 @@ bool CoreController::clearApplicationData()
 
     m_applicationDataCleared = true;
     showNotice(QCoreApplication::translate(
-        "Core", "Application data deleted. JamesGames will quit now."));
+        "Core", "Application data deleted. Sprout will quit now."));
     QTimer::singleShot(400, qApp, []() { QCoreApplication::quit(); });
     return true;
 }

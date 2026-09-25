@@ -16,7 +16,7 @@ fi
 PREV="$(git tag -l 'v*' --sort=-version:refname | head -n1 || true)"
 
 {
-  echo "# JamesGames v${VERSION}"
+  echo "# Sprout v${VERSION}"
   echo
   echo "## Changes"
   echo
@@ -31,8 +31,8 @@ PREV="$(git tag -l 'v*' --sort=-version:refname | head -n1 || true)"
   echo
   echo "## Downloads"
   echo
-  echo "- **Windows:** \`JamesGames-${VERSION}-Setup.exe\`"
-  echo "- **Linux:** \`JamesGames-${VERSION}-x86_64.AppImage\`"
+  echo "- **Windows:** \`SproutLauncher-${VERSION}-Setup.exe\`"
+  echo "- **Linux:** \`SproutLauncher-${VERSION}-x86_64.AppImage\`"
   echo
   echo "Verify checksums in \`checksums.sha256\`."
 } >"${OUTPUT}"

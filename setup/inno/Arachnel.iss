@@ -1,16 +1,20 @@
 ﻿; Arachnel shipping installer. UI = Arachnel-UI.iss (known-good). Install via ReadyToInstall + Next.OnClick.
 ; Build: .\setup\inno\pack-inno.ps1
 
-; 73137a8 ships the binary as JamesGames (CMake OUTPUT_NAME). What must NOT follow
-; the rename: the AppId below (in-place upgrades), the install directory (see
-; GetDefaultDir - the updater and the uninstall key both locate installs by it), the
-; arachnel:// scheme in [Registry], and the legacy Uninstall\Arachnel keys in [Code].
-#define MyAppName "JamesGames"
-#define MyAppExeName "JamesGames.exe"
-; Pre-rename binary and shortcut name, removed on upgrade - see [InstallDelete].
+; The binary is SproutLauncher.exe (CMake OUTPUT_NAME); it was JamesGames.exe in 0.2.0
+; and arachnel_app.exe before that. What must NOT follow a rename: the AppId below
+; (in-place upgrades), the install directory (see GetDefaultDir - the updater and the
+; uninstall key both locate installs by it), the arachnel:// scheme in [Registry], and
+; the legacy Uninstall\Arachnel keys in [Code].
+#define MyAppName "Sprout"
+#define MyAppExeName "SproutLauncher.exe"
+#define MyOutputName "SproutLauncher"
+; Earlier binary and shortcut names, removed on upgrade - see [InstallDelete].
 #define LegacyExeName "arachnel_app.exe"
 #define LegacyAppName "Arachnel"
-#define MyAppPublisher "JamesGames"
+#define PrevExeName "JamesGames.exe"
+#define PrevAppName "JamesGames"
+#define MyAppPublisher "Sprout"
 #define MyAppURL "https://github.com/PossumLover/StableArachnel"
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0"
@@ -26,8 +30,8 @@ AppPublisherURL={#MyAppURL}
 ; Prefer previous Inno dir, else old Qt SFX InstallLocation, else per-user Programs.
 DefaultDirName={code:GetDefaultDir}
 DefaultGroupName={#MyAppName}
-; Otherwise an upgrade reuses the recorded "Arachnel" Start Menu folder and the
-; JamesGames shortcut lands inside it.
+; Otherwise an upgrade reuses the recorded Start Menu folder of an earlier name
+; ("Arachnel", "JamesGames") and the new shortcut lands inside it.
 UsePreviousGroup=no
 UsePreviousAppDir=yes
 DisableDirPage=yes
@@ -36,7 +40,7 @@ DisableReadyPage=yes
 DisableWelcomePage=yes
 AllowNoIcons=yes
 OutputDir=output
-OutputBaseFilename={#MyAppName}-{#MyAppVersion}-Setup
+OutputBaseFilename={#MyOutputName}-{#MyAppVersion}-Setup
 SetupIconFile=..\..\resources\icons\arachnel.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2
@@ -79,14 +83,19 @@ Source: "..\..\dist-win\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdir
 Type: files; Name: "{app}\uninstall.exe"
 Type: files; Name: "{app}\arachnel_setup.exe"
 Type: files; Name: "{app}\arachnel_setup_launcher.exe"
-; Pre-rename install. Left behind, the old binary keeps running two-release-old code
-; from any shortcut that still points at it. InitializeWizard carries an existing
-; desktop shortcut forward before this runs, so removing it does not lose the icon.
+; Pre-rename installs. Left behind, an old binary keeps running old code from any
+; shortcut that still points at it. InitializeWizard carries an existing desktop
+; shortcut forward before this runs, so removing it does not lose the icon.
 Type: files; Name: "{app}\{#LegacyExeName}"
 Type: files; Name: "{userdesktop}\{#LegacyAppName}.lnk"
 Type: files; Name: "{userprograms}\{#LegacyAppName}\{#LegacyAppName}.lnk"
 Type: files; Name: "{userprograms}\{#LegacyAppName}\Uninstall {#LegacyAppName}.lnk"
 Type: dirifempty; Name: "{userprograms}\{#LegacyAppName}"
+Type: files; Name: "{app}\{#PrevExeName}"
+Type: files; Name: "{userdesktop}\{#PrevAppName}.lnk"
+Type: files; Name: "{userprograms}\{#PrevAppName}\{#PrevAppName}.lnk"
+Type: files; Name: "{userprograms}\{#PrevAppName}\Uninstall {#PrevAppName}.lnk"
+Type: dirifempty; Name: "{userprograms}\{#PrevAppName}"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Check: WantStartMenuIcon
@@ -733,12 +742,13 @@ begin
   LangPage := nil;
 
   { Upgrading a pre-rename install: the InstallDelete section removes the old
-    desktop shortcut along with arachnel_app.exe. The in-app updater runs /SILENT,
+    desktop shortcut along with the old binary. The in-app updater runs /SILENT,
     which never shows the desktop checkbox, so without this a user who had the
     icon would silently lose it. Checked here because InitializeWizard runs before
     InstallDelete does. (No line in here may start with a bracket: ISCC scans for
     section tags before it parses Code as Pascal, comments included.) }
-  if FileExists(ExpandConstant('{userdesktop}\{#LegacyAppName}.lnk')) then
+  if FileExists(ExpandConstant('{userdesktop}\{#LegacyAppName}.lnk')) or
+     FileExists(ExpandConstant('{userdesktop}\{#PrevAppName}.lnk')) then
     WantDesk := True;
 
   { In-app update (/SILENT): skip Botva skin. Stock Inno progress window + [Run] relaunch. }

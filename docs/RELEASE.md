@@ -11,12 +11,12 @@ Inputs:
 
 Artifacts:
 
-- `Arachnel-<version>-Setup.exe` — Windows installer (Inno Setup + app from dist-win)
-- `Arachnel-<version>-x86_64.AppImage` — Linux portable build
-- `Arachnel-Setup.exe` / `Arachnel-x86_64.AppImage` — stable aliases (always latest of that release; used by VirusTotal badge)
+- `SproutLauncher-<version>-Setup.exe` — Windows installer (Inno Setup + app from dist-win)
+- `SproutLauncher-<version>-x86_64.AppImage` — Linux portable build
+- `SproutLauncher-Setup.exe` / `SproutLauncher-x86_64.AppImage` — stable aliases (always latest of that release; used by VirusTotal badge)
 - `checksums.sha256` — SHA-256 for the versioned files
 
-The release notes body lists commits since the previous `v*` tag.
+The release notes body is `docs/release-notes/v<version>.md` when that file exists, otherwise the commits since the previous `v*` tag.
 
 ## Versioning
 
@@ -31,7 +31,7 @@ The app shows whatever was baked in at CMake configure time (`ARACHNEL_VERSION`)
 ## Upgrade / player data safety
 
 - **Game libraries and settings** live under AppData / user library folders, not inside the launcher install dir. Updating the launcher only replaces files under `{app}` (binaries, Qt, etc.).
-- **In-app update** downloads `Arachnel-*-Setup.exe` and runs Inno with `/SILENT /DIR=<install dir>` (unpack progress, no folder prompts, then auto-launches Arachnel). Legacy Program Files installs also pass `/ALLUSERS` so elevation can work.
+- **In-app update** downloads `SproutLauncher-*-Setup.exe` and runs Inno with `/SILENT /DIR=<install dir>` (unpack progress, no folder prompts, then auto-launches Sprout). Legacy Program Files installs also pass `/ALLUSERS` so elevation can work.
 - **Legacy installs** (`C:\Program Files\Arachnel`, uninstall key `...\Uninstall\Arachnel`): the Inno installer detects that `InstallLocation`, offers it as the default folder, writes the new Inno uninstall entry, removes the old uninstall registry key, and deletes leftover `uninstall.exe` / setup stubs under `{app}`. It does **not** run the old uninstaller.
 - New default for fresh installs: `%LOCALAPPDATA%\Programs\Arachnel` (`PrivilegesRequired=lowest`, elevates only when the target needs it).
 
@@ -68,7 +68,7 @@ Export PFX (PowerShell):
 
 You need an **Authenticode** certificate (OV/EV from a public CA). Self-signed certs do not remove SmartScreen for unknown publishers.
 
-When secrets are set, `.\run.ps1 --installer` (via `setup\inno\pack-inno.ps1`) signs the final Inno `Arachnel-Setup.exe`.
+When secrets are set, `.\run.ps1 --installer` (via `setup\inno\pack-inno.ps1`) signs the final Inno `SproutLauncher-Setup.exe`.
 
 ## VirusTotal (release binaries)
 
@@ -84,7 +84,7 @@ Notes:
 
 - Scans **release binaries only** (what users download). Scanning every source file burns the free API quota and does not help SmartScreen.
 - SmartScreen / Defender “unknown publisher” is mostly about **code signing**, not VirusTotal. VT is transparency for multi-engine results.
-- Release notes get a VirusTotal section with per-file links. Stable aliases `Arachnel-Setup.exe` / `Arachnel-x86_64.AppImage` are uploaded alongside versioned assets.
+- Release notes get a VirusTotal section with per-file links. Stable aliases `SproutLauncher-Setup.exe` / `SproutLauncher-x86_64.AppImage` are uploaded alongside versioned assets.
 
 ### Defender false positives (`Sabsik.TE.A!ml`)
 

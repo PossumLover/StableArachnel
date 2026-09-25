@@ -31,19 +31,20 @@ if (-not $Version -or $Version -eq 'dev' -or $Version -eq '0.0.0-dev') {
     throw "pack-inno: refuse version '$Version'. Pass -Version / ARACHNEL_VERSION (e.g. 0.1.39)."
 }
 if (-not $OutputPath) {
-    $OutputPath = Join-Path $ROOT "JamesGames-Setup.exe"
+    $OutputPath = Join-Path $ROOT "SproutLauncher-Setup.exe"
 }
 
-$appExe = Join-Path $DistDir "JamesGames.exe"
+$appExe = Join-Path $DistDir "SproutLauncher.exe"
 if (-not (Test-Path -LiteralPath $appExe)) {
-    throw "dist-win missing JamesGames.exe at $DistDir. Run .\run.ps1 --package first."
+    throw "dist-win missing SproutLauncher.exe at $DistDir. Run .\run.ps1 --package first."
 }
-# The pre-rename binary must never ship. [InstallDelete] removes it from {app} but
+# Pre-rename binaries must never ship. [InstallDelete] removes them from {app} but
 # runs before [Files], so a stale copy in dist-win would be deleted and then
 # reinstalled - and old shortcuts would keep launching it.
-$legacyExe = Join-Path $DistDir "arachnel_app.exe"
-if (Test-Path -LiteralPath $legacyExe) {
-    throw "dist-win still contains arachnel_app.exe (pre-rename build output). Remove it and rebuild."
+foreach ($legacyName in @("arachnel_app.exe", "JamesGames.exe")) {
+    if (Test-Path -LiteralPath (Join-Path $DistDir $legacyName)) {
+        throw "dist-win still contains $legacyName (pre-rename build output). Remove it and rebuild."
+    }
 }
 
 $skinScript = Join-Path $PSScriptRoot "skin\gen-skin.ps1"
@@ -68,7 +69,7 @@ Write-Host "Building Inno installer (version=$Version, dist=$DistDir) ..."
 & $iscc "/DMyAppVersion=$Version" (Join-Path $PSScriptRoot "Arachnel.iss")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-$built = Join-Path $PSScriptRoot "output\JamesGames-$Version-Setup.exe"
+$built = Join-Path $PSScriptRoot "output\SproutLauncher-$Version-Setup.exe"
 if (-not (Test-Path -LiteralPath $built)) {
     throw "ISCC output missing: $built"
 }

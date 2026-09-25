@@ -400,10 +400,10 @@ Flickable {
             MD.Label {
                 Layout.fillWidth: true
                 text: removeDriveDialog.gameCount > 0
-                      ? qsTr("“%1” still has games (%2). Remove the drive from JamesGames anyway? Files stay on disk; games stay in the library under another drive.")
+                      ? qsTr("“%1” still has games (%2). Remove the drive from Sprout anyway? Files stay on disk; games stay in the library under another drive.")
                             .arg(removeDriveDialog.libraryLabel)
                             .arg(removeDriveDialog.gameCount)
-                      : qsTr("Remove “%1” from JamesGames? Files on disk are not deleted.")
+                      : qsTr("Remove “%1” from Sprout? Files on disk are not deleted.")
                             .arg(removeDriveDialog.libraryLabel)
                 wrapMode: Text.WordWrap
                 typescale: MD.Token.typescale.body_medium

@@ -25,7 +25,7 @@ Flickable {
             Layout.leftMargin: contentMargin
             Layout.rightMargin: contentMargin
             Layout.topMargin: MD.Token.spacing.small
-            text: qsTr("Check for game updates and new JamesGames versions.")
+            text: qsTr("Check for game updates and new Sprout versions.")
             color: MD.Token.color.on_surface_variant
             wrapMode: Text.WordWrap
             typescale: MD.Token.typescale.body_medium
@@ -126,7 +126,7 @@ Flickable {
             Layout.fillWidth: true
             Layout.leftMargin: contentMargin
             Layout.rightMargin: contentMargin
-            text: qsTr("JamesGames")
+            text: qsTr("Sprout")
             typescale: MD.Token.typescale.title_small
         }
 
@@ -186,7 +186,7 @@ Flickable {
 
                 MD.Label {
                     Layout.fillWidth: true
-                    text: qsTr("Check for JamesGames updates on startup")
+                    text: qsTr("Check for Sprout updates on startup")
                     typescale: MD.Token.typescale.body_large
                 }
 
@@ -249,7 +249,7 @@ Flickable {
 
                 MD.Button {
                     Layout.fillWidth: true
-                    text: qsTr("Check for JamesGames updates")
+                    text: qsTr("Check for Sprout updates")
                     icon.name: MD.Token.icon.update
                     mdState.type: MD.Enum.BtOutlined
                     enabled: !Core.appUpdater.checking && !Core.appUpdater.downloading

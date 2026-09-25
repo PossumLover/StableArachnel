@@ -8,7 +8,7 @@ guessing once. Work top to bottom; each step is cheap and rules out a whole laye
 A session can run games itself instead of asking for each launch:
 
 ```sh
-JamesGames --launch <gameId>                    # real launch through the running Arachnel
+SproutLauncher --launch <gameId>                # real launch through the running Arachnel
 scripts/dev/launch-probe.sh <gameId> --headless # replay it invisibly, collect logs, stop it
 scripts/dev/launch-probe.sh <gameId> --headless --winedebug +msgbox   # read dialogs too
 ```

@@ -156,7 +156,7 @@ void configureApplicationIdentity()
     // directory from, and that directory holds the library, the settings and 6.8 GB of
     // Proton prefixes whose registries are full of absolute paths - renaming it would
     // move all of that and break every game's prefix.
-    QGuiApplication::setApplicationDisplayName(QStringLiteral("JamesGames"));
+    QGuiApplication::setApplicationDisplayName(QStringLiteral("Sprout"));
 #ifndef ARACHNEL_VERSION
 #define ARACHNEL_VERSION "dev"
 #endif

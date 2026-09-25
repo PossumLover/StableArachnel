@@ -167,7 +167,7 @@ Flickable {
 
             MD.Label {
                 Layout.alignment: Qt.AlignHCenter
-                text: Qt.application.version.length ? qsTr("JamesGames v%1").arg(Qt.application.version) : "JamesGames"
+                text: Qt.application.version.length ? qsTr("Sprout v%1").arg(Qt.application.version) : "Sprout"
                 color: MD.Token.color.on_surface_variant
                 typescale: MD.Token.typescale.label_medium
             }

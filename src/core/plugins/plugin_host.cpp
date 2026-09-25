@@ -326,8 +326,8 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
     if (apiVersion < ARACHNEL_PLUGIN_API_VERSION_MIN || apiVersion > ARACHNEL_PLUGIN_API_VERSION) {
         setLoadRejectReason(QCoreApplication::translate(
             "Core",
-            "%1 needs a different JamesGames plugin API (plugin=%2, this app supports %3-%4). "
-            "Update JamesGames or install a matching plugin build.")
+            "%1 needs a different Sprout plugin API (plugin=%2, this app supports %3-%4). "
+            "Update Sprout or install a matching plugin build.")
                                 .arg(displayName)
                                 .arg(apiVersion)
                                 .arg(ARACHNEL_PLUGIN_API_VERSION_MIN)
@@ -375,13 +375,13 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
             && compareAppVersions(appVersion, maxArachnel.trimmed()) > 0) {
             setLoadRejectReason(QCoreApplication::translate(
                                     "Core",
-                                    "%1 only supports JamesGames up to %2 (you have %3). "
+                                    "%1 only supports Sprout up to %2 (you have %3). "
                                     "Install a newer plugin build from the store.")
                                     .arg(displayName, maxArachnel.trimmed(), appVersion));
         } else {
             setLoadRejectReason(QCoreApplication::translate(
                                     "Core",
-                                    "%1 needs JamesGames %2 or newer (you have %3). Update the app.")
+                                    "%1 needs Sprout %2 or newer (you have %3). Update the app.")
                                     .arg(displayName, needMin, appVersion));
         }
         logDiagnostic(QStringLiteral("Plugin rejected (Arachnel %1 not in [%2, %3]): %4")
@@ -514,8 +514,8 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
         || exportedApi > ARACHNEL_PLUGIN_API_VERSION) {
         setLoadRejectReason(QCoreApplication::translate(
             "Core",
-            "%1 needs a different JamesGames plugin API (plugin=%2, this app supports %3-%4). "
-            "Update JamesGames or install a matching plugin build.")
+            "%1 needs a different Sprout plugin API (plugin=%2, this app supports %3-%4). "
+            "Update Sprout or install a matching plugin build.")
                                 .arg(displayName)
                                 .arg(exportedApi)
                                 .arg(ARACHNEL_PLUGIN_API_VERSION_MIN)
@@ -569,7 +569,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
                 // CatalogEntry of an unknown shape cannot be allowed to cross.
                 setLoadRejectReason(QCoreApplication::translate(
                     "Core",
-                    "%1 was built against an JamesGames SDK this app does not know: CatalogEntry "
+                    "%1 was built against a Sprout SDK this app does not know: CatalogEntry "
                     "is %2 bytes in the plugin and %3 bytes here. Loading it would corrupt "
                     "memory, so it was not loaded. Rebuild the plugin against this app version.")
                                         .arg(displayName)
@@ -602,8 +602,8 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
         if (pluginEntrySize != coreEntrySize) {
             setLoadRejectReason(QCoreApplication::translate(
                 "Core",
-                "%1 was built for a different JamesGames SDK (CatalogEntry %2 vs %3 bytes). "
-                "Update JamesGames, or install a plugin build for this app version.")
+                "%1 was built for a different Sprout SDK (CatalogEntry %2 vs %3 bytes). "
+                "Update Sprout, or install a plugin build for this app version.")
                                     .arg(displayName)
                                     .arg(pluginEntrySize)
                                     .arg(coreEntrySize));
@@ -680,7 +680,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
             setLoadRejectReason(
                 QCoreApplication::translate(
                     "Core",
-                    "%1 was built against a different JamesGames SDK: %2 is %3 bytes in the "
+                    "%1 was built against a different Sprout SDK: %2 is %3 bytes in the "
                     "plugin and %4 bytes here. Rebuild the plugin against this app version.")
                     .arg(displayName, QLatin1String(check.name))
                     .arg(check.plugin)

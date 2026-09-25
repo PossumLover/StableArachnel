@@ -357,7 +357,7 @@ void LaunchController::handleOnlineFixSelfProtection(const QString& gameId)
             m_hooks.notice(QCoreApplication::translate(
                 "Core",
                 "Online Fix refused to run this game (self-protection error 4). Put a "
-                "SteamFix kit (SteamFix64.dll + its winmm.dll) in %1 and JamesGames will "
+                "SteamFix kit (SteamFix64.dll + its winmm.dll) in %1 and Sprout will "
                 "switch the game to it automatically.")
                                .arg(steamFixKitDir()));
         }

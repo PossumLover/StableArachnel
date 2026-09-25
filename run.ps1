@@ -372,20 +372,20 @@ Refusing to ship a 'dev' installer.
     $env:ARACHNEL_VERSION = $version
     Write-Host "Installer version: $version" -ForegroundColor Cyan
 
-    if (-not (Test-Path -LiteralPath (Join-Path $DIST_DIR "JamesGames.exe"))) {
+    if (-not (Test-Path -LiteralPath (Join-Path $DIST_DIR "SproutLauncher.exe"))) {
         Write-Host "dist-win missing — building release package first ..."
         New-ReleasePackage
     }
 
     $packScript = Join-Path $ROOT "setup\inno\pack-inno.ps1"
-    & $packScript -Version $version -DistDir $DIST_DIR -OutputPath (Join-Path $ROOT "JamesGames-Setup.exe")
+    & $packScript -Version $version -DistDir $DIST_DIR -OutputPath (Join-Path $ROOT "SproutLauncher-Setup.exe")
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
 function Get-AppPath {
     $candidates = @(
-        (Join-Path $BUILD_DIR "JamesGames.exe"),
-        (Join-Path $BUILD_DIR "$BUILD_TYPE\JamesGames.exe")
+        (Join-Path $BUILD_DIR "SproutLauncher.exe"),
+        (Join-Path $BUILD_DIR "$BUILD_TYPE\SproutLauncher.exe")
     )
     foreach ($path in $candidates) {
         if (Test-Path -LiteralPath $path) { return (Resolve-Path -LiteralPath $path).Path }
@@ -595,7 +595,7 @@ function New-ReleasePackage {
 
     $appPath = Get-AppPath
     if (-not (Test-Path -LiteralPath $appPath)) {
-        throw "JamesGames.exe not found after build."
+        throw "SproutLauncher.exe not found after build."
     }
 
     if (Test-Path -LiteralPath $DIST_DIR) {
@@ -603,7 +603,7 @@ function New-ReleasePackage {
     }
     New-Item -ItemType Directory -Path $DIST_DIR | Out-Null
 
-    $distExe = Join-Path $DIST_DIR "JamesGames.exe"
+    $distExe = Join-Path $DIST_DIR "SproutLauncher.exe"
     Copy-Item -LiteralPath $appPath -Destination $distExe -Force
 
     @"
@@ -654,7 +654,7 @@ Imports=qml
         Copy-Item -LiteralPath $qmlMaterialDll -Destination (Join-Path $DIST_DIR "qml_material.dll") -Force
     }
 
-    $zipName = "JamesGames-win64-$BUILD_TYPE.zip"
+    $zipName = "SproutLauncher-win64-$BUILD_TYPE.zip"
     $zipPath = Join-Path $ROOT $zipName
     if (Test-Path -LiteralPath $zipPath) {
         Remove-Item -LiteralPath $zipPath -Force
@@ -1008,8 +1008,8 @@ Arachnel dev launcher
   .\run.ps1              configure (if needed) + build + run
   .\run.ps1 --rebuild    clean build-win, then build + run
   .\run.ps1 --run        run without build (exe must exist)
-  .\run.ps1 --package    build Release + create dist-win ZIP (JamesGames-win64-Release.zip)
-  .\run.ps1 --installer  build JamesGames-Setup.exe (Inno + dist-win, Botva2 UI)
+  .\run.ps1 --package    build Release + create dist-win ZIP (SproutLauncher-win64-Release.zip)
+  .\run.ps1 --installer  build SproutLauncher-Setup.exe (Inno + dist-win, Botva2 UI)
   .\run.ps1 --release    use Release build type (still runs app unless combined with --package)
   BUILD_TYPE=RelWithDebInfo .\run.ps1 --package   debug symbols in the package (larger ZIP)
 
@@ -1036,7 +1036,7 @@ if (-not $runOnly) {
 
 $APP = Get-AppPath
 if (-not (Test-Path -LiteralPath $APP)) {
-    throw "JamesGames.exe not found. Run without --run first."
+    throw "SproutLauncher.exe not found. Run without --run first."
 }
 
 $plan = Get-BuildArgs

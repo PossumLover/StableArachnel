@@ -1,11 +1,11 @@
 [Desktop Entry]
 Type=Application
-Name=JamesGames
+Name=Sprout
 GenericName=Game Launcher
 Comment=Game launcher with plugin-based sources
-Exec=JamesGames %u
-Icon=jamesgames
+Exec=SproutLauncher %u
+Icon=sproutlauncher
 Categories=Game;Utility;
-StartupWMClass=JamesGames
+StartupWMClass=SproutLauncher
 MimeType=x-scheme-handler/arachnel;
 Terminal=false

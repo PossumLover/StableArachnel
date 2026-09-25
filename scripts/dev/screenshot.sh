@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Screenshot a page of JamesGames headless, from a sandboxed data copy.
+# Screenshot a page of Sprout headless, from a sandboxed data copy.
 #
 #   scripts/dev/screenshot.sh <out.png> [page] [delay-ms] [view]
 #
@@ -45,7 +45,7 @@ d["autoCheckAppUpdates"] = False
 json.dump(d, open(p, "w"), indent=2)
 PY
 
-app="$root/build/JamesGames"
+app="$root/build/SproutLauncher"
 [ -x "$app" ] || app="$root/build/arachnel_app"
 for try in 1 2 3; do
     rm -f "$out" "$sandbox/data/Arachnel/Arachnel/crash-pending.json"

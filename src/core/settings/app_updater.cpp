@@ -181,7 +181,7 @@ void AppUpdater::checkForUpdates(bool notifyIfUpToDate)
 
     setLastError({});
     setChecking(true);
-    setStatusText(QCoreApplication::translate("Core", "Checking for JamesGames updates…"));
+    setStatusText(QCoreApplication::translate("Core", "Checking for Sprout updates…"));
 
     const QUrl apiUrl(QString::fromUtf8(m_includePreReleases ? kGithubReleasesList
                                                              : kGithubLatestRelease));
@@ -336,13 +336,13 @@ void AppUpdater::handleReleaseObject(const QJsonObject& release, bool notifyIfUp
     if (available) {
         if (release.value(QStringLiteral("prerelease")).toBool(false)) {
             setStatusText(
-                QCoreApplication::translate("Core", "JamesGames %1 (pre-release) is available")
+                QCoreApplication::translate("Core", "Sprout %1 (pre-release) is available")
                     .arg(tag));
         } else {
-            setStatusText(QCoreApplication::translate("Core", "JamesGames %1 is available").arg(tag));
+            setStatusText(QCoreApplication::translate("Core", "Sprout %1 is available").arg(tag));
         }
     } else if (cmp >= 0) {
-        setStatusText(QCoreApplication::translate("Core", "JamesGames is up to date (%1)")
+        setStatusText(QCoreApplication::translate("Core", "Sprout is up to date (%1)")
                           .arg(currentVersion()));
         Q_UNUSED(notifyIfUpToDate);
     } else {
@@ -380,14 +380,14 @@ void AppUpdater::startDownload(const QUrl& url)
     m_downloadProgress = 0;
     m_downloadBytesTotal = 0;
     emit downloadProgressChanged();
-    setStatusText(QCoreApplication::translate("Core", "Downloading JamesGames update…"));
+    setStatusText(QCoreApplication::translate("Core", "Downloading Sprout update…"));
 
     const QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
     QDir().mkpath(tempDir);
     const QString fileName =
-        QStringLiteral("JamesGames-%1-Setup.exe").arg(m_latestVersion.isEmpty()
-                                                        ? QStringLiteral("update")
-                                                        : m_latestVersion);
+        QStringLiteral("SproutLauncher-%1-Setup.exe").arg(m_latestVersion.isEmpty()
+                                                            ? QStringLiteral("update")
+                                                            : m_latestVersion);
     const QString targetPath = QDir(tempDir).absoluteFilePath(fileName);
     QFile::remove(targetPath);
 
@@ -470,7 +470,7 @@ void AppUpdater::startDownload(const QUrl& url)
 
         m_downloadProgress = 100;
         emit downloadProgressChanged();
-        setStatusText(QCoreApplication::translate("Core", "Updating JamesGames…"));
+        setStatusText(QCoreApplication::translate("Core", "Updating Sprout…"));
 
         QString launchError;
         if (!launchInstaller(targetPath, &launchError)) {
@@ -503,13 +503,13 @@ QString readUninstallInstallLocation(const QString& uninstallKey)
     return {};
 }
 
-// The binary is JamesGames.exe since 73137a8; installs from before the rename hold
-// arachnel_app.exe until the next installer's [InstallDelete] removes it. Accept
-// either, or an install-dir probe misses and the update is applied to the wrong
-// folder.
+// The binary is SproutLauncher.exe; installs from before a rename hold JamesGames.exe
+// or arachnel_app.exe until the next installer's [InstallDelete] removes it. Accept
+// any, or an install-dir probe misses and the update is applied to the wrong folder.
 static bool dirHasAppExecutable(const QString& dir)
 {
-    return QFileInfo::exists(dir + QLatin1String("/JamesGames.exe"))
+    return QFileInfo::exists(dir + QLatin1String("/SproutLauncher.exe"))
+        || QFileInfo::exists(dir + QLatin1String("/JamesGames.exe"))
         || QFileInfo::exists(dir + QLatin1String("/arachnel_app.exe"));
 }
 
@@ -588,7 +588,7 @@ bool AppUpdater::launchInstaller(const QString& installerPath, QString* errorOut
     if (targetDir.isEmpty()) {
         if (errorOut) {
             *errorOut = QCoreApplication::translate(
-                "Core", "Could not find an JamesGames install folder to update");
+                "Core", "Could not find a Sprout install folder to update");
         }
         return false;
     }
@@ -613,7 +613,7 @@ bool AppUpdater::launchInstaller(const QString& installerPath, QString* errorOut
         || pid == 0) {
         if (errorOut) {
             *errorOut = QCoreApplication::translate("Core",
-                                                    "Could not start the JamesGames installer");
+                                                    "Could not start the Sprout installer");
         }
         return false;
     }
