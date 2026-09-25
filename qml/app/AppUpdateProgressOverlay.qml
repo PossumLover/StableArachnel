@@ -45,7 +45,9 @@ Item {
 
                 MD.Label {
                     Layout.fillWidth: true
-                    text: qsTr("Please wait. The installer will open automatically.")
+                    text: Qt.platform.os === "windows"
+                          ? qsTr("Please wait. The installer will open automatically.")
+                          : qsTr("Please wait. Sprout restarts when it's done.")
                     wrapMode: Text.WordWrap
                     color: MD.Token.color.on_surface_variant
                     typescale: MD.Token.typescale.body_medium

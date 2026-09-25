@@ -1,6 +1,7 @@
 #include "app_updater.h"
 
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QDebug>
 #include <QDesktopServices>
@@ -14,11 +15,14 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QProcess>
+#include <QProcessEnvironment>
+#include <QSaveFile>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QUrl>
 #include <QVersionNumber>
 
+#include <memory>
 #include <utility>
 
 namespace arachnel::core {
@@ -45,6 +49,83 @@ QString preferredAssetNameHint()
     return {};
 #endif
 }
+
+QString assetUrlNamed(const QJsonObject& release, const QString& assetName)
+{
+    for (const QJsonValue& value : release.value(QStringLiteral("assets")).toArray()) {
+        const QJsonObject asset = value.toObject();
+        if (asset.value(QStringLiteral("name")).toString() == assetName)
+            return asset.value(QStringLiteral("browser_download_url")).toString();
+    }
+    return {};
+}
+
+#if defined(Q_OS_LINUX)
+// The AppImage runtime exports APPIMAGE, the real path of the file this process runs
+// from. Source builds have none. The swap is a rename, so the folder must be writable.
+QString replaceableAppImagePath()
+{
+    const QString path = qEnvironmentVariable("APPIMAGE");
+    if (path.isEmpty())
+        return {};
+    const QFileInfo info(path);
+    if (!info.isFile() || !QFileInfo(info.absolutePath()).isWritable())
+        return {};
+    return info.absoluteFilePath();
+}
+
+// An ELF header with the type 2 AppImage magic the runtime keeps in its padding.
+bool looksLikeAppImage(const QByteArray& head)
+{
+    return head.startsWith(QByteArray("\x7f" "ELF", 4))
+        && head.mid(8, 3) == QByteArray("AI\x02", 3);
+}
+
+// Starts the new AppImage once this process is gone - until then the single-instance
+// guard would hand it straight back to us. Nothing it inherits may point into this
+// AppImage's mount: that disappears when we exit.
+bool relaunchAppImageAfterExit(const QString& appImagePath)
+{
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    const QString mount = env.value(QStringLiteral("APPDIR"));
+    for (const QString& name : {QStringLiteral("APPDIR"), QStringLiteral("APPIMAGE"),
+                                QStringLiteral("ARGV0"), QStringLiteral("OWD")}) {
+        env.remove(name);
+    }
+    if (!mount.isEmpty()) {
+        const QString mountPrefix = mount + QLatin1Char('/');
+        for (const QString& name : env.keys()) {
+            const QStringList entries = env.value(name).split(QLatin1Char(':'));
+            QStringList kept;
+            for (const QString& entry : entries) {
+                if (entry != mount && !entry.startsWith(mountPrefix))
+                    kept.append(entry);
+            }
+            if (kept.size() == entries.size())
+                continue;
+            if (kept.join(QString()).isEmpty())
+                env.remove(name);
+            else
+                env.insert(name, kept.join(QLatin1Char(':')));
+        }
+    }
+
+    QProcess helper;
+    helper.setProgram(QStringLiteral("/bin/sh"));
+    helper.setArguments({QStringLiteral("-c"),
+                         QStringLiteral("i=0; while kill -0 \"$2\" 2>/dev/null && [ \"$i\" -lt 300 ]; "
+                                        "do sleep 0.2; i=$((i + 1)); done; exec \"$1\""),
+                         QStringLiteral("sprout-relaunch"), appImagePath,
+                         QString::number(QCoreApplication::applicationPid())});
+    helper.setProcessEnvironment(env);
+    helper.setWorkingDirectory(QDir::homePath());
+#if QT_VERSION >= QT_VERSION_CHECK(6, 6, 0)
+    // Otherwise sockets and files this process left inheritable follow the new copy.
+    helper.setUnixProcessParameters(QProcess::UnixProcessFlag::CloseFileDescriptors);
+#endif
+    return helper.startDetached();
+}
+#endif
 
 } // namespace
 
@@ -233,7 +314,7 @@ QString AppUpdater::assetDownloadUrl(const QJsonObject& release)
         const QString url = asset.value(QStringLiteral("browser_download_url")).toString();
         if (name.isEmpty() || url.isEmpty())
             continue;
-        if (!hint.isEmpty() && name.contains(hint, Qt::CaseInsensitive))
+        if (!hint.isEmpty() && name.endsWith(hint, Qt::CaseInsensitive))
             return url;
     }
     return {};
@@ -327,6 +408,7 @@ void AppUpdater::handleReleaseObject(const QJsonObject& release, bool notifyIfUp
 
     m_latestVersion = tag;
     m_downloadUrl = assetDownloadUrl(release);
+    m_checksumsUrl = assetUrlNamed(release, QStringLiteral("checksums.sha256"));
 
     const int cmp = m_includePreReleases ? compareVersions(currentVersion(), tag)
                                          : compareVersionsPreferPlain(currentVersion(), tag);
@@ -363,13 +445,19 @@ void AppUpdater::downloadAndInstall()
         return;
     }
 
-#if !defined(Q_OS_WIN)
+#if defined(Q_OS_WIN)
+    startDownload(QUrl(m_downloadUrl));
+#else
+#if defined(Q_OS_LINUX)
+    const QString appImage = replaceableAppImagePath();
+    if (!appImage.isEmpty()) {
+        startAppImageDownload(QUrl(m_downloadUrl), appImage);
+        return;
+    }
+#endif
     openReleasePage();
     setStatusText(QCoreApplication::translate(
         "Core", "Open the release page to download the latest package for your platform"));
-    return;
-#else
-    startDownload(QUrl(m_downloadUrl));
 #endif
 }
 
@@ -418,17 +506,7 @@ void AppUpdater::startDownload(const QUrl& url)
 
     QNetworkReply* reply = m_network->get(request);
     m_activeReply = reply;
-    connect(reply, &QNetworkReply::downloadProgress, this,
-            [this, reply](qint64 received, qint64 total) {
-                if (m_activeReply != reply)
-                    return;
-                m_downloadBytesTotal = total;
-                if (total > 0)
-                    m_downloadProgress = static_cast<int>((received * 100) / total);
-                else
-                    m_downloadProgress = 0;
-                emit downloadProgressChanged();
-            });
+    trackDownloadProgress(reply);
     connect(reply, &QNetworkReply::readyRead, this, [this, reply, outFile]() {
         if (m_activeReply != reply || !outFile)
             return;
@@ -484,6 +562,198 @@ void AppUpdater::startDownload(const QUrl& url)
         emit installerLaunchRequested();
     });
 }
+
+void AppUpdater::trackDownloadProgress(QNetworkReply* reply)
+{
+    connect(reply, &QNetworkReply::downloadProgress, this,
+            [this, reply](qint64 received, qint64 total) {
+                if (m_activeReply != reply)
+                    return;
+                m_downloadBytesTotal = total;
+                if (total > 0)
+                    m_downloadProgress = static_cast<int>((received * 100) / total);
+                else
+                    m_downloadProgress = 0;
+                emit downloadProgressChanged();
+            });
+}
+
+void AppUpdater::failDownload(const QString& error)
+{
+    setDownloading(false);
+    setLastError(error);
+    setStatusText(error);
+    emit updateFailed(error);
+}
+
+#if defined(Q_OS_LINUX)
+void AppUpdater::startAppImageDownload(const QUrl& url, const QString& appImagePath)
+{
+    setLastError({});
+    setDownloading(true);
+    m_downloadProgress = 0;
+    m_downloadBytesTotal = 0;
+    emit downloadProgressChanged();
+    setStatusText(QCoreApplication::translate("Core", "Downloading Sprout update…"));
+
+    // Written beside the AppImage and renamed over it only on commit(), so a failed or
+    // rejected download never touches the working copy. The running copy keeps the old
+    // inode open until it exits.
+    auto* out = new QSaveFile(appImagePath, this);
+    if (!out->open(QIODevice::WriteOnly)) {
+        const QString error =
+            QCoreApplication::translate("Core", "Could not save the update next to %1: %2")
+                .arg(appImagePath, out->errorString());
+        delete out;
+        failDownload(error);
+        return;
+    }
+
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::UserAgentHeader,
+                      QStringLiteral("Arachnel/%1").arg(currentVersion()));
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
+
+    if (m_activeReply) {
+        QObject::disconnect(m_activeReply, nullptr, this, nullptr);
+        m_activeReply->abort();
+        m_activeReply->deleteLater();
+        m_activeReply = nullptr;
+    }
+
+    QNetworkReply* reply = m_network->get(request);
+    m_activeReply = reply;
+    trackDownloadProgress(reply);
+
+    auto hash = std::make_shared<QCryptographicHash>(QCryptographicHash::Sha256);
+    auto head = std::make_shared<QByteArray>();
+    const auto consume = [out, hash, head](const QByteArray& chunk) {
+        out->write(chunk);
+        hash->addData(chunk);
+        if (head->size() < 16)
+            head->append(chunk.left(16 - head->size()));
+    };
+    connect(reply, &QNetworkReply::readyRead, this, [this, reply, consume]() {
+        if (m_activeReply == reply)
+            consume(reply->readAll());
+    });
+    connect(reply, &QNetworkReply::finished, this,
+            [this, reply, out, hash, head, consume, appImagePath]() {
+                if (m_activeReply == reply)
+                    m_activeReply = nullptr;
+                reply->deleteLater();
+
+                if (reply->error() != QNetworkReply::NoError) {
+                    out->cancelWriting();
+                    delete out;
+                    if (reply->error() == QNetworkReply::OperationCanceledError) {
+                        setDownloading(false);
+                        return;
+                    }
+                    failDownload(QCoreApplication::translate("Core", "Download failed: %1")
+                                     .arg(reply->errorString()));
+                    return;
+                }
+                consume(reply->readAll());
+
+                // An error page must never replace a working AppImage.
+                if (!looksLikeAppImage(*head)) {
+                    out->cancelWriting();
+                    delete out;
+                    failDownload(QCoreApplication::translate(
+                        "Core", "The downloaded file is not an AppImage"));
+                    return;
+                }
+                out->setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner
+                                    | QFileDevice::ExeOwner | QFileDevice::ReadGroup
+                                    | QFileDevice::ExeGroup | QFileDevice::ReadOther
+                                    | QFileDevice::ExeOther);
+                verifyAppImageDownload(out, appImagePath, hash->result().toHex());
+            });
+}
+
+void AppUpdater::verifyAppImageDownload(QSaveFile* out, const QString& appImagePath,
+                                        const QByteArray& sha256Hex)
+{
+    // Releases before checksums.sha256 existed can only be checked by the magic above.
+    if (m_checksumsUrl.isEmpty()) {
+        installAppImage(out, appImagePath);
+        return;
+    }
+
+    QNetworkRequest request{QUrl(m_checksumsUrl)};
+    request.setHeader(QNetworkRequest::UserAgentHeader,
+                      QStringLiteral("Arachnel/%1").arg(currentVersion()));
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
+    QNetworkReply* reply = m_network->get(request);
+    m_activeReply = reply;
+    connect(reply, &QNetworkReply::finished, this,
+            [this, reply, out, appImagePath, sha256Hex]() {
+                if (m_activeReply == reply)
+                    m_activeReply = nullptr;
+                reply->deleteLater();
+
+                if (reply->error() != QNetworkReply::NoError) {
+                    out->cancelWriting();
+                    delete out;
+                    if (reply->error() == QNetworkReply::OperationCanceledError) {
+                        setDownloading(false);
+                        return;
+                    }
+                    failDownload(QCoreApplication::translate(
+                                     "Core", "Could not check the download: %1")
+                                     .arg(reply->errorString()));
+                    return;
+                }
+
+                // sha256sum lines are "<hash>  <file>". Match the hash, not the name: the
+                // update may be the versioned file or its unversioned alias.
+                bool listed = false;
+                const QList<QByteArray> lines = reply->readAll().split('\n');
+                for (const QByteArray& line : lines) {
+                    if (line.trimmed().split(' ').value(0).toLower() == sha256Hex) {
+                        listed = true;
+                        break;
+                    }
+                }
+                if (!listed) {
+                    out->cancelWriting();
+                    delete out;
+                    failDownload(QCoreApplication::translate(
+                        "Core", "The download does not match the release checksums"));
+                    return;
+                }
+                installAppImage(out, appImagePath);
+            });
+}
+
+void AppUpdater::installAppImage(QSaveFile* out, const QString& appImagePath)
+{
+    const bool replaced = out->commit();
+    const QString commitError = out->errorString();
+    delete out;
+    if (!replaced) {
+        failDownload(QCoreApplication::translate("Core", "Could not replace %1: %2")
+                         .arg(appImagePath, commitError));
+        return;
+    }
+    qInfo().noquote() << "[app-updater] replaced" << appImagePath << "with" << m_latestVersion;
+
+    m_downloadProgress = 100;
+    emit downloadProgressChanged();
+    if (!relaunchAppImageAfterExit(appImagePath)) {
+        m_updateAvailable = false;
+        setDownloading(false);
+        setStatusText(QCoreApplication::translate("Core", "Sprout %1 is installed. Restart to use it.")
+                          .arg(m_latestVersion));
+        return;
+    }
+    setStatusText(QCoreApplication::translate("Core", "Restarting Sprout…"));
+    emit installerLaunchRequested();
+}
+#endif
 
 namespace {
 

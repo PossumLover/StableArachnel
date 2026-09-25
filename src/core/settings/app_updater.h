@@ -6,6 +6,7 @@
 class QNetworkAccessManager;
 class QNetworkReply;
 class QJsonObject;
+class QSaveFile;
 
 namespace arachnel::core {
 
@@ -61,6 +62,14 @@ private:
     void handleReleasesListPayload(const QByteArray& payload, bool notifyIfUpToDate);
     void startDownload(const QUrl& url);
     bool launchInstaller(const QString& installerPath, QString* errorOut);
+#if defined(Q_OS_LINUX)
+    void startAppImageDownload(const QUrl& url, const QString& appImagePath);
+    void verifyAppImageDownload(QSaveFile* out, const QString& appImagePath,
+                                const QByteArray& sha256Hex);
+    void installAppImage(QSaveFile* out, const QString& appImagePath);
+#endif
+    void trackDownloadProgress(QNetworkReply* reply);
+    void failDownload(const QString& error);
     static QString assetDownloadUrl(const QJsonObject& release);
     static int compareVersions(const QString& left, const QString& right);
     static int compareVersionsPreferPlain(const QString& left, const QString& right);
@@ -76,6 +85,7 @@ private:
     int m_downloadProgress = 0;
     QString m_latestVersion;
     QString m_downloadUrl;
+    QString m_checksumsUrl;
     QString m_releasePageUrl;
     QString m_statusText;
     QString m_lastError;
