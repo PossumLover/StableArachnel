@@ -2,7 +2,7 @@
 
 <img src="resources/icons/arachnel-github.svg" width="128" alt="Arachnel logo" />
 
-<h1>Arachnel</h1>
+<h1>Sprout</h1>
 
 <p>
   <a href="README.md"><img src="https://img.shields.io/badge/README-English-8E8E93?style=for-the-badge&labelColor=161618" alt="English README"></a>
