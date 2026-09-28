@@ -17,6 +17,8 @@ struct ResolvedLaunch {
     QStringList arguments;
     QString workingDirectory;
     QProcessEnvironment environment;
+    /** The game runs under Proton. The prefix and Wine-only settings exist only then. */
+    bool viaProton = false;
 };
 
 QStringList splitLaunchArguments(const QString& text);

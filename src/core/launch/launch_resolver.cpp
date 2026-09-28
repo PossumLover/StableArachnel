@@ -304,6 +304,7 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
             resolved.arguments = protonArgs;
         }
         resolved.workingDirectory = workDir;
+        resolved.viaProton = true;
         resolved.environment =
             buildProtonEnvironment(game.id, manager.installDirForId(protonId), manager);
 
@@ -372,12 +373,16 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
             resolved.environment.insert(it.key(), it.value());
         }
     }
+#if defined(Q_OS_LINUX)
+    // Only Wine reads this. A native Linux launch can still be a script that starts
+    // Wine itself; a game on Windows never runs under it.
     if (!pluginInfo.wineDllOverrides.trimmed().isEmpty()) {
         const QString existing = resolved.environment.value(QStringLiteral("WINEDLLOVERRIDES"));
         const QString merged = existing.isEmpty() ? pluginInfo.wineDllOverrides
                                                   : existing + QLatin1Char(';') + pluginInfo.wineDllOverrides;
         resolved.environment.insert(QStringLiteral("WINEDLLOVERRIDES"), merged);
     }
+#endif
     applyUserLaunchOptions(&resolved, globalOptions, gameOptions);
     return resolved;
 }

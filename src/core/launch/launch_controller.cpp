@@ -1080,19 +1080,24 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
         }
         ResolvedLaunch resolved = resolveLaunch(info, gameCopy, *m_settings, m_protons);
         if (resolved.program.isEmpty()) {
-            const QString reason = QCoreApplication::translate(
+            const QString notFound =
+                QCoreApplication::translate("Core", "Executable not found for %1")
+                    .arg(gameCopy.title);
+#if defined(Q_OS_LINUX)
+            logLine(QCoreApplication::translate(
                 "Core",
-                "Could not resolve a launch command (missing Proton or game executable).");
-            logLine(reason);
+                "Could not resolve a launch command (missing Proton or game executable)."));
+#else
+            logLine(notFound);
+#endif
             if (m_hooks.notice)
-                m_hooks.notice(QCoreApplication::translate("Core", "Executable not found for %1")
-                                   .arg(gameCopy.title));
+                m_hooks.notice(notFound);
             return;
         }
         logLine(QStringLiteral("Arachnel %1 · %2 (%3)")
                     .arg(QCoreApplication::applicationVersion(), QSysInfo::prettyProductName(),
                          QSysInfo::currentCpuArchitecture()));
-        if (m_protons) {
+        if (m_protons && resolved.viaProton) {
             const QString protonId = m_settings->resolvedProtonId(gameCopy.protonId, *m_protons);
             const QString protonName = m_protons->activeVersionName(protonId);
             if (!protonName.isEmpty())
@@ -1141,7 +1146,7 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
         }
 
         QString error;
-        if (m_protons && detectUnsteamOverlay(gameCopy.installPath).enabled) {
+        if (m_protons && resolved.viaProton && detectUnsteamOverlay(gameCopy.installPath).enabled) {
             // The shim is a long-running Wine process in the SAME prefix, started
             // before the game. `waitforexitandrun` waits for every Wine process in the
             // prefix to exit before starting - it would wait on the shim forever. Keep
