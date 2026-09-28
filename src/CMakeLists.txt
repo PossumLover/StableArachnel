@@ -106,6 +106,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/launch/launch_facade.cpp
     src/core/library/library_facade_sync.cpp
     src/core/library/library_facade_ops.cpp
+    src/core/library/library_facade_verify.cpp
     src/core/plugins/plugin_facade.cpp
     src/core/runtime/proton_facade.cpp
     src/core/facade/core_wiring_services.cpp

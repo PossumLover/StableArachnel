@@ -2594,6 +2594,51 @@
         <source>Torrent error %1</source>
         <translation>Torrent error %1</translation>
     </message>
+    <message>
+        <location filename="../src/core/jobs/job_kind.cpp" line="19" />
+        <source>Verify</source>
+        <translation>Verify</translation>
+    </message>
+    <message>
+        <location filename="../src/core/jobs/job_display.cpp" line="45" />
+        <source>Verifying %1</source>
+        <translation>Verifying %1</translation>
+    </message>
+    <message>
+        <location filename="../src/core/jobs/job_display.cpp" line="46" />
+        <source>Files verified</source>
+        <translation>Files verified</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="78" />
+        <source>Close %1 before verifying its files</source>
+        <translation>Close %1 before verifying its files</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="84" />
+        <source>%1 is busy - wait for its current task to finish</source>
+        <translation>%1 is busy - wait for its current task to finish</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="95" />
+        <source>This source can't verify game files</source>
+        <translation>This source can't verify game files</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="135" />
+        <source>Could not start verifying %1</source>
+        <translation>Could not start verifying %1</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="179" />
+        <source>Could not verify game files</source>
+        <translation>Could not verify game files</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="229" />
+        <source>Files verified: %1</source>
+        <translation>Files verified: %1</translation>
+    </message>
 </context>
 <context>
     <name>CrashReportDialog</name>
@@ -3380,6 +3425,61 @@
         <location line="+1" />
         <source>Not needed</source>
         <translation>Not needed</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="306" />
+        <source>Game files</source>
+        <translation>Game files</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="313" />
+        <source>Check every file against the source and re-download any that are missing or damaged.</source>
+        <translation>Check every file against the source and re-download any that are missing or damaged.</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="314" />
+        <source>This source can't check game files.</source>
+        <translation>This source can't check game files.</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="322" />
+        <source>Verifying…</source>
+        <translation>Verifying…</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="322" />
+        <source>Verify files</source>
+        <translation>Verify files</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="784" />
+        <source>Verify game files?</source>
+        <translation>Verify game files?</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="800" />
+        <source>Every file is checked against the source. Missing or damaged files are downloaded again, and modded game files go back to the originals.</source>
+        <translation>Every file is checked against the source. Missing or damaged files are downloaded again, and modded game files go back to the originals.</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="810" />
+        <source>The available update is installed too. It may break the game - DLC for the new build is not on the source yet.</source>
+        <translation>The available update is installed too. It may break the game - DLC for the new build is not on the source yet.</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="811" />
+        <source>The available update is installed too.</source>
+        <translation>The available update is installed too.</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="829" />
+        <source>Cancel</source>
+        <translation>Cancel</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="836" />
+        <source>Verify</source>
+        <translation>Verify</translation>
     </message>
 </context>
 <context>

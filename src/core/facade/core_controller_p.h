@@ -64,6 +64,12 @@
     void startOwnedUpdate(const QString& entryId, const QString& libraryId);
     /** Report content an update left at the old build, before the game fails on it. */
     void warnAboutStaleContentAfterUpdate(const QString& entryId);
+    /** Installed DLC and the Online Fix state, for a verify job. */
+    void prepareGameFilesVerify(const QString& jobId, const LibraryGame& game, InstallContext& ctx);
+    void beginGameFilesVerifyCommit(const QString& jobId, const QString& entryId,
+                                    const QString& sourceId);
+    void restoreOnlineFixAfterVerify(const QString& jobId, const QString& entryId);
+    void finishGameFilesVerify(const QString& jobId, const QString& entryId);
     /** A refused fix addon often has a newer sibling that still downloads; try it. */
     bool retryAddonWithSiblingVersion(const QString& jobId, const QString& error);
     void syncCatalogInstallKind(const QString&, InstallKind);
@@ -133,6 +139,8 @@
     bool m_prepareShutdownDone = false;
     bool m_startupLibraryUpdatesHandled = false;
     QSet<QString> m_catalogAddonEnrichInFlight;
+    /** Verify jobs started on a game whose Online Fix the user had turned off. */
+    QSet<QString> m_verifyKeepsOnlineFixOff;
     QList<QFuture<void>> m_catalogAddonEnrichFutures;
     mutable QMutex m_catalogAddonEnrichMutex;
     bool m_pluginCallsBlocked = false;

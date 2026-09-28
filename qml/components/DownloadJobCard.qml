@@ -165,7 +165,8 @@ Item {
         const prefixes = [
             "Downloading ", "Загрузка ",
             "Installing ", "Установка ",
-            "Updating ", "Обновление "
+            "Updating ", "Обновление ",
+            "Verifying ", "Проверка "
         ]
         for (let i = 0; i < prefixes.length; ++i) {
             if (t.startsWith(prefixes[i])) {

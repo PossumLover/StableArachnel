@@ -15,6 +15,8 @@ QString jobKindLabel(JobKind kind)
         return QCoreApplication::translate("Core", "Update");
     case JobKind::Move:
         return QCoreApplication::translate("Core", "Move");
+    case JobKind::Verify:
+        return QCoreApplication::translate("Core", "Verify");
     }
     return QCoreApplication::translate("Core", "Task");
 }

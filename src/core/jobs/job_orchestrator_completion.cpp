@@ -25,8 +25,9 @@ void JobOrchestrator::completePluginDownload(const QString& jobId, const QString
     job.detail = QStringLiteral("Installed");
     job.artifactPath = installPath;
     job.completedAt = isoNow();
-    updateJobInModel(job);
+    // Store first: the model signal has QML re-check isEntryPlayable, which reads the store.
     persistJob(job);
+    updateJobInModel(job);
     const JobKind kind = m_jobKinds.value(jobId, job.kind);
     m_jobKinds.remove(jobId);
     m_pluginSpeed.remove(jobId);
@@ -43,8 +44,8 @@ void JobOrchestrator::failPluginDownload(const QString& jobId, const QString& er
     job.status = QStringLiteral("failed");
     job.detail = error.isEmpty() ? QStringLiteral("Failed") : error;
     job.completedAt = isoNow();
-    updateJobInModel(job);
     persistJob(job);
+    updateJobInModel(job);
     m_jobKinds.remove(jobId);
     m_pluginSpeed.remove(jobId);
     m_pluginEstimatedTotal.remove(jobId);

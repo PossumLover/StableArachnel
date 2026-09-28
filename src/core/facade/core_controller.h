@@ -32,6 +32,7 @@ namespace arachnel::core {
 
 struct GameMetadata;
 struct GameLaunchTarget;
+struct InstallContext;
 
 class CatalogFilterService;
 class CatalogDiscoveryService;

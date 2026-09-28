@@ -320,11 +320,14 @@ QString JobOrchestrator::startPluginOwnedDownload(const CatalogEntry& entry, Job
     if (!existing.isEmpty())
         return existing;
 
-    const QString prefix =
-        kind == JobKind::Update ? QStringLiteral("update") : QStringLiteral("install");
+    const QString prefix = kind == JobKind::Update   ? QStringLiteral("update")
+                           : kind == JobKind::Verify ? QStringLiteral("verify")
+                                                     : QStringLiteral("install");
     const QString saveSubdir = QStringLiteral("%1/%2").arg(prefix, entry.id);
     const QString title = kind == JobKind::Update
                               ? QStringLiteral("Updating %1").arg(entry.title)
+                          : kind == JobKind::Verify
+                              ? QStringLiteral("Verifying %1").arg(entry.title)
                               : QStringLiteral("Downloading %1").arg(entry.title);
     const QString libId = libraryId.isEmpty() ? m_settings->defaultLibraryId() : libraryId;
     const QString downloadsRoot = m_settings->resolvedDownloadsRoot(libId);

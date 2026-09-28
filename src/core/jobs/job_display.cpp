@@ -42,6 +42,8 @@ void jobDisplayTranslationSeed()
     QT_TRANSLATE_NOOP("Core", "Downloading %1");
     QT_TRANSLATE_NOOP("Core", "Installing %1");
     QT_TRANSLATE_NOOP("Core", "Updating %1");
+    QT_TRANSLATE_NOOP("Core", "Verifying %1");
+    QT_TRANSLATE_NOOP("Core", "Files verified");
     QT_TRANSLATE_NOOP("Core", "Installing (%1/%2)");
     QT_TRANSLATE_NOOP("Core", "Installing (%1/%2) - %3");
     QT_TRANSLATE_NOOP("Core", "Couldn't update DLC unlocks.");
@@ -88,6 +90,10 @@ QString displayJobTitle(const QString& title)
         !translated.isEmpty())
         return translated;
     if (QString translated = fromPrefixed(title, QStringLiteral("Updating "), "Updating %1");
+        !translated.isEmpty())
+        return translated;
+
+    if (QString translated = fromPrefixed(title, QStringLiteral("Verifying "), "Verifying %1");
         !translated.isEmpty())
         return translated;
 
@@ -186,6 +192,7 @@ QString displayJobDetail(const QString& detail)
         {"Failed to start HTTP download", "Failed to start HTTP download"},
         {"Завершено", "Completed"},
         {"Completed", "Completed"},
+        {"Files verified", "Files verified"},
     };
 
     for (const auto& entry : kExact) {

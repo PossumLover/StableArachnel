@@ -690,8 +690,12 @@ void CoreController::initializeServices()
                         }
                     }
 
+                    if (kind == JobKind::Verify)
+                        beginGameFilesVerifyCommit(jobId, entryId, sourceId);
                     m_installSessionService->completePluginDownload(
                         resolved, sourceId, job->savePath, libraryId, artifactPath, jobId);
+                    if (kind == JobKind::Verify)
+                        finishGameFilesVerify(jobId, entryId);
                     return;
                 }
 

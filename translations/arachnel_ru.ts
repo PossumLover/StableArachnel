@@ -2594,6 +2594,51 @@
         <source>Torrent error %1</source>
         <translation>Ошибка торрента %1</translation>
     </message>
+    <message>
+        <location filename="../src/core/jobs/job_kind.cpp" line="19" />
+        <source>Verify</source>
+        <translation>Проверка</translation>
+    </message>
+    <message>
+        <location filename="../src/core/jobs/job_display.cpp" line="45" />
+        <source>Verifying %1</source>
+        <translation>Проверка %1</translation>
+    </message>
+    <message>
+        <location filename="../src/core/jobs/job_display.cpp" line="46" />
+        <source>Files verified</source>
+        <translation>Файлы проверены</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="78" />
+        <source>Close %1 before verifying its files</source>
+        <translation>Закройте %1 перед проверкой файлов</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="84" />
+        <source>%1 is busy - wait for its current task to finish</source>
+        <translation>Сначала дождитесь завершения текущей задачи для %1</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="95" />
+        <source>This source can't verify game files</source>
+        <translation>Этот источник не поддерживает проверку файлов игры</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="135" />
+        <source>Could not start verifying %1</source>
+        <translation>Не удалось начать проверку %1</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="179" />
+        <source>Could not verify game files</source>
+        <translation>Не удалось проверить файлы игры</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/library_facade_verify.cpp" line="229" />
+        <source>Files verified: %1</source>
+        <translation>Файлы проверены: %1</translation>
+    </message>
 </context>
 <context>
     <name>CrashReportDialog</name>
@@ -3382,6 +3427,61 @@
         <location line="+1" />
         <source>Not needed</source>
         <translation>Не нужен</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="306" />
+        <source>Game files</source>
+        <translation>Файлы игры</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="313" />
+        <source>Check every file against the source and re-download any that are missing or damaged.</source>
+        <translation>Проверить каждый файл по источнику и заново скачать отсутствующие или повреждённые.</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="314" />
+        <source>This source can't check game files.</source>
+        <translation>Этот источник не поддерживает проверку файлов игры.</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="322" />
+        <source>Verifying…</source>
+        <translation>Проверка…</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="322" />
+        <source>Verify files</source>
+        <translation>Проверить файлы</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="784" />
+        <source>Verify game files?</source>
+        <translation>Проверить файлы игры?</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="800" />
+        <source>Every file is checked against the source. Missing or damaged files are downloaded again, and modded game files go back to the originals.</source>
+        <translation>Каждый файл сверяется с источником. Отсутствующие или повреждённые файлы скачиваются заново, а изменённые модами файлы игры заменяются оригинальными.</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="810" />
+        <source>The available update is installed too. It may break the game - DLC for the new build is not on the source yet.</source>
+        <translation>Доступное обновление тоже будет установлено. Оно может сломать игру - DLC для нового билда ещё нет на источнике.</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="811" />
+        <source>The available update is installed too.</source>
+        <translation>Доступное обновление тоже будет установлено.</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="829" />
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="836" />
+        <source>Verify</source>
+        <translation>Проверить</translation>
     </message>
 </context>
 <context>

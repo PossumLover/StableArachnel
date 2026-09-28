@@ -266,6 +266,8 @@ std::optional<CatalogEntry> CoreController::resolveCatalogEntry(const QString& e
         synthetic.title = synthetic.title.mid(9);
     else if (synthetic.title.startsWith(QStringLiteral("Обновление ")))
         synthetic.title = synthetic.title.mid(11);
+    else if (synthetic.title.startsWith(QStringLiteral("Verifying ")))
+        synthetic.title = synthetic.title.mid(10);
     if (!jobHint->magnetUri.isEmpty())
         synthetic.magnetUris.append(jobHint->magnetUri);
     synthetic.coverUrl = jobHint->coverUrl;

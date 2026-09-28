@@ -87,6 +87,20 @@ MD.BottomSheet {
             return info.sourceName
         return Core.sources.nameForId(sid)
     }
+    readonly property bool canVerifyFiles: {
+        const _rev = root.detailsRevision
+        return root.gameId.length > 0 && Core.canVerifyGameFiles(root.gameId)
+    }
+    readonly property bool verifyingFiles: {
+        const _rev = root.detailsRevision
+        return root.gameId.length > 0 && Core.isVerifyingGameFiles(root.gameId)
+    }
+    readonly property bool gameBusy: {
+        const _rev = root.detailsRevision
+        return !!(Core.jobs.jobForEntry(root.gameId).inProgress)
+            || (Core.gameRunning && Core.runningGameId === root.gameId)
+            || (Core.runtimeSetupInProgress && Core.runtimeSetupGameId === root.gameId)
+    }
 
     function openForGame(id) {
         gameId = id
@@ -265,6 +279,50 @@ MD.BottomSheet {
                         Core.setGameSteamOverlayForced(root.gameId, checked)
                         root.detailsRevision++
                     }
+                }
+            }
+        }
+
+        MD.ElevationRectangle {
+            Layout.fillWidth: true
+            Layout.leftMargin: MD.Token.spacing.large
+            Layout.rightMargin: MD.Token.spacing.large
+            visible: root.installed
+            implicitHeight: filesCol.implicitHeight + 2 * MD.Token.spacing.medium
+            radius: MD.Token.shape.corner.large
+            color: MD.Token.color.surface_container_low
+            elevation: MD.Token.elevation.level0
+
+            ColumnLayout {
+                id: filesCol
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: MD.Token.spacing.medium
+                spacing: MD.Token.spacing.small
+
+                MD.Label {
+                    Layout.fillWidth: true
+                    text: qsTr("Game files")
+                    typescale: MD.Token.typescale.title_small
+                }
+
+                MD.Label {
+                    Layout.fillWidth: true
+                    text: root.canVerifyFiles
+                          ? qsTr("Check every file against the source and re-download any that are missing or damaged.")
+                          : qsTr("This source can't check game files.")
+                    color: MD.Token.color.on_surface_variant
+                    typescale: MD.Token.typescale.body_small
+                    wrapMode: Text.WordWrap
+                }
+
+                MD.Button {
+                    mdState.type: MD.Enum.BtFilledTonal
+                    text: root.verifyingFiles ? qsTr("Verifying…") : qsTr("Verify files")
+                    icon.name: MD.Token.icon.fact_check
+                    enabled: root.canVerifyFiles && !root.gameBusy
+                    onClicked: verifyDialog.open()
                 }
             }
         }
@@ -715,6 +773,77 @@ MD.BottomSheet {
             mdState.type: MD.Enum.BtFilled
             text: qsTr("Done")
             onClicked: root.close()
+        }
+    }
+
+    MD.Dialog {
+        id: verifyDialog
+        parent: Overlay.overlay
+        modal: true
+        width: Math.min(440, Overlay.overlay ? Overlay.overlay.width - 48 : 440)
+        title: qsTr("Verify game files?")
+
+        property bool withUpdate: false
+        property bool dlcRisk: false
+
+        onAboutToShow: {
+            withUpdate = !!(root.info.hasUpdate)
+            dlcRisk = Core.catalogUpdateHasDlcRisk(root.gameId)
+        }
+
+        contentItem: ColumnLayout {
+            spacing: MD.Token.spacing.medium
+            width: verifyDialog.width - verifyDialog.horizontalPadding * 2
+
+            MD.Label {
+                Layout.fillWidth: true
+                text: qsTr("Every file is checked against the source. Missing or damaged files are downloaded again, and modded game files go back to the originals.")
+                wrapMode: Text.WordWrap
+                typescale: MD.Token.typescale.body_medium
+                color: MD.Token.color.on_surface_variant
+            }
+
+            MD.Label {
+                Layout.fillWidth: true
+                visible: verifyDialog.withUpdate
+                text: verifyDialog.dlcRisk
+                      ? qsTr("The available update is installed too. It may break the game - DLC for the new build is not on the source yet.")
+                      : qsTr("The available update is installed too.")
+                wrapMode: Text.WordWrap
+                typescale: MD.Token.typescale.body_medium
+                color: verifyDialog.dlcRisk ? MD.Token.color.error : MD.Token.color.on_surface_variant
+            }
+        }
+
+        footer: Item {
+            implicitHeight: verifyFooterRow.implicitHeight + MD.Token.spacing.medium
+
+            MD.DialogButtonBox {
+                id: verifyFooterRow
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+
+                MD.Button {
+                    mdState.type: MD.Enum.BtText
+                    text: qsTr("Cancel")
+                    DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+                    onClicked: verifyDialog.close()
+                }
+
+                MD.Button {
+                    mdState.type: MD.Enum.BtFilled
+                    text: qsTr("Verify")
+                    DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                    onClicked: {
+                        const id = root.gameId
+                        verifyDialog.close()
+                        // Close the sheet so the game page shows the progress.
+                        root.close()
+                        Core.verifyGameFiles(id)
+                    }
+                }
+            }
         }
     }
 }

@@ -40,6 +40,10 @@
     Q_INVOKABLE void installDownloadedCatalogAddon(const QString&, const QString&);
     Q_INVOKABLE bool isCatalogAddonInstalled(const QString&, const QString&) const;
     Q_INVOKABLE void updateCatalogEntry(const QString&);
+    /** Check an installed game's files against its source and re-download what's missing or changed. */
+    Q_INVOKABLE void verifyGameFiles(const QString& entryId);
+    Q_INVOKABLE bool canVerifyGameFiles(const QString& entryId) const;
+    Q_INVOKABLE bool isVerifyingGameFiles(const QString& entryId) const;
     /** Refresh Steam/plugin addons into the catalog cache (async). Returns true if already ready. */
     Q_INVOKABLE bool ensureCatalogAddons(const QString& entryId);
     /** True when updating may break installed DLC (local check only - never blocks). */

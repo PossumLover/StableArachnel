@@ -185,11 +185,19 @@ bool CoreController::restartPluginOwnedDownload(const QString& jobId)
     const CatalogEntry& entry = *entryOpt;
     const JobEntry job = *jobPtr;
     const bool isUpdate = job.kind == JobKind::Update;
+    const bool isVerify = job.kind == JobKind::Verify;
     const QString libId = job.libraryId.isEmpty() ? m_settings.defaultLibraryId() : job.libraryId;
 
     m_jobOrchestrator->preparePluginJobResume(jobId);
 
     const LibraryGame* existing = m_libraryStore.gameById(entry.id);
+    // A verify with no install left would download the whole game into a new folder.
+    if (isVerify
+        && (!existing || existing->installPath.isEmpty() || !QDir(existing->installPath).exists())) {
+        m_jobOrchestrator->failPluginDownload(
+            jobId, QCoreApplication::translate("Core", "Install the game first"));
+        return false;
+    }
     InstallContext ctx;
     ctx.jobId = jobId;
     ctx.entryId = entry.id;
@@ -202,7 +210,9 @@ bool CoreController::restartPluginOwnedDownload(const QString& jobId)
     ctx.downloadsPath = m_settings.resolvedDownloadsRoot(libId);
     ctx.downloadPath = job.savePath.isEmpty()
                            ? (ctx.downloadsPath + QLatin1Char('/')
-                              + (isUpdate ? QStringLiteral("update/") : QStringLiteral("install/"))
+                              + (isUpdate   ? QStringLiteral("update/")
+                                 : isVerify ? QStringLiteral("verify/")
+                                            : QStringLiteral("install/"))
                               + entry.id)
                            : job.savePath;
     ctx.magnetUri = entry.steamAppId.isEmpty() ? job.magnetUri : entry.steamAppId;
@@ -213,8 +223,10 @@ bool CoreController::restartPluginOwnedDownload(const QString& jobId)
     ctx.steamAppId = entry.steamAppId;
     ctx.installKind = entry.installKind;
     // Empty = resume/continue; "update" forces verify. Never treat retry as brand-new skip.
-    ctx.installMode = isUpdate ? QStringLiteral("update") : QString();
-    if (existing) {
+    ctx.installMode = isUpdate || isVerify ? QStringLiteral("update") : QString();
+    if (isVerify) {
+        prepareGameFilesVerify(jobId, *existing, ctx);
+    } else if (existing) {
         for (const InstalledComponent& c : existing->components)
             ctx.selectedAddonIds.append(c.id);
     }
