@@ -64,6 +64,8 @@ SocialController::SocialController(QObject* parent)
             entry.addedAt = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
         if (entry.nickname.isEmpty())
             entry.nickname = tr("New friend");
+        if (const FriendEntry* existing = findFriend(entry.friendId))
+            entry.alias = existing->alias;
         m_store.upsertFriend(entry);
         emit noticeRequested(tr("Friend added"));
     });
@@ -198,13 +200,15 @@ void SocialController::removeFriend(const QString& friendId)
 void SocialController::renameFriend(const QString& friendId, const QString& nickname)
 {
     const QString trimmed = nickname.trimmed();
-    if (trimmed.isEmpty())
-        return;
     QVector<FriendEntry> friends = m_store.friends();
     for (FriendEntry& entry : friends) {
         if (entry.friendId != friendId)
             continue;
-        entry.nickname = trimmed;
+        // Empty or their own name drops the alias, so their future renames show again.
+        const QString alias = trimmed == entry.nickname ? QString() : trimmed;
+        if (alias == entry.alias)
+            return;
+        entry.alias = alias;
         m_store.setFriends(std::move(friends));
         return;
     }
@@ -245,7 +249,7 @@ QVariantMap SocialController::friendSummary(const QString& friendId) const
         return {};
     return {
         {QStringLiteral("friendId"), entry->friendId},
-        {QStringLiteral("nickname"), entry->nickname},
+        {QStringLiteral("nickname"), entry->shownName()},
         {QStringLiteral("online"), entry->online},
         {QStringLiteral("currentGameId"), entry->currentGameId},
         {QStringLiteral("currentGameTitle"), entry->currentGameTitle},
@@ -293,11 +297,12 @@ void SocialController::applyRemotePresence(const QVector<FriendEntry>& remoteFri
             }
         }
 
-        // Relay displayName is source of truth so renames reach friends.
+        // Relay nickname tracks the friend's own display name; the local alias overrides it.
         if (entry.nickname.isEmpty() && local && !local->nickname.isEmpty())
             entry.nickname = local->nickname;
         if (entry.nickname.isEmpty())
             entry.nickname = tr("Friend");
+        entry.alias = local ? local->alias : QString();
         if (entry.addedAt.isEmpty())
             entry.addedAt = local && !local->addedAt.isEmpty()
                                 ? local->addedAt
@@ -314,7 +319,7 @@ void SocialController::applyRemotePresence(const QVector<FriendEntry>& remoteFri
             if (arrived) {
                 const QString title =
                     remote.suggestedGameTitle.isEmpty() ? remote.suggestedGameId : remote.suggestedGameTitle;
-                m_suggestionFriend = entry.nickname;
+                m_suggestionFriend = entry.shownName();
                 m_suggestionGameId = remote.suggestedGameId;
                 m_suggestionGameTitle = title;
                 emit suggestionNotificationChanged();

@@ -25,7 +25,7 @@ QVariant FriendsModel::data(const QModelIndex& index, int role) const
     case FriendIdRole:
         return entry.friendId;
     case NicknameRole:
-        return entry.nickname;
+        return entry.shownName();
     case PublicKeyRole:
         return entry.publicKey;
     case OnlineRole:
@@ -85,7 +85,7 @@ int presenceRank(const FriendEntry& entry)
 
 bool sameRow(const FriendEntry& a, const FriendEntry& b)
 {
-    return a.friendId == b.friendId && a.nickname == b.nickname && a.online == b.online
+    return a.friendId == b.friendId && a.shownName() == b.shownName() && a.online == b.online
         && a.currentGameId == b.currentGameId && a.currentGameTitle == b.currentGameTitle
         && a.currentGameCoverUrl == b.currentGameCoverUrl && a.lastSeenAt == b.lastSeenAt
         && a.suggestedGameId == b.suggestedGameId && a.suggestedGameTitle == b.suggestedGameTitle
@@ -103,7 +103,7 @@ void FriendsModel::setFriends(QVector<FriendEntry> friends)
             return ra < rb;
         if (ra == 2 && a.lastSeenAt != b.lastSeenAt)
             return a.lastSeenAt > b.lastSeenAt; // ISO-8601 sorts as text
-        return QString::localeAwareCompare(a.nickname, b.nickname) < 0;
+        return QString::localeAwareCompare(a.shownName(), b.shownName()) < 0;
     });
 
     // Presence polls every few seconds. Same people in the same order: update the
@@ -136,7 +136,7 @@ QVariantMap FriendsModel::friendInfo(int row) const
     const FriendEntry& entry = m_friends.at(row);
     return {
         {QStringLiteral("friendId"), entry.friendId},
-        {QStringLiteral("nickname"), entry.nickname},
+        {QStringLiteral("nickname"), entry.shownName()},
         {QStringLiteral("publicKey"), entry.publicKey},
         {QStringLiteral("online"), entry.online},
         {QStringLiteral("currentGameId"), entry.currentGameId},

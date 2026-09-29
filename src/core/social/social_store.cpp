@@ -86,6 +86,7 @@ QJsonObject friendToJson(const FriendEntry& entry)
     return {
         {QStringLiteral("friendId"), entry.friendId},
         {QStringLiteral("nickname"), entry.nickname},
+        {QStringLiteral("alias"), entry.alias},
         {QStringLiteral("publicKey"), entry.publicKey},
         {QStringLiteral("online"), entry.online},
         {QStringLiteral("currentGameId"), entry.currentGameId},
@@ -105,6 +106,7 @@ FriendEntry friendFromJson(const QJsonObject& obj)
     FriendEntry entry;
     entry.friendId = obj.value(QStringLiteral("friendId")).toString();
     entry.nickname = obj.value(QStringLiteral("nickname")).toString();
+    entry.alias = obj.value(QStringLiteral("alias")).toString();
     entry.publicKey = obj.value(QStringLiteral("publicKey")).toString();
     entry.online = obj.value(QStringLiteral("online")).toBool(false);
     entry.currentGameId = obj.value(QStringLiteral("currentGameId")).toString();

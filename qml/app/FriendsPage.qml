@@ -481,9 +481,7 @@ Item {
             renameField.selectAll()
         }
         function commit() {
-            const name = renameField.text.trim()
-            if (name.length > 0)
-                Core.renameFriendById(friendId, name)
+            Core.renameFriendById(friendId, renameField.text.trim())
             close()
         }
 
