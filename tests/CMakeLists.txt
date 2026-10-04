@@ -52,10 +52,11 @@ add_test(NAME network_tests COMMAND network_tests)
 
 if(WIN32)
     find_package(Qt6 6.8 REQUIRED COMPONENTS Gui Qml)
-    add_executable(window_resize_tests window_resize_tests.cpp)
+    add_executable(window_resize_tests window_resize_tests.cpp
+        ../src/app/window_frame.cpp)
     target_compile_definitions(window_resize_tests PRIVATE
         SPROUT_WINDOW_CHROME_QML="${CMAKE_CURRENT_SOURCE_DIR}/../qml/components/WindowChrome.qml")
     target_link_libraries(window_resize_tests PRIVATE Qt6::Gui Qt6::Qml Qt6::Test user32)
-    add_test(NAME window_resize_tests COMMAND window_resize_tests)
+    add_test(NAME window_resize_tests COMMAND window_resize_tests -o -,txt)
     set_tests_properties(window_resize_tests PROPERTIES TIMEOUT 30)
 endif()

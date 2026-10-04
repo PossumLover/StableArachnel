@@ -12,6 +12,7 @@
 #include <QStyleHints>
 #include <QString>
 #include <QTimer>
+#include <QWindow>
 
 #if defined(Q_OS_UNIX)
 #include <sys/resource.h>
@@ -29,6 +30,7 @@
 #include "crash_log.h"
 #include "deep_link.h"
 #include "settings_identity.h"
+#include "window_frame.h"
 
 #ifndef QT_QML_MATERIAL_IMPORT_PATH
 #define QT_QML_MATERIAL_IMPORT_PATH ""
@@ -228,6 +230,10 @@ int main(int argc, char* argv[])
         QQmlApplicationEngine engine;
         configureQmlEngine(engine);
         wireEngineLogging(engine, app);
+        QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &app,
+                         [](QObject* object, const QUrl&) {
+                             arachnel::configureWindowFrame(qobject_cast<QWindow*>(object));
+                         });
 
         if (!crashDialogMode) {
             if (auto* guiApp = qobject_cast<QGuiApplication*>(&app))
