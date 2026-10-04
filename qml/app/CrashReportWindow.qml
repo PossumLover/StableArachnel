@@ -15,9 +15,11 @@ MD.ApplicationWindow {
     minimumHeight: 340
     title: qsTr("Application crashed")
     color: MD.Token.color.surface_container
-    flags: customTitleBar ? (Qt.Window | Qt.FramelessWindowHint) : Qt.Window
+    flags: windowChrome.flags
 
-    readonly property bool customTitleBar: Qt.platform.os === "windows"
+    readonly property bool customTitleBar: windowChrome.customTitleBar
+
+    WindowChrome { id: windowChrome }
 
     MD.MProp.textColor: MD.MProp.color.on_surface
     MD.MProp.backgroundColor: MD.MProp.color.surface_container
@@ -69,7 +71,6 @@ MD.ApplicationWindow {
     WindowResizeEdges {
         anchors.fill: parent
         visible: root.customTitleBar
-        enabled: root.customTitleBar
         window: root
         z: 1000
     }

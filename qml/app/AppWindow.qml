@@ -16,9 +16,11 @@ MD.ApplicationWindow {
     minimumHeight: 720
     title: Qt.application.displayName
     color: MD.Token.color.surface_container
-    flags: customTitleBar ? (Qt.Window | Qt.FramelessWindowHint) : Qt.Window
+    flags: windowChrome.flags
 
-    readonly property bool customTitleBar: Qt.platform.os === "windows"
+    readonly property bool customTitleBar: windowChrome.customTitleBar
+
+    WindowChrome { id: windowChrome }
 
     MD.MProp.textColor: MD.MProp.color.on_surface
     MD.MProp.backgroundColor: MD.MProp.color.surface_container

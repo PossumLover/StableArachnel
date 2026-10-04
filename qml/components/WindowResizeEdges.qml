@@ -5,9 +5,10 @@ Item {
 
     required property var window
     property int margin: 5
+    enabled: root.window.visibility === Window.Windowed
 
     function resize(edge) {
-        if (root.window.visibility !== Window.Maximized)
+        if (root.enabled)
             root.window.startSystemResize(edge)
     }
 
@@ -16,6 +17,7 @@ Item {
         anchors.right: parent.right
         anchors.top: parent.top
         height: margin
+        cursorShape: Qt.SizeVerCursor
         onPressed: resize(Qt.TopEdge)
     }
 
@@ -24,6 +26,7 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         height: margin
+        cursorShape: Qt.SizeVerCursor
         onPressed: resize(Qt.BottomEdge)
     }
 
@@ -32,6 +35,7 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: margin
+        cursorShape: Qt.SizeHorCursor
         onPressed: resize(Qt.LeftEdge)
     }
 
@@ -40,6 +44,7 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: margin
+        cursorShape: Qt.SizeHorCursor
         onPressed: resize(Qt.RightEdge)
     }
 
@@ -48,6 +53,7 @@ Item {
         anchors.top: parent.top
         width: margin
         height: margin
+        cursorShape: Qt.SizeFDiagCursor
         onPressed: resize(Qt.LeftEdge | Qt.TopEdge)
     }
 
@@ -56,6 +62,7 @@ Item {
         anchors.top: parent.top
         width: margin
         height: margin
+        cursorShape: Qt.SizeBDiagCursor
         onPressed: resize(Qt.RightEdge | Qt.TopEdge)
     }
 
@@ -64,6 +71,7 @@ Item {
         anchors.bottom: parent.bottom
         width: margin
         height: margin
+        cursorShape: Qt.SizeBDiagCursor
         onPressed: resize(Qt.LeftEdge | Qt.BottomEdge)
     }
 
@@ -72,6 +80,7 @@ Item {
         anchors.bottom: parent.bottom
         width: margin
         height: margin
+        cursorShape: Qt.SizeFDiagCursor
         onPressed: resize(Qt.RightEdge | Qt.BottomEdge)
     }
 }
