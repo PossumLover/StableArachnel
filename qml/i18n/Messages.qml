@@ -18,6 +18,8 @@ QtObject {
 
     readonly property string settingsSourceFormDesc: qsTr("Paste a catalog JSON URL. Sprout loads the game list from that link.")
 
+    readonly property string settingsHydraLibraryHint: qsTr("Sources listed on Hydra Library. Sprout checks each one when you add it, and tells you if its site won't let Sprout in.")
+
     readonly property string settingsWeblateHint: qsTr("Missing your language? Help translate Sprout on <a href=\"%1\">Weblate</a>.")
 
     readonly property string settingsPluginsInstallHint: qsTr("Use Install plugin below and pick a .arach file.")

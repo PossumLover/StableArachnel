@@ -52,6 +52,8 @@ public:
     QString activeCatalogSourceId() const;
     QStringList activeCatalogSourceIds() const;
     int catalogEntryCount(const QString& sourceId) const;
+    /** Why the catalog's last load or count failed; empty when it did not. */
+    QString catalogLoadError(const QString& sourceId) const;
     bool isCatalogSourceSelected(const QString& sourceId) const;
     const QHash<QString, QVector<CatalogEntry>>& catalogsBySource() const;
 
@@ -131,6 +133,7 @@ private:
     /** Any known entry id (showcase or offer) -> groupKey. */
     QHash<QString, QString> m_entryIdToOfferGroup;
     QHash<QString, int> m_catalogCounts;
+    QHash<QString, QString> m_catalogErrors;
     QStringList m_catalogPrefetchQueue;
     QStringList m_activeSourceIds;
     QStringList m_catalogLoadQueue;

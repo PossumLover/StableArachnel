@@ -112,8 +112,10 @@
     Q_INVOKABLE void selectCatalogSource(const QString&, const QString& = {});
     Q_INVOKABLE void clearCatalogView();
     Q_INVOKABLE int catalogEntryCount(const QString&) const;
+    Q_INVOKABLE QString catalogLoadError(const QString&) const;
     Q_INVOKABLE void prefetchCatalogCounts();
     Q_INVOKABLE void validateHydraCatalogUrl(const QString&, const QString&);
+    Q_INVOKABLE void fetchHydraLibrarySources();
     Q_INVOKABLE void invalidateSourceCatalog(const QString&);
     Q_INVOKABLE void openExternalUrl(const QString&);
     Q_INVOKABLE QString applicationDataPath() const;

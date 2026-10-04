@@ -63,6 +63,11 @@ int CoreController::catalogEntryCount(const QString& sourceId) const
     return m_catalogController ? m_catalogController->catalogEntryCount(sourceId) : -1;
 }
 
+QString CoreController::catalogLoadError(const QString& sourceId) const
+{
+    return m_catalogController ? m_catalogController->catalogLoadError(sourceId) : QString();
+}
+
 void CoreController::invalidateSourceCatalog(const QString& sourceId)
 {
     if (m_catalogController)
@@ -93,6 +98,12 @@ void CoreController::validateHydraCatalogUrl(const QString& requestId, const QSt
     }
 
     m_catalogValidateLoader->loadFeed(parsed, QStringLiteral("validate:%1").arg(requestId));
+}
+
+void CoreController::fetchHydraLibrarySources()
+{
+    if (m_hydraLibrary)
+        m_hydraLibrary->fetch();
 }
 
 void CoreController::refreshCatalog(const QString& sourceId)

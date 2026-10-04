@@ -13,6 +13,7 @@ Flickable {
     property int sourcesRev: 0
 
     signal addSourceRequested()
+    signal browseLibraryRequested()
     signal editSourceRequested(string pluginId, string name, string catalogUrl,
                                string description, bool sourceEnabled)
 
@@ -29,12 +30,22 @@ Flickable {
         return qsTr("Games: %1").arg(count)
     }
 
+    function catalogError(row) {
+        root.countsRevision
+        if (!row.sourceEnabled)
+            return ""
+        return Core.catalogLoadError(row.pluginId)
+    }
+
     function catalogSupport(row) {
         const hasUrl = !!(row.catalogUrl && row.catalogUrl.length)
         if (!hasUrl)
             return qsTr("No URL - catalog will not load")
         if (!row.sourceEnabled)
             return qsTr("Off")
+        const error = root.catalogError(row)
+        if (error.length)
+            return error
         return root.formatGameCount(row.pluginId)
     }
 
@@ -85,6 +96,16 @@ Flickable {
             text: qsTr("Add catalog")
             icon.name: MD.Token.icon.add
             onClicked: root.addSourceRequested()
+        }
+
+        MD.Button {
+            Layout.fillWidth: true
+            Layout.leftMargin: contentMargin
+            Layout.rightMargin: contentMargin
+            mdState.type: MD.Enum.BtFilledTonal
+            text: qsTr("Browse Hydra Library")
+            icon.name: MD.Token.icon.travel_explore
+            onClicked: root.browseLibraryRequested()
         }
 
         MD.ElevationRectangle {
@@ -171,6 +192,7 @@ Flickable {
                         readonly property bool enabledOn: !!modelData.sourceEnabled
                         readonly property bool hasUrl: !!(modelData.catalogUrl
                                                           && modelData.catalogUrl.length)
+                        readonly property bool failed: root.catalogError(modelData).length > 0
 
                         RowLayout {
                             Layout.fillWidth: true
@@ -210,10 +232,12 @@ Flickable {
                                 MD.Label {
                                     Layout.fillWidth: true
                                     text: root.catalogSupport(catalogRow.modelData)
-                                    color: catalogRow.hasUrl ? MD.Token.color.on_surface_variant
-                                                             : MD.Token.color.error
+                                    color: catalogRow.hasUrl && !catalogRow.failed
+                                           ? MD.Token.color.on_surface_variant
+                                           : MD.Token.color.error
                                     typescale: MD.Token.typescale.body_small
-                                    elide: Text.ElideRight
+                                    wrapMode: catalogRow.failed ? Text.WordWrap : Text.NoWrap
+                                    elide: catalogRow.failed ? Text.ElideNone : Text.ElideRight
                                 }
                             }
 

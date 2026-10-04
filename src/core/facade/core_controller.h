@@ -44,6 +44,7 @@ class CoverImageCache;
 class FriendsModel;
 class GameMetadataService;
 class HttpDownloadSession;
+class HydraLibraryDirectory;
 class JobOrchestrator;
 class InstallKindProbeService;
 class InstallAnalyzer;
@@ -188,6 +189,8 @@ signals:
     void activeCatalogSourceIdsChanged();
     void catalogCountsChanged();
     void hydraCatalogUrlValidated(const QString&, bool, int, const QString&);
+    void hydraLibrarySourcesLoaded(const QVariantList& sources);
+    void hydraLibrarySourcesFailed(const QString& error);
     void pluginsChanged();
     void lastPluginErrorChanged();
     void pluginInstallBusyChanged();

@@ -96,6 +96,7 @@
     LibraryStore m_libraryStore;
     JobStore m_jobStore;
     CatalogFeedLoader* m_catalogValidateLoader = nullptr;
+    HydraLibraryDirectory* m_hydraLibrary = nullptr;
     GameMetadataService* m_metadataService = nullptr;
     CoverImageCache* m_coverCache = nullptr;
     CatalogCoverCoordinator* m_catalogCovers = nullptr;

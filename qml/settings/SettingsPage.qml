@@ -60,7 +60,10 @@ ColumnLayout {
                 stack.navigatePush(aboutComponent, {}, true)
             else if (section === "plugins")
                 stack.navigatePush(pluginsComponent, {}, true)
-            else
+            else if (section === "hydra-library") {
+                stack.navigatePush(sourcesComponent, {}, true)
+                stack.navigatePush(hydraLibraryComponent, {}, true)
+            } else
                 openSection(section)
         } else {
             pendingCreateSource = false
@@ -81,7 +84,10 @@ ColumnLayout {
             stack.navigatePush(pluginsComponent)
         else if (sectionId === "sources")
             openSources()
-        else if (sectionId === "friends")
+        else if (sectionId === "hydra-library") {
+            openSources()
+            openHydraLibrary()
+        } else if (sectionId === "friends")
             stack.navigatePush(friendsComponent)
         else if (sectionId === "storage")
             stack.navigatePush(storageComponent)
@@ -101,6 +107,10 @@ ColumnLayout {
 
     function openPluginStore() {
         stack.navigatePush(pluginStoreComponent)
+    }
+
+    function openHydraLibrary() {
+        stack.navigatePush(hydraLibraryComponent)
     }
 
     function openSourceCreate() {
@@ -161,9 +171,18 @@ ColumnLayout {
             property string pageTitle: qsTr("Hydra catalogs")
             contentMargin: root.contentMargin
             onAddSourceRequested: root.openSourceCreate()
+            onBrowseLibraryRequested: root.openHydraLibrary()
             onEditSourceRequested: function (pluginId, name, catalogUrl, description, sourceEnabled) {
                 root.openSourceEdit(pluginId, name, catalogUrl, description, sourceEnabled)
             }
+        }
+    }
+
+    Component {
+        id: hydraLibraryComponent
+        SettingsHydraLibraryPage {
+            property string pageTitle: qsTr("Hydra Library")
+            contentMargin: root.contentMargin
         }
     }
 

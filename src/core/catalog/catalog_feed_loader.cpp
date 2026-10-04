@@ -13,6 +13,27 @@
 
 namespace arachnel::core {
 
+namespace {
+
+/** Plain words for the refusals a catalog site gives on purpose; empty for anything else. */
+QString refusedFeedMessage(const QNetworkReply* reply, int httpStatus)
+{
+    // Cloudflare marks a challenged request with this header (status 403 or 503). Only a
+    // web browser can pass the check, so retrying from here never helps.
+    if (reply->rawHeader("cf-mitigated").trimmed().compare("challenge", Qt::CaseInsensitive) == 0) {
+        return QCoreApplication::translate(
+            "Core", "This site only lets web browsers in (a Cloudflare check), so Sprout "
+                    "can't load the catalog from it.");
+    }
+    if (httpStatus == 451) {
+        return QCoreApplication::translate(
+            "Core", "This catalog was taken down for legal reasons (HTTP 451).");
+    }
+    return {};
+}
+
+} // namespace
+
 CatalogFeedLoader::CatalogFeedLoader(QObject* parent)
     : QObject(parent)
     , m_network(new QNetworkAccessManager(this))
@@ -75,7 +96,8 @@ void CatalogFeedLoader::handleFinished(QNetworkReply* reply)
     }
 
     if (reply->error() != QNetworkReply::NoError) {
-        emit feedFailed(sourceId, reply->errorString());
+        const QString refused = refusedFeedMessage(reply, httpStatus);
+        emit feedFailed(sourceId, refused.isEmpty() ? reply->errorString() : refused);
         reply->deleteLater();
         return;
     }

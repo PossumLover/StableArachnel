@@ -613,6 +613,12 @@ void CoreController::initializeServices()
                 emit hydraCatalogUrlValidated(requestId, false, 0, error);
             });
 
+    m_hydraLibrary = new HydraLibraryDirectory(this);
+    connect(m_hydraLibrary, &HydraLibraryDirectory::loaded, this,
+            &CoreController::hydraLibrarySourcesLoaded);
+    connect(m_hydraLibrary, &HydraLibraryDirectory::failed, this,
+            &CoreController::hydraLibrarySourcesFailed);
+
     connect(m_metadataService, &GameMetadataService::metadataReady, this,
             [this](const QString& entryId, const GameMetadata& metadata) {
                 bool applied = false;

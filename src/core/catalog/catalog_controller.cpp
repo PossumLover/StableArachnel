@@ -107,6 +107,8 @@ CatalogController::CatalogController(CatalogModel* catalog, SourcePluginModel* s
             [this](const QString& sourceId, const QString& error) {
                 m_catalogHttpLoadActive = false;
                 m_loadingSourceIds.remove(sourceId);
+                m_catalogErrors.insert(sourceId, error);
+                emit catalogCountsChanged();
                 if (m_activeSourceIds.contains(sourceId) && !m_catalogBySource.contains(sourceId)) {
                     emit noticeRequested(
                         QCoreApplication::translate("Core", "Catalog error: %1").arg(error));
@@ -123,16 +125,18 @@ CatalogController::CatalogController(CatalogModel* catalog, SourcePluginModel* s
                     return;
                 const QString sourceId = tag.mid(6);
                 m_catalogCounts.insert(sourceId, count);
+                m_catalogErrors.remove(sourceId);
                 emit catalogCountsChanged();
                 if (m_activeSourceIds.contains(sourceId) && !m_catalogBySource.contains(sourceId))
                     requestCatalogLoad(sourceId);
                 startNextCatalogPrefetch();
             });
     connect(m_probeLoader, &CatalogFeedLoader::feedFailed, this,
-            [this](const QString& tag, const QString&) {
+            [this](const QString& tag, const QString& error) {
                 if (!tag.startsWith(QStringLiteral("count:")))
                     return;
                 m_catalogCounts.insert(tag.mid(6), -1);
+                m_catalogErrors.insert(tag.mid(6), error);
                 emit catalogCountsChanged();
                 startNextCatalogPrefetch();
             });
@@ -153,6 +157,10 @@ int CatalogController::catalogEntryCount(const QString& id) const
                ? -1
                : m_catalogBySource.contains(id) ? m_catalogBySource.value(id).size()
                                                 : m_catalogCounts.value(id, -1);
+}
+QString CatalogController::catalogLoadError(const QString& id) const
+{
+    return m_catalogErrors.value(id);
 }
 bool CatalogController::isCatalogSourceSelected(const QString& id) const
 {
@@ -249,6 +257,7 @@ void CatalogController::storeCatalogForSource(const QString& sourceId, QVector<C
     m_catalogBySource.insert(sourceId, std::move(entries));
     m_sourceLoadedAtMs.insert(sourceId, QDateTime::currentMSecsSinceEpoch());
     m_catalogCounts.insert(sourceId, m_catalogBySource.value(sourceId).size());
+    m_catalogErrors.remove(sourceId);
     emit catalogCountsChanged();
     m_loadingSourceIds.remove(sourceId);
     if (m_activeSourceIds.contains(sourceId))
@@ -1030,6 +1039,7 @@ void CatalogController::refreshCatalog(const QString& sourceId)
     m_sourceLoadedAtMs.remove(sourceId);
     m_sourcePayloadSha.remove(sourceId);
     m_catalogCounts.remove(sourceId);
+    m_catalogErrors.remove(sourceId);
     CatalogDiskCache::remove(sourceId);
     emit catalogCountsChanged();
     m_loadingSourceIds.remove(sourceId);
@@ -1126,6 +1136,7 @@ void CatalogController::invalidateSourceCatalog(const QString& id)
     m_sourceLoadedAtMs.remove(id);
     m_sourcePayloadSha.remove(id);
     m_catalogCounts.remove(id);
+    m_catalogErrors.remove(id);
     emit catalogCountsChanged();
     if (m_activeSourceIds.contains(id))
         rebuildMergedCatalog();
@@ -1189,6 +1200,7 @@ void CatalogController::startNextCatalogPrefetch()
         return;
     }
     m_catalogCounts.insert(sourceId, -1);
+    m_catalogErrors.remove(sourceId);
     emit catalogCountsChanged();
     m_probeLoader->loadFeed(QUrl(url), QStringLiteral("count:%1").arg(sourceId));
 }
