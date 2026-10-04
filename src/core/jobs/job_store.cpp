@@ -43,6 +43,8 @@ JobEntry jobFromJson(const QJsonObject& obj)
     job.referer = obj.value(QStringLiteral("referer")).toString();
     job.httpDownload = obj.value(QStringLiteral("httpDownload")).toBool(false);
     job.pluginDownload = obj.value(QStringLiteral("pluginDownload")).toBool(false);
+    job.torboxDownload = obj.value(QStringLiteral("torboxDownload")).toBool(false);
+    job.torboxTorrentId = obj.value(QStringLiteral("torboxTorrentId")).toInteger(-1);
     job.artifactPath = obj.value(QStringLiteral("artifactPath")).toString();
     job.expectedVersion = obj.value(QStringLiteral("expectedVersion")).toString();
     job.expectedUploadDate = obj.value(QStringLiteral("expectedUploadDate")).toString();
@@ -73,6 +75,8 @@ QJsonObject jobToJson(const JobEntry& job)
     obj.insert(QStringLiteral("referer"), job.referer);
     obj.insert(QStringLiteral("httpDownload"), job.httpDownload);
     obj.insert(QStringLiteral("pluginDownload"), job.pluginDownload);
+    obj.insert(QStringLiteral("torboxDownload"), job.torboxDownload);
+    obj.insert(QStringLiteral("torboxTorrentId"), job.torboxTorrentId);
     obj.insert(QStringLiteral("artifactPath"), job.artifactPath);
     if (!job.expectedVersion.isEmpty())
         obj.insert(QStringLiteral("expectedVersion"), job.expectedVersion);

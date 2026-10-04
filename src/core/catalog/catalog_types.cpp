@@ -71,7 +71,8 @@ void prepareCatalogEntry(CatalogEntry& entry)
         entry.remoteCoverUrl.clear();
         bool hasTorrentMagnet = false;
         for (const QString& uri : entry.magnetUris) {
-            if (uri.startsWith(QLatin1String("magnet:"), Qt::CaseInsensitive)) {
+            if (uri.startsWith(QLatin1String("magnet:"), Qt::CaseInsensitive)
+                || uri.startsWith(QLatin1String("hydra:"), Qt::CaseInsensitive)) {
                 hasTorrentMagnet = true;
                 break;
             }

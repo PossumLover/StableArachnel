@@ -2,6 +2,7 @@
 
 #include "catalog_disk_cache.h"
 #include "catalog_parser.h"
+#include "hydra_catalog_client.h"
 
 #include <QCoreApplication>
 #include <QNetworkAccessManager>
@@ -37,11 +38,20 @@ QString refusedFeedMessage(const QNetworkReply* reply, int httpStatus)
 CatalogFeedLoader::CatalogFeedLoader(QObject* parent)
     : QObject(parent)
     , m_network(new QNetworkAccessManager(this))
+    , m_hydra(new HydraCatalogClient(this))
 {
+    connect(m_hydra, &HydraCatalogClient::loaded, this, [this](const QByteArray& payload) {
+        parsePayload(m_hydraSourceId, payload, {}, m_requestSerial);
+    });
+    connect(m_hydra, &HydraCatalogClient::failed, this, [this](const QString& error) {
+        emit feedFailed(m_hydraSourceId, error);
+    });
 }
 
 void CatalogFeedLoader::cancelActive()
 {
+    ++m_requestSerial;
+    m_hydra->cancel();
     if (!m_activeReply)
         return;
     QNetworkReply* reply = m_activeReply.data();
@@ -58,6 +68,11 @@ void CatalogFeedLoader::loadFeed(const QUrl& url, const QString& sourceId, const
     cancelActive();
 
     const quint64 serial = ++m_requestSerial;
+    if (HydraCatalogClient::isHydraSource(url)) {
+        m_hydraSourceId = sourceId;
+        m_hydra->load(url);
+        return;
+    }
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("Arachnel/0.1"));
     request.setTransferTimeout(30000);
@@ -106,6 +121,12 @@ void CatalogFeedLoader::handleFinished(QNetworkReply* reply)
     const QByteArray etag = reply->rawHeader("ETag");
     reply->deleteLater();
 
+    parsePayload(sourceId, payload, etag, serial);
+}
+
+void CatalogFeedLoader::parsePayload(const QString& sourceId, const QByteArray& payload,
+                                    const QByteArray& etag, quint64 serial)
+{
     const bool countOnly = sourceId.startsWith(QStringLiteral("count:"));
     const quint64 capturedSerial = serial;
 

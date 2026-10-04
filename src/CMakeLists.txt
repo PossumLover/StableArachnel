@@ -23,6 +23,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/jobs/job_store.cpp
     src/core/settings/settings_store.cpp
     src/core/settings/settings_store_persistence.cpp
+    src/core/settings/settings_store_debrid.cpp
     src/core/library/storage_library.cpp
     src/core/library/storage_library_model.cpp
     src/core/util/file_utils.cpp
@@ -31,6 +32,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/library/library_maintenance_service.cpp
     src/core/library/game_update_service.cpp
     src/core/catalog/catalog_feed_loader.cpp
+    src/core/catalog/hydra_catalog_client.cpp
     src/core/catalog/hydra_library_directory.cpp
     src/core/catalog/catalog_disk_cache.cpp
     src/core/catalog/catalog_parser.cpp
@@ -51,6 +53,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/torrent/torrent_session_poll.cpp
     src/core/torrent/torrent_settings.cpp
     src/core/jobs/http_download_session.cpp
+    src/core/jobs/torbox_download_session.cpp
     src/core/torrent/torrent_metadata_fetcher.cpp
     src/core/install/install_analysis.cpp
     src/core/install/install_heuristics.cpp

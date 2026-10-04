@@ -612,7 +612,7 @@
 <context>
     <name>Core</name>
     <message>
-        <location filename="../src/core/catalog/catalog_types.cpp" line="+172"/>
+        <location filename="../src/core/catalog/catalog_types.cpp" line="+173"/>
         <source>Game</source>
         <translation>Game</translation>
     </message>
@@ -729,7 +729,7 @@
     </message>
     <message>
         <location line="+1"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+272"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+273"/>
         <source>Preparing…</source>
         <translation>Preparing…</translation>
     </message>
@@ -901,6 +901,7 @@
     <message>
         <location filename="../src/core/jobs/job_display.cpp" line="-83"/>
         <location filename="../src/core/jobs/job_status.cpp" line="+2"/>
+        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="+162"/>
         <source>Paused</source>
         <translation>Paused</translation>
     </message>
@@ -924,7 +925,7 @@
     <message>
         <location line="+1"/>
         <location filename="../src/core/jobs/job_status.cpp" line="+8"/>
-        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="+291"/>
+        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="+293"/>
         <location filename="../src/core/library/library_facade_sync.cpp" line="+245"/>
         <source>Install failed</source>
         <translation>Install failed</translation>
@@ -1645,12 +1646,12 @@
         <translation>Source &quot;%1&quot; is disabled in settings</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="-271"/>
+        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="-273"/>
         <source>Could not resolve application data folder</source>
         <translation>Could not resolve application data folder</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+24"/>
         <source>Failed to delete application data</source>
         <translation>Failed to delete application data</translation>
     </message>
@@ -2426,7 +2427,7 @@
         <translation>Failed to create folder: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_feed_loader.cpp" line="+24"/>
+        <location filename="../src/core/catalog/catalog_feed_loader.cpp" line="+25"/>
         <source>This site only lets web browsers in (a Cloudflare check), so Sprout can&apos;t load the catalog from it.</source>
         <translation>This site only lets web browsers in (a Cloudflare check), so Sprout can&apos;t load the catalog from it.</translation>
     </message>
@@ -2436,7 +2437,7 @@
         <translation>This catalog was taken down for legal reasons (HTTP 451).</translation>
     </message>
     <message>
-        <location line="+91"/>
+        <location line="+111"/>
         <location line="+35"/>
         <source>Catalog is empty or format not recognized</source>
         <translation>Catalog is empty or format not recognized</translation>
@@ -2623,14 +2624,19 @@
         <translation>Drive removed</translation>
     </message>
     <message>
-        <location filename="../src/core/settings/settings_store_persistence.cpp" line="+139"/>
+        <location filename="../src/core/settings/settings_store_persistence.cpp" line="+142"/>
         <source>FreeTP torrent catalog - magnet links and add-ons</source>
         <translation>FreeTP torrent catalog - magnet links and add-ons</translation>
     </message>
     <message>
-        <location filename="../src/core/jobs/job_orchestrator.cpp" line="+64"/>
+        <location filename="../src/core/jobs/job_orchestrator.cpp" line="+83"/>
         <source>Move interrupted</source>
         <translation>Move interrupted</translation>
+    </message>
+    <message>
+        <location line="+192"/>
+        <source>Getting download link from Hydra</source>
+        <translation>Getting download link from Hydra</translation>
     </message>
     <message>
         <location filename="../src/core/catalog/catalog_genre_normalize.cpp" line="+260"/>
@@ -2834,7 +2840,12 @@
         <translation>Hydra Library sent a list Sprout can&apos;t read.</translation>
     </message>
     <message>
-        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="+469"/>
+        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="-11"/>
+        <source>Resuming download</source>
+        <translation>Resuming download</translation>
+    </message>
+    <message>
+        <location line="+348"/>
         <source>Download refused by the server</source>
         <translation>Download refused by the server</translation>
     </message>
@@ -2842,6 +2853,153 @@
         <location line="+1"/>
         <source>Download refused: %1</source>
         <translation>Download refused: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/core/settings/settings_store_debrid.cpp" line="+80"/>
+        <source>Could not save the TorBox API key</source>
+        <translation>Could not save the TorBox API key</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Enter your TorBox API key first</source>
+        <translation>Enter your TorBox API key first</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Connected to TorBox</source>
+        <translation>Connected to TorBox</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Could not connect to TorBox. Check your API key and subscription.</source>
+        <translation>Could not connect to TorBox. Check your API key and subscription.</translation>
+    </message>
+    <message>
+        <location filename="../src/core/catalog/hydra_catalog_client.cpp" line="+62"/>
+        <source>Could not load this source through Hydra (HTTP %1)</source>
+        <translation>Could not load this source through Hydra (HTTP %1)</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>Hydra is still indexing this source. Try again later.</source>
+        <translation>Hydra is still indexing this source. Try again later.</translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Hydra returned an invalid catalog</source>
+        <translation>Hydra returned an invalid catalog</translation>
+    </message>
+    <message>
+        <location line="+41"/>
+        <source>Invalid Hydra download reference</source>
+        <translation>Invalid Hydra download reference</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>No available download link in this Hydra source</source>
+        <translation>No available download link in this Hydra source</translation>
+    </message>
+    <message>
+        <location filename="../src/core/jobs/torbox_download_session.cpp" line="+131"/>
+        <source>Waiting for a download slot</source>
+        <translation>Waiting for a download slot</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>TorBox needs an API key and a valid magnet link</source>
+        <translation>TorBox needs an API key and a valid magnet link</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Preparing TorBox download</source>
+        <translation>Preparing TorBox download</translation>
+    </message>
+    <message>
+        <location line="+54"/>
+        <source>TorBox is busy. Retrying shortly.</source>
+        <translation>TorBox is busy. Retrying shortly.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>TorBox request failed (HTTP %1)</source>
+        <translation>TorBox request failed (HTTP %1)</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>TorBox: %1</source>
+        <translation>TorBox: %1</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>TorBox did not return a torrent ID</source>
+        <translation>TorBox did not return a torrent ID</translation>
+    </message>
+    <message>
+        <location line="+22"/>
+        <source>This torrent is no longer in your TorBox account. Start a new download.</source>
+        <translation>This torrent is no longer in your TorBox account. Start a new download.</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>TorBox could not download this torrent</source>
+        <translation>TorBox could not download this torrent</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Waiting for TorBox: %1</source>
+        <translation>Waiting for TorBox: %1</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Could not create the TorBox download folder</source>
+        <translation>Could not create the TorBox download folder</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>TorBox returned an unsafe or duplicate file path</source>
+        <translation>TorBox returned an unsafe or duplicate file path</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>TorBox returned no files</source>
+        <translation>TorBox returned no files</translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>TorBox did not return a valid download link</source>
+        <translation>TorBox did not return a valid download link</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <location line="+53"/>
+        <source>Could not write the TorBox download file</source>
+        <translation>Could not write the TorBox download file</translation>
+    </message>
+    <message>
+        <location line="-43"/>
+        <location line="+33"/>
+        <source>Could not reset the partial download</source>
+        <translation>Could not reset the partial download</translation>
+    </message>
+    <message>
+        <location line="-5"/>
+        <source>The server returned an invalid download range</source>
+        <translation>The server returned an invalid download range</translation>
+    </message>
+    <message>
+        <location line="+34"/>
+        <source>TorBox download was interrupted. Retry to resume.</source>
+        <translation>TorBox download was interrupted. Retry to resume.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Could not replace the download file</source>
+        <translation>Could not replace the download file</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Could not finish the download file</source>
+        <translation>Could not finish the download file</translation>
     </message>
 </context>
 <context>
@@ -4868,6 +5026,59 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
     </message>
 </context>
 <context>
+    <name>SettingsDebridPage</name>
+    <message>
+        <location filename="../qml/settings/SettingsDebridPage.qml" line="+40"/>
+        <source>TorBox</source>
+        <translation>TorBox</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Download all torrents through TorBox.</source>
+        <translation>Download all torrents through TorBox.</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Use TorBox</source>
+        <translation>Use TorBox</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>API key</source>
+        <translation>API key</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Show API key</source>
+        <translation>Show API key</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Checking...</source>
+        <translation>Checking...</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Save and test</source>
+        <translation>Save and test</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Remove key</source>
+        <translation>Remove key</translation>
+    </message>
+    <message>
+        <location line="+19"/>
+        <source>Open TorBox settings</source>
+        <translation>Open TorBox settings</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>A TorBox subscription with API access is required. Enabling TorBox switches unfinished torrents to TorBox. Direct downloads stay direct.</source>
+        <translation>A TorBox subscription with API access is required. Enabling TorBox switches unfinished torrents to TorBox. Direct downloads stay direct.</translation>
+    </message>
+</context>
+<context>
     <name>SettingsFriendsPage</name>
     <message>
         <location filename="../qml/settings/SettingsFriendsPage.qml" line="+70"/>
@@ -4939,6 +5150,16 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
     </message>
     <message>
         <location line="+6"/>
+        <source>Debrid</source>
+        <translation>Debrid</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>TorBox downloads</source>
+        <translation>TorBox downloads</translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>Storage</source>
         <translation>Storage</translation>
     </message>
@@ -4983,7 +5204,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Launch</translation>
     </message>
     <message>
-        <location line="-34"/>
+        <location line="-41"/>
         <source>Install plugins to browse and play games.</source>
         <translation>Install plugins to browse and play games.</translation>
     </message>
@@ -4993,7 +5214,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>JSON catalog URLs</translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+41"/>
         <source>Appearance</source>
         <translation>Appearance</translation>
     </message>
@@ -5129,7 +5350,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
     <message>
         <location filename="../qml/settings/SettingsPage.qml" line="+25"/>
         <location line="+3"/>
-        <location line="+111"/>
+        <location line="+121"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
@@ -5167,6 +5388,11 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+10"/>
         <source>Friends</source>
         <translation>Friends</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Debrid</source>
+        <translation>Debrid</translation>
     </message>
     <message>
         <location line="+8"/>

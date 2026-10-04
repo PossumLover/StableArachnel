@@ -152,8 +152,17 @@ void InstallKindProbeService::setBackgroundProbesEnabled(bool enabled)
     if (m_probesEnabled == enabled)
         return;
     m_probesEnabled = enabled;
-    if (enabled)
+    if (!enabled) {
+        if (m_probe->busy()) {
+            const ProbeTask task = m_current;
+            m_current = {};
+            m_inFlightHashes.remove(task.hashKey);
+            enqueueTask(task, true);
+        }
+        m_probe->cancel();
+    } else {
         pumpQueue();
+    }
 }
 
 void InstallKindProbeService::enqueueTask(ProbeTask task, bool front)

@@ -3,6 +3,8 @@
 #include "http_download_session.h"
 #include "job_status.h"
 #include "torrent_session.h"
+#include "torbox_download_session.h"
+#include "hydra_catalog_client.h"
 
 #include <QCoreApplication>
 #include <QFile>
@@ -105,7 +107,12 @@ void JobOrchestrator::cancelJob(const QString& jobId)
     if (job.kind == JobKind::Move)
         return;
 
-    if (job.pluginDownload) {
+    if (auto* resolver = m_hydraResolvers.take(jobId)) {
+        resolver->cancel();
+        resolver->deleteLater();
+    } else if (job.torboxDownload) {
+        m_torbox->cancel(jobId);
+    } else if (job.pluginDownload) {
         // CoreController/PluginHost cancel the plugin work; mark job here.
     } else if (job.httpDownload) {
         if (isJobRunning(job.status) || job.status == QStringLiteral("starting"))
@@ -137,6 +144,27 @@ void JobOrchestrator::toggleJobPause(const QString& jobId)
     // Plugin-owned pause is driven by CoreController -> PluginHost; this path is torrents only.
     if (job.pluginDownload)
         return;
+
+    if (job.torboxDownload || job.magnetUri.startsWith(QStringLiteral("hydra:"))) {
+        if (isJobPaused(job.status)) {
+            job.status = QStringLiteral("starting");
+            job.detail = QCoreApplication::translate("Core", "Resuming download");
+            persistJob(job);
+            updateJobInModel(job);
+            startDownload(job);
+        } else {
+            if (auto* resolver = m_hydraResolvers.take(jobId)) {
+                resolver->cancel();
+                resolver->deleteLater();
+            }
+            m_torbox->setPaused(jobId, true);
+            job.status = QStringLiteral("paused");
+            job.detail = QCoreApplication::translate("Core", "Paused");
+            persistJob(job);
+            updateJobInModel(job);
+        }
+        return;
+    }
 
     if (job.status == QStringLiteral("paused")) {
         m_torrent->setPaused(jobId, false);
@@ -185,7 +213,12 @@ void JobOrchestrator::removeJob(const QString& jobId)
 
     JobEntry job = jobFromModelRow(row);
     if (!isJobTerminal(job.status)) {
-        if (job.pluginDownload) {
+        if (auto* resolver = m_hydraResolvers.take(jobId)) {
+            resolver->cancel();
+            resolver->deleteLater();
+        } else if (job.torboxDownload) {
+            m_torbox->cancel(jobId);
+        } else if (job.pluginDownload) {
             // cancelled via cancelJob path when user cancels first
         } else if (job.httpDownload) {
             if (isJobRunning(job.status) || job.status == QStringLiteral("starting"))
@@ -195,7 +228,7 @@ void JobOrchestrator::removeJob(const QString& jobId)
         } else {
             m_torrent->removeResumeFile(jobId);
         }
-    } else if (!job.httpDownload && !job.pluginDownload) {
+    } else if (!job.httpDownload && !job.pluginDownload && !job.torboxDownload) {
         m_torrent->removeResumeFile(jobId);
     }
 
@@ -221,7 +254,7 @@ void JobOrchestrator::retryJob(const QString& jobId)
     if (job.magnetUri.isEmpty())
         return;
 
-    if (!job.httpDownload)
+    if (!job.httpDownload && !job.torboxDownload)
         m_torrent->removeResumeFile(jobId);
 
     job.status = QStringLiteral("starting");
@@ -234,10 +267,7 @@ void JobOrchestrator::retryJob(const QString& jobId)
     m_jobKinds.insert(jobId, job.kind);
     updateJobInModel(job);
     persistJob(job);
-    if (job.httpDownload)
-        startHttp(job);
-    else
-        startTorrent(job);
+    startDownload(job);
 }
 
 void JobOrchestrator::preparePluginJobResume(const QString& jobId)

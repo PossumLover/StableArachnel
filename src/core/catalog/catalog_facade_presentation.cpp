@@ -263,7 +263,7 @@ void CoreController::syncInstallKindProbeSuspension()
 {
     if (!m_installKindProbe)
         return;
-    m_installKindProbe->setBackgroundProbesEnabled(m_jobs.activeCount() == 0);
+    m_installKindProbe->setBackgroundProbesEnabled(!m_settings.torboxEnabled() && m_jobs.activeCount() == 0);
 }
 
 void CoreController::syncCatalogInstallKind(const QString& entryId, InstallKind kind)

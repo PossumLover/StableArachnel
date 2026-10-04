@@ -62,6 +62,8 @@ bool CoreController::clearApplicationData()
 
     if (m_catalogValidateLoader)
         m_catalogValidateLoader->cancelActive();
+    if (m_jobOrchestrator)
+        m_jobOrchestrator->shutdownDownloads();
     if (m_httpSession)
         m_httpSession->shutdown();
     if (m_torrentSession)
@@ -702,6 +704,8 @@ void CoreController::prepareShutdown()
 
     if (m_jobOrchestrator)
         m_jobOrchestrator->flushPersistence();
+    if (m_jobOrchestrator)
+        m_jobOrchestrator->shutdownDownloads();
     if (m_httpSession)
         m_httpSession->shutdown();
     if (m_torrentSession)

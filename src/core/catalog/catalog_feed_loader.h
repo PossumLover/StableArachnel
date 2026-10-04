@@ -13,6 +13,8 @@ class QNetworkReply;
 
 namespace arachnel::core {
 
+class HydraCatalogClient;
+
 class CatalogFeedLoader : public QObject
 {
     Q_OBJECT
@@ -31,9 +33,12 @@ signals:
 
 private:
     void handleFinished(QNetworkReply* reply);
+    void parsePayload(const QString& sourceId, const QByteArray& payload, const QByteArray& etag, quint64 serial);
 
     QNetworkAccessManager* m_network = nullptr;
     QPointer<QNetworkReply> m_activeReply;
+    HydraCatalogClient* m_hydra = nullptr;
+    QString m_hydraSourceId;
     quint64 m_requestSerial = 0;
 };
 

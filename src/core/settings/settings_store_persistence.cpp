@@ -18,6 +18,7 @@ namespace arachnel::core {
 
 void SettingsStore::load()
 {
+    loadTorboxKey();
     QFile file(settingsFilePath());
     if (!file.open(QIODevice::ReadOnly)) {
         m_sources.clear();
@@ -40,6 +41,8 @@ void SettingsStore::load()
     }
 
     const QJsonObject obj = QJsonDocument::fromJson(file.readAll()).object();
+    m_torboxEnabled = obj.value(QStringLiteral("torboxEnabled")).toBool(false);
+    emit debridChanged();
     if (obj.contains(QStringLiteral("maxConcurrentDownloads")))
         m_maxConcurrentDownloads = qBound(1, obj.value(QStringLiteral("maxConcurrentDownloads")).toInt(2), 8);
     m_autoCheckUpdates = obj.value(QStringLiteral("autoCheckUpdates")).toBool(true);
@@ -181,6 +184,7 @@ void SettingsStore::load()
 void SettingsStore::save()
 {
     QJsonObject obj;
+    obj.insert(QStringLiteral("torboxEnabled"), m_torboxEnabled);
     obj.insert(QStringLiteral("libraryRoot"), m_libraryRoot);
     obj.insert(QStringLiteral("downloadsRoot"), m_downloadsRoot);
     obj.insert(QStringLiteral("maxConcurrentDownloads"), m_maxConcurrentDownloads);

@@ -4,6 +4,8 @@
 #include "i18n.h"
 #include "job_status.h"
 #include "torrent_session.h"
+#include "torbox_download_session.h"
+#include "hydra_catalog_client.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -29,6 +31,7 @@ JobOrchestrator::JobOrchestrator(SettingsStore* settings, JobStore* jobStore,
     , m_jobStore(jobStore)
     , m_torrent(torrent)
     , m_http(http)
+    , m_torbox(new TorBoxDownloadSession(settings, this))
     , m_jobs(jobs)
 {
     connect(m_torrent, &TorrentSession::torrentProgress, this, &JobOrchestrator::onTorrentProgress);
@@ -38,6 +41,22 @@ JobOrchestrator::JobOrchestrator(SettingsStore* settings, JobStore* jobStore,
     connect(m_http, &HttpDownloadSession::httpProgress, this, &JobOrchestrator::onHttpProgress);
     connect(m_http, &HttpDownloadSession::httpFinished, this, &JobOrchestrator::onHttpFinished);
     connect(m_http, &HttpDownloadSession::httpFailed, this, &JobOrchestrator::onHttpFailed);
+    connect(m_torbox, &TorBoxDownloadSession::progress, this, &JobOrchestrator::onHttpProgress);
+    connect(m_torbox, &TorBoxDownloadSession::finished, this, &JobOrchestrator::onTorrentFinished);
+    connect(m_torbox, &TorBoxDownloadSession::failed, this, &JobOrchestrator::onTorrentFailed);
+    connect(m_torbox, &TorBoxDownloadSession::phase, this, &JobOrchestrator::setJobPhase);
+    connect(m_settings, &SettingsStore::debridChanged, this,
+            &JobOrchestrator::routePendingTorrentsThroughTorbox);
+    connect(m_torbox, &TorBoxDownloadSession::torrentRegistered, this, [this](const QString& id, qint64 remoteId) {
+        const int row = m_jobs->indexOfJob(id);
+        if (row < 0)
+            return;
+        JobEntry job = jobFromModelRow(row);
+        job.torboxTorrentId = remoteId;
+        persistJob(job);
+        updateJobInModel(job);
+        m_jobStore->save();
+    });
 
     m_persistTimer.setInterval(3000);
     m_persistTimer.setSingleShot(true);
@@ -82,6 +101,8 @@ void JobOrchestrator::restoreJobs()
         }
         if (isJobTerminal(job.status))
             continue;
+        if (!job.httpDownload && m_settings->torboxEnabled())
+            job.torboxDownload = true;
         if (isJobQueued(job.status) || isJobActive(job.status))
             job.status = QStringLiteral("starting");
         m_jobKinds.insert(job.id, job.kind);
@@ -94,11 +115,10 @@ void JobOrchestrator::restoreJobs()
         if (isJobTerminal(job.status) || job.pluginDownload)
             continue;
         const bool wasPaused = isJobPaused(job.status);
-        if (job.httpDownload)
-            startHttp(job);
-        else
-            startTorrent(job);
-        if (!job.httpDownload && wasPaused)
+        if (wasPaused && (job.torboxDownload || job.magnetUri.startsWith(QStringLiteral("hydra:"))))
+            continue;
+        startDownload(job);
+        if (!job.httpDownload && !job.torboxDownload && wasPaused)
             m_torrent->setPaused(job.id, true);
     }
 
@@ -115,6 +135,17 @@ void JobOrchestrator::flushPersistence()
     for (int i = 0; i < m_jobs->rowCount(); ++i)
         jobs.append(jobFromModelRow(i));
     m_jobStore->setJobs(jobs);
+}
+
+void JobOrchestrator::shutdownDownloads()
+{
+    m_torbox->shutdown();
+    const auto resolvers = m_hydraResolvers;
+    m_hydraResolvers.clear();
+    for (auto* resolver : resolvers) {
+        resolver->cancel();
+        resolver->deleteLater();
+    }
 }
 
 QString JobOrchestrator::pickMagnet(const QStringList& uris) const
@@ -199,16 +230,80 @@ QString JobOrchestrator::createJob(const QString& title, JobKind kind, const QSt
     job.parentEntryId = parentEntryId;
     job.referer = referer;
     job.httpDownload = httpDownload;
+    job.torboxDownload = !httpDownload && m_settings->torboxEnabled()
+        && (downloadUri.startsWith(QStringLiteral("magnet:"), Qt::CaseInsensitive)
+            || downloadUri.startsWith(QStringLiteral("hydra:")));
     job.createdAt = isoNow();
     m_jobKinds.insert(jobId, kind);
 
     m_jobs->addJob(job);
-    m_jobStore->upsertJob(job);
-    if (httpDownload)
-        startHttp(job);
-    else
-        startTorrent(job);
+    persistJob(job);
+    startDownload(job);
     return jobId;
+}
+
+void JobOrchestrator::routePendingTorrentsThroughTorbox()
+{
+    if (!m_settings->torboxEnabled())
+        return;
+    for (int row = 0; row < m_jobs->rowCount(); ++row) {
+        JobEntry job = jobFromModelRow(row);
+        if (job.httpDownload || job.pluginDownload || job.torboxDownload
+            || job.kind == JobKind::Move || isJobTerminal(job.status)
+            || job.status == QStringLiteral("installing") || job.status == QStringLiteral("moving"))
+            continue;
+        m_torrent->cancel(job.id, false);
+        job.torboxDownload = true;
+        persistJob(job);
+        updateJobInModel(job);
+        if (!isJobPaused(job.status) && !m_hydraResolvers.contains(job.id))
+            startDownload(job);
+    }
+}
+
+void JobOrchestrator::startDownload(const JobEntry& input)
+{
+    JobEntry job = input;
+    if (!job.httpDownload && m_settings->torboxEnabled() && !job.torboxDownload) {
+        job.torboxDownload = true;
+        persistJob(job);
+        updateJobInModel(job);
+    }
+    if (job.magnetUri.startsWith(QStringLiteral("hydra:"))) {
+        auto* resolver = new HydraCatalogClient(this);
+        m_hydraResolvers.insert(job.id, resolver);
+        setJobPhase(job.id, QStringLiteral("starting"), QCoreApplication::translate("Core", "Getting download link from Hydra"));
+        connect(resolver, &HydraCatalogClient::resolved, this, [this, id = job.id, resolver](const QString& uri) {
+            m_hydraResolvers.remove(id);
+            resolver->deleteLater();
+            const int row = m_jobs->indexOfJob(id);
+            if (row < 0)
+                return;
+            JobEntry ready = jobFromModelRow(row);
+            if (isJobTerminal(ready.status) || isJobPaused(ready.status))
+                return;
+            ready.magnetUri = uri;
+            ready.httpDownload = uri.startsWith(QStringLiteral("http://"), Qt::CaseInsensitive)
+                || uri.startsWith(QStringLiteral("https://"), Qt::CaseInsensitive);
+            if (ready.httpDownload)
+                ready.torboxDownload = false;
+            persistJob(ready);
+            updateJobInModel(ready);
+            startDownload(ready);
+        });
+        connect(resolver, &HydraCatalogClient::failed, this, [this, id = job.id, resolver](const QString& error) {
+            m_hydraResolvers.remove(id);
+            resolver->deleteLater();
+            onTorrentFailed(id, error);
+        });
+        resolver->resolve(job.magnetUri);
+    } else if (job.torboxDownload) {
+        m_torbox->addJob(job.id, job.magnetUri, job.savePath, job.torboxTorrentId);
+    } else if (job.httpDownload) {
+        startHttp(job);
+    } else {
+        startTorrent(job);
+    }
 }
 
 void JobOrchestrator::startTorrent(const JobEntry& job)
@@ -278,6 +373,8 @@ JobEntry JobOrchestrator::jobFromModelRow(int row) const
             job.expectedVersion = stored->expectedVersion;
             job.expectedUploadDate = stored->expectedUploadDate;
             job.expectedSteamAppId = stored->expectedSteamAppId;
+            job.torboxDownload = stored->torboxDownload;
+            job.torboxTorrentId = stored->torboxTorrentId;
         }
     }
     return job;

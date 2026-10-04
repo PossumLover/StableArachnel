@@ -32,6 +32,7 @@ public:
     bool busy() const { return m_busy; }
     /** Start reading the file list. False when a probe is running or the link can't be parsed. */
     bool start(const QString& magnetUri, int timeoutMs = 12000);
+    void cancel();
     /** How long the session outlives the last probe. */
     void setIdleTimeout(int ms);
 

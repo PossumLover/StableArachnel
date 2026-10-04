@@ -48,6 +48,8 @@ ColumnLayout {
             pendingSection = ""
             if (section === "friends")
                 stack.navigatePush(friendsComponent, {}, true)
+            else if (section === "debrid")
+                stack.navigatePush(debridComponent, {}, true)
             else if (section === "storage")
                 stack.navigatePush(storageComponent, {}, true)
             else if (section === "updates")
@@ -91,6 +93,8 @@ ColumnLayout {
             stack.navigatePush(friendsComponent)
         else if (sectionId === "storage")
             stack.navigatePush(storageComponent)
+        else if (sectionId === "debrid")
+            stack.navigatePush(debridComponent)
         else if (sectionId === "updates")
             stack.navigatePush(updatesComponent)
         else if (sectionId === "launch" && root.onLinux)
@@ -200,6 +204,14 @@ ColumnLayout {
         id: friendsComponent
         SettingsFriendsPage {
             property string pageTitle: qsTr("Friends")
+            contentMargin: root.contentMargin
+        }
+    }
+
+    Component {
+        id: debridComponent
+        SettingsDebridPage {
+            property string pageTitle: qsTr("Debrid")
             contentMargin: root.contentMargin
         }
     }

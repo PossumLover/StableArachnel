@@ -45,9 +45,20 @@ class SettingsStore : public QObject
                    protonPriorityChanged)
     Q_PROPERTY(QStringList bookmarkedEntryIds READ bookmarkedEntryIds NOTIFY bookmarkedEntryIdsChanged)
     Q_PROPERTY(QVariantList bookmarks READ bookmarks NOTIFY bookmarkedEntryIdsChanged)
+    Q_PROPERTY(bool torboxEnabled READ torboxEnabled WRITE setTorboxEnabled NOTIFY debridChanged)
+    Q_PROPERTY(QString torboxApiKey READ torboxApiKey WRITE setTorboxApiKey NOTIFY debridChanged)
+    Q_PROPERTY(QString torboxStatus READ torboxStatus NOTIFY debridStatusChanged)
+    Q_PROPERTY(bool torboxChecking READ torboxChecking NOTIFY debridStatusChanged)
 
 public:
     explicit SettingsStore(QObject* parent = nullptr);
+    bool torboxEnabled() const { return m_torboxEnabled; }
+    QString torboxApiKey() const { return m_torboxApiKey; }
+    QString torboxStatus() const { return m_torboxStatus; }
+    bool torboxChecking() const { return m_torboxChecking; }
+    void setTorboxEnabled(bool enabled);
+    void setTorboxApiKey(const QString& key);
+    Q_INVOKABLE void checkTorboxConnection();
 
     QString libraryRoot() const { return m_libraryRoot; }
     QString downloadsRoot() const { return m_downloadsRoot; }
@@ -118,6 +129,8 @@ public:
     void save();
 
 signals:
+    void debridChanged();
+    void debridStatusChanged();
     void libraryRootChanged();
     void downloadsRootChanged();
     void sourcesChanged();
@@ -137,6 +150,13 @@ signals:
 
 private:
     void ensureDefaultStorageLibraries();
+    void loadTorboxKey();
+    bool saveTorboxKey(const QString& key);
+
+    bool m_torboxEnabled = false;
+    QString m_torboxApiKey;
+    QString m_torboxStatus;
+    bool m_torboxChecking = false;
 
     QString m_libraryRoot;
     QString m_downloadsRoot;

@@ -103,6 +103,15 @@ void MagnetMetadataProbe::setIdleTimeout(int ms)
     m_idleTimer->setInterval(ms);
 }
 
+void MagnetMetadataProbe::cancel()
+{
+    m_pollTimer->stop();
+    m_idleTimer->stop();
+    m_busy = false;
+    m_magnetUri.clear();
+    m_session.reset();
+}
+
 bool MagnetMetadataProbe::start(const QString& magnetUri, int timeoutMs)
 {
     if (m_busy)

@@ -27,6 +27,8 @@ struct JobEntry {
     QString referer;
     bool httpDownload = false;
     bool pluginDownload = false;
+    bool torboxDownload = false;
+    qint64 torboxTorrentId = -1;
     QString artifactPath;
     /** Remote markers captured when the job started (Steam/plugin update commit). */
     QString expectedVersion;

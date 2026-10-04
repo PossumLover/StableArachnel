@@ -35,6 +35,13 @@ Flickable {
                 subtitle: qsTr("Invite codes and relay presence")
             },
             {
+                id: "debrid",
+                icon: MD.Token.icon.cloud_download,
+                tone: 0,
+                title: qsTr("Debrid"),
+                subtitle: qsTr("TorBox downloads")
+            },
+            {
                 id: "storage",
                 icon: MD.Token.icon.hard_drive,
                 tone: 3,

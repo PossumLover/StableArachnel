@@ -18,6 +18,8 @@ namespace arachnel::core {
 
 class HttpDownloadSession;
 class TorrentSession;
+class TorBoxDownloadSession;
+class HydraCatalogClient;
 
 class JobOrchestrator : public QObject
 {
@@ -29,6 +31,7 @@ public:
 
     void restoreJobs();
     void flushPersistence();
+    void shutdownDownloads();
     QString startCatalogDownload(const CatalogEntry& entry, JobKind kind,
                                  const QString& libraryId = {});
     QString startAddonDownload(const CatalogEntry& parent, const CatalogComponent& addon);
@@ -73,6 +76,8 @@ private:
                       const QString& referer = {});
     void startTorrent(const JobEntry& job);
     void startHttp(const JobEntry& job);
+    void startDownload(const JobEntry& job);
+    void routePendingTorrentsThroughTorbox();
     void persistJob(const JobEntry& job);
     JobEntry jobFromModelRow(int row) const;
     void updateJobInModel(const JobEntry& job);
@@ -105,6 +110,8 @@ private:
     JobStore* m_jobStore = nullptr;
     TorrentSession* m_torrent = nullptr;
     HttpDownloadSession* m_http = nullptr;
+    TorBoxDownloadSession* m_torbox = nullptr;
+    QHash<QString, HydraCatalogClient*> m_hydraResolvers;
     JobModel* m_jobs = nullptr;
     QHash<QString, JobKind> m_jobKinds;
     QHash<QString, SpeedSample> m_pluginSpeed;

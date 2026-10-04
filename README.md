@@ -40,6 +40,8 @@ Bugs/ideas: [Issues](https://github.com/BadKiko/Arachnel/issues)
 
 Build from source: [CONTRIBUTING.md](CONTRIBUTING.md)
 
+TorBox setup and protected Hydra catalogs: [download guide](docs/torbox-hydra.md)
+
 ## Plugins
 
 Arachnel doesn't ship a game catalog. A plugin is a small add-on that talks to a source, fills Catalog, and handles download, install, and Play.

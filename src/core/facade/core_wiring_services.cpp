@@ -162,6 +162,7 @@ void CoreController::initializeServices()
     m_jobOrchestrator->restoreJobs();
     resumePluginOwnedDownloads();
     connect(&m_jobs, &JobModel::jobsChanged, this, &CoreController::syncInstallKindProbeSuspension);
+    connect(&m_settings, &SettingsStore::debridChanged, this, &CoreController::syncInstallKindProbeSuspension);
     syncInstallKindProbeSuspension();
     m_protonManager = new ProtonManager(this);
     m_runtimeDependencyService = new RuntimeDependencyService(this);

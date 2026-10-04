@@ -217,6 +217,7 @@ CoreController::CoreController(QObject* parent)
     QTimer::singleShot(0, this, &CoreController::reportIncompatiblePlugins);
     m_installAnalyzer = new InstallAnalyzer(m_pluginHost);
     m_installKindProbe = new InstallKindProbeService(m_installAnalyzer, this);
+    syncInstallKindProbeSuspension();
     connect(m_installKindProbe, &InstallKindProbeService::installKindResolved, this,
             [this](const QString& entryId, InstallKind kind) {
                 syncCatalogInstallKind(entryId, kind);

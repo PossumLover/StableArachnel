@@ -268,7 +268,7 @@ qt_import_qml_plugins(arachnel_app)
 arachnel_setup_libtorrent(arachnel_app)
 
 if(WIN32)
-    target_link_libraries(arachnel_app PRIVATE ole32 shell32 dbghelp)
+    target_link_libraries(arachnel_app PRIVATE ole32 shell32 dbghelp crypt32)
 else()
     target_link_libraries(arachnel_app PRIVATE Qt6::Widgets)
     target_link_options(arachnel_app PRIVATE -rdynamic)

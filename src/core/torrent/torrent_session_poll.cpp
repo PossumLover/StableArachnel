@@ -67,6 +67,7 @@ void TorrentSession::pollAlerts()
                 m_impl->pausedJobs.remove(jobId);
                 m_impl->metadataStallSinceMs.remove(jobId);
                 removeResumeFile(jobId);
+                m_impl->session.remove_torrent(finished->handle, lt::session::delete_partfile);
                 emit torrentFinished(jobId, savePath);
             }
             continue;
