@@ -219,6 +219,66 @@ BOOL CALLBACK enumDialogWindows(HWND hwnd, LPARAM lparam)
 }
 #endif
 
+#if defined(Q_OS_WIN)
+/** A control's text from another process, without waiting on a hung window. */
+QString controlText(HWND control)
+{
+    if (!control)
+        return {};
+    wchar_t buffer[1024] = {};
+    DWORD_PTR copied = 0;
+    if (!SendMessageTimeoutW(control, WM_GETTEXT, 1024, reinterpret_cast<LPARAM>(buffer),
+                             SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &copied))
+        return {};
+    return QString::fromWCharArray(buffer, static_cast<int>(qMin<DWORD_PTR>(copied, 1023)));
+}
+
+BOOL CALLBACK appendStaticText(HWND child, LPARAM lparam)
+{
+    wchar_t cls[32] = {};
+    GetClassNameW(child, cls, 32);
+    if (QString::fromWCharArray(cls).compare(QLatin1String("Static"), Qt::CaseInsensitive) == 0)
+        reinterpret_cast<QString*>(lparam)->append(QLatin1Char('\n') + controlText(child));
+    return TRUE;
+}
+
+struct SelfProtectionCtx {
+    const QSet<qint64>* pids = nullptr;
+    bool found = false;
+};
+
+BOOL CALLBACK enumSelfProtectionWindows(HWND hwnd, LPARAM lparam)
+{
+    auto* ctx = reinterpret_cast<SelfProtectionCtx*>(lparam);
+    if (!ctx || !ctx->pids || ctx->found)
+        return FALSE;
+    if (!IsWindowVisible(hwnd))
+        return TRUE;
+
+    DWORD pid = 0;
+    GetWindowThreadProcessId(hwnd, &pid);
+    if (!ctx->pids->contains(static_cast<qint64>(pid)))
+        return TRUE;
+
+    wchar_t cls[64] = {};
+    GetClassNameW(hwnd, cls, 64);
+    if (QString::fromWCharArray(cls) != QLatin1String("#32770"))
+        return TRUE;
+
+    // A MessageBox keeps its message in a Static control. GetWindowText can't read another
+    // process's controls, so each one is asked for its text with WM_GETTEXT.
+    wchar_t title[512] = {};
+    GetWindowTextW(hwnd, title, 512);
+    QString text = QString::fromWCharArray(title);
+    EnumChildWindows(hwnd, appendStaticText, reinterpret_cast<LPARAM>(&text));
+    if (text.contains(QLatin1String("Self-protection"), Qt::CaseInsensitive)) {
+        ctx->found = true;
+        return FALSE;
+    }
+    return TRUE;
+}
+#endif
+
 #if defined(ARACHNEL_HAVE_X11)
 /**
  * Swallow X errors for the duration of a scan.
@@ -410,6 +470,22 @@ bool relatedGameExecutableAlive(qint64 launchProcessId, const WineErrorWatchHint
 #endif
     }
     return false;
+}
+
+bool onlineFixSelfProtectionVisible(qint64 launchProcessId, const WineErrorWatchHints& hints)
+{
+#if defined(Q_OS_WIN)
+    const QSet<qint64> pids = relatedPidSet(launchProcessId, hints);
+    if (pids.isEmpty())
+        return false;
+    SelfProtectionCtx ctx{&pids, false};
+    EnumWindows(enumSelfProtectionWindows, reinterpret_cast<LPARAM>(&ctx));
+    return ctx.found;
+#else
+    Q_UNUSED(launchProcessId);
+    Q_UNUSED(hints);
+    return false;
+#endif
 }
 
 bool wineErrorDialogVisible(qint64 launchProcessId, const WineErrorWatchHints& hints)

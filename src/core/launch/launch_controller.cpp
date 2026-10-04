@@ -367,30 +367,36 @@ void LaunchController::handleOnlineFixSelfProtection(const QString& gameId)
     const QString executable = !m_watchHints.executablePath.isEmpty()
                                    ? m_watchHints.executablePath
                                    : game->executableOverride;
-    QString summary;
-    QString error;
-    if (!convertOnlineFixToSteamFix(game->id, game->installPath, executable, realSteamAppId(*game),
-                                    &summary, &error)) {
-        logLine(QCoreApplication::translate("Core", "Could not switch to SteamFix: %1").arg(error));
-        if (m_hooks.notice) {
-            m_hooks.notice(QCoreApplication::translate(
-                "Core", "Online Fix refused this game, and switching to SteamFix failed: %1")
-                               .arg(error));
-        }
-        return;
-    }
+    const QString installPath = game->installPath;
+    const QString appId = realSteamAppId(*game);
 
-    logLine(summary);
-    if (m_hooks.notice) {
-        m_hooks.notice(QCoreApplication::translate(
-            "Core", "Online Fix refused this game, so it now uses SteamFix. Relaunching."));
-    }
-
-    // Close the blocked launch (the error dialog included) and start again on the
-    // new layer. A fresh launchGame() also resets the Online Fix fallback state.
+    // Close the blocked launch, error box included, before touching its files: on
+    // Windows the game still has Online Fix's DLLs loaded, and a loaded DLL can't be
+    // moved off its drive. A fresh launchGame() also resets the fallback state.
     terminateTrackedLaunch();
     clearRunning(false, true);
-    QTimer::singleShot(1500, this, [this, gameId]() { launchGame(gameId); });
+    QTimer::singleShot(1500, this, [this, gameId, installPath, executable, appId]() {
+        QString summary;
+        QString error;
+        if (!convertOnlineFixToSteamFix(gameId, installPath, executable, appId, &summary,
+                                        &error)) {
+            logLine(QCoreApplication::translate("Core", "Could not switch to SteamFix: %1")
+                        .arg(error));
+            if (m_hooks.notice) {
+                m_hooks.notice(QCoreApplication::translate(
+                    "Core", "Online Fix refused this game, and switching to SteamFix failed: %1")
+                                   .arg(error));
+            }
+            return;
+        }
+
+        logLine(summary);
+        if (m_hooks.notice) {
+            m_hooks.notice(QCoreApplication::translate(
+                "Core", "Online Fix refused this game, so it now uses SteamFix. Relaunching."));
+        }
+        launchGame(gameId);
+    });
 }
 
 void LaunchController::handleOnlineFixLaunchFailure(const QString& gameId, const QString& reason)
@@ -667,6 +673,13 @@ void LaunchController::pollRunningGame()
                 });
                 return;
             }
+        }
+        // Windows captures no game output, so look for the box itself.
+        if (onlineFixSelfProtectionVisible(m_processId, m_watchHints)) {
+            m_selfProtectionHandled = true;
+            const QString gameId = m_gameId;
+            QTimer::singleShot(0, this, [this, gameId]() { handleOnlineFixSelfProtection(gameId); });
+            return;
         }
     }
 

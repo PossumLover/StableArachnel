@@ -19,6 +19,12 @@ QList<qint64> relatedLaunchPids(qint64 launchProcessId, const WineErrorWatchHint
 /** True if a modal/error dialog from this launch is visible (Win32 MessageBox / Wine on X11). */
 bool wineErrorDialogVisible(qint64 launchProcessId, const WineErrorWatchHints& hints = {});
 
+/**
+ * True if Online Fix's "Self-protection failed" box is open for this launch. Windows only:
+ * under Proton its text reaches the launch log through WINEDEBUG=+msgbox instead.
+ */
+bool onlineFixSelfProtectionVisible(qint64 launchProcessId, const WineErrorWatchHints& hints);
+
 /** True if the game exe (or Wine path to it) is still among related launch pids. */
 bool relatedGameExecutableAlive(qint64 launchProcessId, const WineErrorWatchHints& hints);
 
