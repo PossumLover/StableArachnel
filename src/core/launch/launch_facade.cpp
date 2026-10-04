@@ -35,6 +35,32 @@ void CoreController::launchGame(const QString& gameId, const QString& optionId)
         m_launchController->launchGame(gameId, optionId);
 }
 
+void CoreController::refreshGameAchievements(const QString& gameId, bool force)
+{
+    const auto* game = m_libraryStore.gameById(gameId);
+    if (!game || !m_achievements || game->installPath.isEmpty())
+        return;
+    const QString appId = entryDetails(gameId).value(QStringLiteral("steamAppId")).toString();
+    AchievementLocations locations;
+    locations.installPath = game->installPath;
+#ifdef Q_OS_WIN
+    locations.roamingPath = qEnvironmentVariable("APPDATA");
+    const QString publicPath = qEnvironmentVariable("PUBLIC");
+    if (!publicPath.isEmpty())
+        locations.publicDocumentsPath = publicPath + QStringLiteral("/Documents");
+#else
+    if (m_protonManager)
+        locations.prefixPath = m_protonManager->compatDataRoot() + QLatin1Char('/') + game->id + QStringLiteral("/pfx");
+#endif
+    m_achievements->refresh(game->id, appId, m_settings.uiLanguage(), locations, force);
+}
+
+QVariantMap CoreController::gameAchievements(const QString& gameId) const
+{
+    const auto* game = m_libraryStore.gameById(gameId);
+    return m_achievements && game ? m_achievements->info(game->id) : QVariantMap();
+}
+
 void CoreController::launchGameWithOption(const QString& gameId, const QString& optionId, bool rememberChoice)
 {
     if (rememberChoice && m_launchController)

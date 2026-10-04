@@ -230,6 +230,8 @@ void LaunchController::markRunning(const LibraryGame& game, qint64 processId,
     m_gameCoverUrl = game.coverUrl;
     m_processId = processId;
     m_launchStartedAt = QDateTime::currentDateTime();
+    m_sessionClock.start();
+    m_creditedPlaytimeMs = 0;
     m_watchingOnlineFix = watchingOnlineFix;
     m_watchHints = watchHints;
     m_sawGameExecutable = false;
@@ -258,8 +260,20 @@ void LaunchController::terminateTrackedLaunch()
     }
 }
 
+void LaunchController::checkpointPlaytime(qint64 elapsedMs, bool ended, bool discard)
+{
+    if (!m_hooks.playtimeProgress || m_gameId.isEmpty())
+        return;
+    if (!ended && elapsedMs - m_creditedPlaytimeMs < 30000)
+        return;
+    const qint64 credited = discard ? 0 : qMax<qint64>(0, elapsedMs);
+    const qint64 delta = credited - m_creditedPlaytimeMs;
+    m_creditedPlaytimeMs = credited;
+    m_hooks.playtimeProgress(m_gameId, delta, credited, ended);
+}
+
 void LaunchController::clearRunning(bool allowOnlineFixFallback, bool suppressQuickExitLog,
-                                    int exitCode)
+                                    int exitCode, bool discardPlaytime)
 {
     if (m_gameId.isEmpty())
         return;
@@ -285,8 +299,7 @@ void LaunchController::clearRunning(bool allowOnlineFixFallback, bool suppressQu
         logLine(QCoreApplication::translate("Core", "Stopped by the user"));
 
     const QString endedId = m_gameId;
-    const qint64 elapsedMs =
-        m_launchStartedAt.isValid() ? m_launchStartedAt.msecsTo(QDateTime::currentDateTime()) : 0;
+    const qint64 elapsedMs = m_sessionClock.isValid() ? m_sessionClock.elapsed() : 0;
     m_lastSessionGameId = endedId;
     m_lastSessionElapsedMs = elapsedMs;
     if (elapsedMs > 0) {
@@ -301,6 +314,8 @@ void LaunchController::clearRunning(bool allowOnlineFixFallback, bool suppressQu
     const bool earlyOfExit = allowOnlineFixFallback && m_watchingOnlineFix
         && !m_onlineFixFallbackUsed && elapsedMs >= 0 && elapsedMs < kOnlineFixEarlyExitMs
         && !cleanQuit;
+    checkpointPlaytime(elapsedMs, true, discardPlaytime || earlyOfExit || !m_sawGameExecutable
+                       || (!cleanQuit && elapsedMs < 20000));
     stopSteamShim();
     const qint64 endedPid = m_processId;
     m_gameId.clear();
@@ -308,6 +323,7 @@ void LaunchController::clearRunning(bool allowOnlineFixFallback, bool suppressQu
     m_gameCoverUrl.clear();
     m_processId = 0;
     m_launchStartedAt = {};
+    m_sessionClock.invalidate();
     m_watchingOnlineFix = false;
     m_onlineFixWatchUntil = {};
     m_watchHints = {};
@@ -374,7 +390,7 @@ void LaunchController::handleOnlineFixSelfProtection(const QString& gameId)
     // Windows the game still has Online Fix's DLLs loaded, and a loaded DLL can't be
     // moved off its drive. A fresh launchGame() also resets the fallback state.
     terminateTrackedLaunch();
-    clearRunning(false, true);
+    clearRunning(false, true, -1, true);
     QTimer::singleShot(1500, this, [this, gameId, installPath, executable, appId]() {
         QString summary;
         QString error;
@@ -433,7 +449,7 @@ void LaunchController::handleOnlineFixLaunchFailure(const QString& gameId, const
     }
 
     terminateTrackedLaunch();
-    clearRunning(false, true);
+    clearRunning(false, true, -1, true);
     m_relaunchWithoutOnlineFix = true;
     QTimer::singleShot(350, this, [this, gameId]() { launchGame(gameId); });
 }
@@ -649,6 +665,8 @@ void LaunchController::pollRunningGame()
 
     if (relatedGameExecutableAlive(m_processId, m_watchHints))
         m_sawGameExecutable = true;
+    if (m_sawGameExecutable && m_sessionClock.isValid())
+        checkpointPlaytime(m_sessionClock.elapsed(), false, false);
 
     // The dialog blocks the game rather than killing it, so no exit-based check
     // ever fires - the user just sees an error box. WINEDEBUG=+msgbox puts its

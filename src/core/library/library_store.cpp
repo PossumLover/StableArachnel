@@ -8,6 +8,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QStandardPaths>
+#include <QSaveFile>
 
 #include <algorithm>
 
@@ -146,6 +147,18 @@ void LibraryStore::removeGame(const QString& id)
     save();
 }
 
+void LibraryStore::recordPlaytime(const QString& id, qint64 deltaMs, qint64 sessionMs, bool ended)
+{
+    const LibraryGame* existing = gameById(id);
+    if (!existing)
+        return;
+    LibraryGame updated = *existing;
+    updated.playtimeMs = qMax<qint64>(0, updated.playtimeMs + deltaMs);
+    if (ended && sessionMs > 0)
+        updated.lastSessionMs = qMax<qint64>(0, sessionMs);
+    upsertGame(updated);
+}
+
 void LibraryStore::load()
 {
     QFile file(libraryFilePath());
@@ -183,6 +196,8 @@ void LibraryStore::load()
         game.downloadPath = obj.value(QStringLiteral("downloadPath")).toString();
         game.libraryId = obj.value(QStringLiteral("libraryId")).toString();
         game.lastPlayedAt = obj.value(QStringLiteral("lastPlayedAt")).toString();
+        game.playtimeMs = qMax<qint64>(0, obj.value(QStringLiteral("playtimeMs")).toInteger());
+        game.lastSessionMs = qMax<qint64>(0, obj.value(QStringLiteral("lastSessionMs")).toInteger());
         game.launchArgs = obj.value(QStringLiteral("launchArgs")).toString();
         game.executableOverride = obj.value(QStringLiteral("executableOverride")).toString();
         game.protonId = obj.value(QStringLiteral("protonId")).toString();
@@ -219,6 +234,8 @@ void LibraryStore::save()
         obj.insert(QStringLiteral("downloadPath"), game.downloadPath);
         obj.insert(QStringLiteral("libraryId"), game.libraryId);
         obj.insert(QStringLiteral("lastPlayedAt"), game.lastPlayedAt);
+        obj.insert(QStringLiteral("playtimeMs"), game.playtimeMs);
+        obj.insert(QStringLiteral("lastSessionMs"), game.lastSessionMs);
         obj.insert(QStringLiteral("launchArgs"), game.launchArgs);
         obj.insert(QStringLiteral("executableOverride"), game.executableOverride);
         obj.insert(QStringLiteral("protonId"), game.protonId);
@@ -231,10 +248,11 @@ void LibraryStore::save()
         array.append(obj);
     }
 
-    QFile file(libraryFilePath());
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    QSaveFile file(libraryFilePath());
+    if (!file.open(QIODevice::WriteOnly))
         return;
     file.write(QJsonDocument(array).toJson(QJsonDocument::Indented));
+    file.commit();
 }
 
 } // namespace arachnel::core

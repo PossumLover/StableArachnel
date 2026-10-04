@@ -20,6 +20,7 @@ public:
     const LibraryGame* gameById(const QString& id) const;
     void upsertGame(const LibraryGame& game);
     void removeGame(const QString& id);
+    void recordPlaytime(const QString& id, qint64 deltaMs, qint64 sessionMs, bool ended);
 
     void load();
     void save();

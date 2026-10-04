@@ -28,6 +28,8 @@ set(ARACHNEL_APP_SOURCES
     src/core/library/storage_library_model.cpp
     src/core/util/file_utils.cpp
     src/core/library/library_store.cpp
+    src/core/library/achievement_files.cpp
+    src/core/library/achievement_service.cpp
     src/core/library/library_controller.cpp
     src/core/library/library_maintenance_service.cpp
     src/core/library/game_update_service.cpp
@@ -37,6 +39,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/catalog/catalog_disk_cache.cpp
     src/core/catalog/catalog_parser.cpp
     src/core/catalog/catalog_controller.cpp
+    src/core/catalog/catalog_identity.cpp
     src/core/catalog/catalog_cover_coordinator.cpp
     src/core/catalog/catalog_filter_service.cpp
     src/core/catalog/content_rating_store.cpp

@@ -1,6 +1,10 @@
 #include <QtTest>
 
 #include "catalog_parser.h"
+#include "catalog_identity.h"
+#include "catalog_filter_service.h"
+#include "library_store.h"
+#include "achievement_service.h"
 #include "hydra_catalog_client.h"
 #include "job_store.h"
 #include "job_orchestrator.h"
@@ -153,6 +157,176 @@ private slots:
         QStandardPaths::setTestModeEnabled(true);
         QCoreApplication::setApplicationName(QStringLiteral("SproutNetworkTests"));
         QCoreApplication::setOrganizationName(QStringLiteral("SproutTests"));
+    }
+    void catalogReleaseTitlesGroupTogether()
+    {
+        const QString expected = catalogTitleKey(QStringLiteral("How to Fish"));
+        for (const auto& title : {QStringLiteral("How to Fish - V 1.0.8 / Build 24902533"),
+                                 QStringLiteral("How to Fish [P] {RUS + ENG + 14]"),
+                                 QStringLiteral("How to Fish Free Download [v1.0.9/Build-24911270]")})
+            QCOMPARE(catalogTitleKey(title), expected);
+        QVERIFY(catalogTitleKey(QStringLiteral("Game 2")) != catalogTitleKey(QStringLiteral("Game")));
+        QVERIFY(catalogTitleKey(QStringLiteral("Game Remastered")) != catalogTitleKey(QStringLiteral("Game")));
+        QCOMPARE(catalogTitleKey(QStringLiteral("V Rising")), QStringLiteral("vrising"));
+
+        CatalogEntry original;
+        original.title = QStringLiteral("How to Fish");
+        original.steamAppId = QStringLiteral("1234");
+        CatalogEntry release;
+        release.title = QStringLiteral("How to Fish - V 1.0.8 / Build 24902533");
+        QCOMPARE(catalogOfferGroupKey(release, catalogSteamTitleKeys({original})), QStringLiteral("steam:1234"));
+        auto conflicting = original;
+        conflicting.steamAppId = QStringLiteral("5678");
+        const auto keys = catalogSteamTitleKeys({original, conflicting});
+        QCOMPARE(catalogOfferGroupKey(release, keys), QStringLiteral("title:howtofish"));
+        QCOMPARE(catalogOfferGroupKey(original, keys), QStringLiteral("steam:1234"));
+        QCOMPARE(catalogOfferGroupKey(conflicting, keys), QStringLiteral("steam:5678"));
+    }
+    void catalogSearchKeepsLatestQueryDuringReload()
+    {
+        QVector<CatalogEntry> cache;
+        for (int i = 0; i < 5000; ++i) {
+            CatalogEntry entry;
+            entry.id = QString::number(i);
+            entry.title = i % 2 ? QStringLiteral("How to Fish") : QStringLiteral("V Rising");
+            entry.sourceId = QStringLiteral("source");
+            prepareCatalogEntry(entry);
+            cache.append(entry);
+        }
+        QReadWriteLock lock;
+        CatalogModel model;
+        CatalogFilterService filters(&model);
+        filters.setCache(&cache);
+        filters.setCacheLock(&lock);
+        filters.rebuildFilterTable();
+        filters.applyFilter(QStringLiteral("fish"));
+        filters.applyFilter(QStringLiteral("rising"));
+        QTRY_COMPARE(model.count(), 2500);
+        QCOMPARE(model.data(model.index(0), CatalogModel::TitleRole).toString(), QStringLiteral("V Rising"));
+        {
+            QWriteLocker locker(&lock);
+            for (auto& entry : cache) {
+                entry.title = QStringLiteral("Other game");
+                prepareCatalogEntry(entry);
+            }
+        }
+        filters.rebuildFilterTable();
+        filters.applyFilter(filters.activeQuery());
+        QTRY_COMPARE(model.count(), 0);
+        filters.applyFilter(QStringLiteral("other"));
+        QTRY_COMPARE(model.count(), 5000);
+        QThreadPool::globalInstance()->waitForDone();
+    }
+    void hydraDownloadRowsRetainSteamIdentity()
+    {
+        const auto entries = parseCatalogFeed(R"({"downloads":[{"title":"Example","steamAppId":123,"uris":[]}]})", QStringLiteral("source"));
+        QCOMPARE(entries.size(), 1);
+        QCOMPARE(entries.first().steamAppId, QStringLiteral("123"));
+    }
+    void playtimeCheckpointsSurviveRestart()
+    {
+        LibraryStore store;
+        LibraryGame game;
+        game.id = QStringLiteral("playtime-game");
+        game.playtimeMs = 60000;
+        store.setGames({game});
+        store.recordPlaytime(game.id, 30000, 30000, false);
+        store.recordPlaytime(game.id, 30000, 60000, false);
+        store.recordPlaytime(game.id, 10000, 70000, true);
+        LibraryStore restored;
+        restored.load();
+        QCOMPARE(restored.gameById(game.id)->playtimeMs, 130000);
+        QCOMPARE(restored.gameById(game.id)->lastSessionMs, 70000);
+        restored.recordPlaytime(game.id, 30000, 30000, false);
+        restored.recordPlaytime(game.id, -30000, 0, true);
+        QCOMPARE(restored.gameById(game.id)->playtimeMs, 130000);
+        QCOMPARE(restored.gameById(game.id)->lastSessionMs, 70000);
+        restored.removeGame(game.id);
+    }
+    void achievementFilesAndProtonPaths()
+    {
+        QTemporaryDir dir;
+        AchievementLocations locations;
+        locations.prefixPath = dir.path() + QStringLiteral("/pfx");
+        const QString roaming = locations.prefixPath + QStringLiteral("/drive_c/users/steamuser/AppData/Roaming");
+        QVERIFY(QDir().mkpath(roaming));
+        const auto paths = achievementFileCandidates(QStringLiteral("123"), locations);
+        const QString goldberg = roaming + QStringLiteral("/GSE Saves/123/achievements.json");
+        QVERIFY(paths.contains(goldberg));
+        QVERIFY(achievementFileCandidates(QStringLiteral("../123"), locations).isEmpty());
+        QVERIFY(QDir().mkpath(QFileInfo(goldberg).absolutePath()));
+        QFile file(goldberg);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(R"({"FIRST":{"earned":true,"earned_time":1700000000},"LOCKED":{"earned":false}})");
+        file.close();
+        bool valid = false;
+        auto unlocks = readAchievementUnlocks(goldberg, &valid);
+        QVERIFY(valid);
+        QCOMPARE(unlocks.size(), 1);
+        QCOMPARE(unlocks.value(QStringLiteral("FIRST")), 1700000000000LL);
+        QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        file.write(R"([{"name":"FIRST","earned":true,"earned_time":1700000000}])");
+        file.close();
+        QCOMPARE(readAchievementUnlocks(goldberg, &valid).size(), 1);
+        const QString ini = dir.path() + QStringLiteral("/Achievements.ini");
+        QFile iniFile(ini);
+        QVERIFY(iniFile.open(QIODevice::WriteOnly));
+        iniFile.write("\xEF\xBB\xBF[FIRST]\r\nAchieved=true\r\nTimeUnlocked=1700000000\r\n[SECOND]\nAchieved=1\nUnlockTime=1700000001\n[LOCKED]\nAchieved=false\n");
+        iniFile.close();
+        unlocks = readAchievementUnlocks(ini, &valid);
+        QVERIFY(valid);
+        QCOMPARE(unlocks.size(), 2);
+        QCOMPARE(unlocks.value(QStringLiteral("FIRST")), 1700000000000LL);
+        QCOMPARE(unlocks.value(QStringLiteral("SECOND")), 1700000001000LL);
+    }
+    void achievementMetadataCachingAndFailures()
+    {
+        QTemporaryDir dir;
+        FakeNetwork network;
+        network.handler = [](const auto&, const auto&) -> Response {
+            return {QJsonDocument(QJsonArray{
+                QJsonObject{{QStringLiteral("name"), QStringLiteral("FIRST")},
+                    {QStringLiteral("displayName"), QStringLiteral("First step")},
+                    {QStringLiteral("description"), QStringLiteral("Visible")},
+                    {QStringLiteral("icon"), QStringLiteral("https://icons.example/1")},
+                    {QStringLiteral("hidden"), true}},
+                QJsonObject{{QStringLiteral("name"), QStringLiteral("SECRET")},
+                    {QStringLiteral("displayName"), QStringLiteral("Spoiler")},
+                    {QStringLiteral("description"), QStringLiteral("Spoiler")},
+                    {QStringLiteral("hidden"), true}}}).toJson()};
+        };
+        AchievementLocations locations;
+        locations.installPath = dir.path();
+        QFile file(dir.path() + QStringLiteral("/achievements.json"));
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(R"({"FIRST":{"earned":true,"earned_time":1700000000}})");
+        file.close();
+        AchievementService service(nullptr, &network, dir.path() + QStringLiteral("/cache"));
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations);
+        QTRY_VERIFY(!service.info(QStringLiteral("game")).value(QStringLiteral("loading")).toBool());
+        auto info = service.info(QStringLiteral("game"));
+        QCOMPARE(info.value(QStringLiteral("unlocked")).toInt(), 1);
+        QCOMPARE(info.value(QStringLiteral("total")).toInt(), 2);
+        QVERIFY(info.value(QStringLiteral("localFileFound")).toBool());
+        const auto rows = info.value(QStringLiteral("rows")).toList();
+        QCOMPARE(rows.first().toMap().value(QStringLiteral("title")).toString(), QStringLiteral("First step"));
+        QVERIFY(rows.last().toMap().value(QStringLiteral("description")).toString().isEmpty());
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations);
+        QCOMPARE(network.requests.size(), 1);
+        QVERIFY(file.remove());
+        AchievementService restored(nullptr, &network, dir.path() + QStringLiteral("/cache"));
+        restored.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations);
+        QCOMPARE(network.requests.size(), 1);
+        QCOMPARE(restored.info(QStringLiteral("game")).value(QStringLiteral("unlocked")).toInt(), 1);
+        QVERIFY(!restored.info(QStringLiteral("game")).value(QStringLiteral("localFileFound")).toBool());
+        network.handler = [](const auto&, const auto&) { return Response{R"({"error":"offline"})", 503}; };
+        restored.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("ru"), locations);
+        QTRY_VERIFY(!restored.info(QStringLiteral("game")).value(QStringLiteral("loading")).toBool());
+        QCOMPARE(network.requests.size(), 2);
+        QCOMPARE(restored.info(QStringLiteral("game")).value(QStringLiteral("total")).toInt(), 2);
+        QVERIFY(!restored.info(QStringLiteral("game")).value(QStringLiteral("error")).toString().isEmpty());
+        restored.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("ru"), locations);
+        QCOMPARE(network.requests.size(), 2);
     }
     void hydraPaginationAndLazyLinks()
     {

@@ -127,6 +127,18 @@ jobs:
           git lfs install
           .\run.ps1 --installer
 
+      - name: Run regression and QML interaction tests
+        shell: pwsh
+        run: |
+          cmake -S tests -B build-network-tests -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++ "-DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR"
+          if ($LASTEXITCODE -ne 0) { throw "Test configuration failed" }
+          cmake --build build-network-tests --parallel 4
+          if ($LASTEXITCODE -ne 0) { throw "Test build failed" }
+          ctest --test-dir build-network-tests --output-on-failure
+          if ($LASTEXITCODE -ne 0) { throw "Regression tests failed" }
+          cmake "-DSPROUT_BUILD_DIR=$PWD/build-win" "-DQT_BIN_DIR=$env:QT_ROOT_DIR/bin" -P tests/run-qml-tests.cmake
+          if ($LASTEXITCODE -ne 0) { throw "QML interaction tests failed" }
+
       - name: sccache stats
         if: always()
         shell: pwsh
@@ -211,6 +223,15 @@ jobs:
         run: |
           git lfs install
           bash scripts/ci/package-appimage.sh
+
+      - name: Run regression and QML interaction tests
+        run: |
+          cmake -S tests -B build-network-tests -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
+          cmake --build build-network-tests --parallel 4
+          ctest --test-dir build-network-tests --output-on-failure
+          cmake -DSPROUT_BUILD_DIR="$PWD/build-linux" \
+            -DQT_BIN_DIR="$QT_ROOT_DIR/bin" -P tests/run-qml-tests.cmake
 
       - name: sccache stats
         if: always()

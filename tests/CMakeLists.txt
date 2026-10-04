@@ -12,6 +12,11 @@ add_executable(network_tests
     ${core}/jobs/http_download_session.h
     ${core}/catalog/hydra_catalog_client.cpp
     ${core}/catalog/catalog_parser.cpp
+    ${core}/catalog/catalog_identity.cpp
+    ${core}/catalog/catalog_search_utils.cpp
+    ${core}/catalog/catalog_model.cpp
+    ${core}/catalog/catalog_filter_service.cpp
+    ${core}/catalog/content_rating_store.cpp
     ${core}/catalog/catalog_types.cpp
     ${core}/catalog/catalog_genre_normalize.cpp
     ${core}/install/install_kind.cpp
@@ -28,11 +33,16 @@ add_executable(network_tests
     ${core}/settings/settings_store_persistence.cpp
     ${core}/settings/settings_store_debrid.cpp
     ${core}/library/storage_library.cpp
+    ${core}/library/library_model.cpp
+    ${core}/library/library_store.cpp
+    ${core}/library/achievement_files.cpp
+    ${core}/library/achievement_service.cpp
     ${core}/library/storage_library_model.cpp
     ${core}/plugins/source_plugin_model.cpp)
 target_include_directories(network_tests PRIVATE
     ${core}/catalog ${core}/install ${core}/jobs ${core}/settings
-    ${core}/library ${core}/plugins ${core}/runtime ${core}/torrent ${core}/i18n)
+    ${core}/library ${core}/plugins ${core}/runtime ${core}/torrent ${core}/i18n
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/app)
 target_compile_definitions(network_tests PRIVATE ARACHNEL_VERSION="test")
 target_link_libraries(network_tests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
 if(WIN32)

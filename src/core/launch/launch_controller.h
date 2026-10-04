@@ -4,6 +4,7 @@
 #include "wine_error_probe.h"
 
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QProcess>
 #include <QObject>
 #include <QStringList>
@@ -28,6 +29,7 @@ public:
         std::function<void(const QString&)> notice;
         std::function<bool(const LibraryGame&)> ensureRuntime;
         std::function<void(const QString&)> touchLastPlayed;
+        std::function<void(const QString&, qint64, qint64, bool)> playtimeProgress;
         std::function<void(const QString& gameId, bool enabled)> setOnlineFixEnabled;
         std::function<void(const QString& gameId, const QString& optionId)> setSelectedLaunchOption;
     };
@@ -54,7 +56,7 @@ public:
 
 signals:
     void runningGameChanged();
-    /** Emitted when a tracked session ends. elapsedMs is wall time since markRunning.
+    /** Emitted when a tracked session ends. elapsedMs is monotonic time since markRunning.
      *  suppressQuickExitLog: OF auto-retry or the user closed the game - don't pop the log. */
     void launchSessionEnded(const QString& gameId, qint64 elapsedMs, bool suppressQuickExitLog);
     void launchOptionSelectionRequested(const QString& gameId,
@@ -64,7 +66,8 @@ private:
     void markRunning(const LibraryGame& game, qint64 processId, bool watchingOnlineFix,
                      const WineErrorWatchHints& watchHints);
     void clearRunning(bool allowOnlineFixFallback, bool suppressQuickExitLog = false,
-                     int exitCode = -1);
+                     int exitCode = -1, bool discardPlaytime = false);
+    void checkpointPlaytime(qint64 elapsedMs, bool ended, bool discard);
     void pollRunningGame();
     /** Online Fix refused the game ("Self-protection failed"): switch to SteamFix. */
     void handleOnlineFixSelfProtection(const QString& gameId);
@@ -85,6 +88,8 @@ private:
     QString m_logGameId;
     QStringList m_launchLogLines;
     QDateTime m_launchStartedAt;
+    QElapsedTimer m_sessionClock;
+    qint64 m_creditedPlaytimeMs = 0;
     QString m_lastSessionGameId;
     qint64 m_lastSessionElapsedMs = -1;
     bool m_watchingOnlineFix = false;

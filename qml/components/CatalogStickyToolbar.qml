@@ -11,6 +11,7 @@ Item {
     required property int pageMargin
 
     property alias searchText: catalogSearch.searchText
+    property bool syncingSearch: false
 
     implicitHeight: catalogStickyCol.implicitHeight + MD.Token.spacing.small
 
@@ -39,8 +40,11 @@ Item {
             // typing a new query over a failed search left "Found: 0" on screen.
             Timer {
                 id: searchDebounce
-                interval: 700
-                onTriggered: page.applyCatalogSearch(catalogSearch.searchText.trim())
+                interval: 250
+                onTriggered: {
+                    if (page.enabled && root.visible)
+                        page.applyCatalogSearch(catalogSearch.searchText.trim())
+                }
             }
 
             onAccepted: {
@@ -48,6 +52,8 @@ Item {
                 page.applyCatalogSearch(catalogSearch.searchText.trim())
             }
             onSearchTextChanged: {
+                if (root.syncingSearch || !page.enabled || !root.visible)
+                    return
                 if (!catalogSearch.searchText.length) {
                     searchDebounce.stop()
                     page.applyCatalogSearch("")
@@ -63,7 +69,13 @@ Item {
                         return
                     // Avoid re-debounce when we push the committed query back.
                     searchDebounce.stop()
+                    root.syncingSearch = true
                     catalogSearch.searchText = page.searchQuery
+                    root.syncingSearch = false
+                }
+                function onEnabledChanged() {
+                    if (!page.enabled)
+                        searchDebounce.stop()
                 }
             }
         }

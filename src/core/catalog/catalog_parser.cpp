@@ -78,6 +78,7 @@ CatalogEntry parseDownloadObject(const QJsonObject& obj, const QString& sourceId
     CatalogEntry entry;
     const QString title = obj.value(QStringLiteral("title")).toString();
     entry.title = title;
+    entry.steamAppId = obj.value(QStringLiteral("steamAppId")).toVariant().toString().trimmed();
     entry.id = obj.value(QStringLiteral("id")).toString();
     if (entry.id.isEmpty())
         entry.id = slugifyCatalogId(title, sourceId);

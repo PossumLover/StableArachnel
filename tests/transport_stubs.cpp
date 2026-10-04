@@ -2,6 +2,10 @@
 #include "torrent_session.h"
 #include "http_download_session.h"
 
+namespace arachnel {
+void logDiagnostic(const QString&) {}
+}
+
 namespace arachnel::core {
 struct TorrentSession::Impl {};
 TorrentSession::TorrentSession(QObject* parent) : QObject(parent) {}

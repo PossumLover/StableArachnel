@@ -14,6 +14,7 @@ Item {
     required property string version
     required property string installKindLabel
     required property bool hasUpdate
+    required property double playtimeMs
     property int componentCount: 0
     property int installedComponentCount: 0
 
@@ -152,6 +153,12 @@ Item {
             typescale: MD.Token.typescale.title_small
             elide: Text.ElideRight
             maximumLineCount: 1
+        }
+
+        PlaytimeLabel {
+            Layout.fillWidth: true
+            visible: root.playtimeMs > 0 && !root.showJobStatus
+            durationMs: root.playtimeMs
         }
 
         RowLayout {

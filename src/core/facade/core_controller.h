@@ -35,6 +35,7 @@ struct GameLaunchTarget;
 struct InstallContext;
 
 class CatalogFilterService;
+class AchievementService;
 class CatalogDiscoveryService;
 class ContentRatingStore;
 class CatalogController;
@@ -197,6 +198,7 @@ signals:
     void pluginAutoUpdatingChanged();
     void runningGameChanged();
     void launchSessionEnded(const QString& gameId, qint64 elapsedMs, bool suppressQuickExitLog);
+    void gameAchievementsChanged(const QString& gameId);
     void launchOptionSelectionRequested(const QString& gameId, const QVariantList& options);
     void runtimeSetupChanged();
     void protonDownloadChanged();

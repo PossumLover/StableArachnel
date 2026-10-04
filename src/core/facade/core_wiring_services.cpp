@@ -433,11 +433,19 @@ void CoreController::initializeServices()
                                           m_jobOrchestrator, &m_catalogCache, std::move(updateHooks));
 
     LaunchController::Hooks launchHooks;
+    m_achievements = new AchievementService(this);
+    connect(m_achievements, &AchievementService::changed, this, &CoreController::gameAchievementsChanged);
     launchHooks.notice = [this](const QString& message) { showNotice(message); };
     launchHooks.ensureRuntime = [this](const LibraryGame& game) {
         return ensureRuntimeDependenciesForGame(game);
     };
     launchHooks.touchLastPlayed = [this](const QString& gameId) { touchLastPlayed(gameId); };
+    launchHooks.playtimeProgress = [this](const QString& gameId, qint64 deltaMs,
+                                         qint64 sessionMs, bool ended) {
+        m_libraryStore.recordPlaytime(gameId, deltaMs, sessionMs, ended);
+        if (const auto* game = m_libraryStore.gameById(gameId))
+            m_library.replaceGame(*game);
+    };
     launchHooks.setOnlineFixEnabled = [this](const QString& gameId, bool enabled) {
         if (m_libraryController)
             m_libraryController->setGameOnlineFixEnabled(gameId, enabled);
@@ -459,6 +467,8 @@ void CoreController::initializeServices()
             &CoreController::runningGameChanged);
     connect(m_launchController, &LaunchController::launchSessionEnded, this,
             &CoreController::launchSessionEnded);
+    connect(m_launchController, &LaunchController::launchSessionEnded, this,
+            [this](const QString& gameId, qint64, bool) { refreshGameAchievements(gameId); });
     connect(m_launchController, &LaunchController::launchOptionSelectionRequested, this,
             [this](const QString& gameId, const QVector<GameLaunchOption>& options) {
                 QVariantList list;

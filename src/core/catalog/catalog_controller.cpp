@@ -4,6 +4,7 @@
 #include "catalog_feed_loader.h"
 #include "catalog_model.h"
 #include "catalog_parser.h"
+#include "catalog_identity.h"
 #include "catalog_search_utils.h"
 #include "crash_log.h"
 #include "plugin_catalog_json.h"
@@ -173,17 +174,7 @@ const QHash<QString, QVector<CatalogEntry>>& CatalogController::catalogsBySource
 
 QString CatalogController::normalizeTitleKey(const QString& title)
 {
-    return compactSearchText(title);
-}
-
-QString CatalogController::offerGroupKey(const CatalogEntry& entry)
-{
-    if (!entry.steamAppId.trimmed().isEmpty())
-        return QStringLiteral("steam:%1").arg(entry.steamAppId.trimmed());
-    const QString titleKey = normalizeTitleKey(entry.title);
-    if (!titleKey.isEmpty())
-        return QStringLiteral("title:%1").arg(titleKey);
-    return QStringLiteral("id:%1").arg(entry.id);
+    return catalogTitleKey(title);
 }
 
 int CatalogController::showcaseScore(const CatalogEntry& entry)
@@ -363,41 +354,6 @@ void CatalogController::rebuildMergedCatalog()
         loadedSourceIds.append(sourceId);
     }
 
-    // Evacuate only when a single enabled source is configured. If another plugin is
-    // still loading, moving the first catalog out of bySource drops it from later merges
-    // and install offers stay single-source (Steam only, FreeTP gone).
-    if (!multiSource && loadedSourceIds.size() == 1) {
-        const QString sourceId = loadedSourceIds.first();
-        QVector<CatalogEntry> local;
-        {
-            const auto it = m_catalogBySource.find(sourceId);
-            if (it != m_catalogBySource.end() && !it.value().isEmpty()) {
-                local = std::move(it.value());
-                it.value() = QVector<CatalogEntry>();
-            }
-        }
-        if (local.isEmpty()) {
-            // Already evacuated into m_mergedCache — only refresh filter/status.
-            if (m_mergedCache && !m_mergedCache->isEmpty()
-                && m_sourceLoadedAtMs.contains(sourceId)) {
-                ++m_mergeGeneration;
-                if (m_hooks.rebuildGenres)
-                    m_hooks.rebuildGenres();
-                if (m_hooks.applyFilter)
-                    m_hooks.applyFilter(m_activeQuery);
-                const SourcePluginInfo* source = m_sources->pluginById(sourceId);
-                setCatalogStatus(QCoreApplication::translate("Core", "%1 · %2 games")
-                                     .arg(source ? source->name : sourceId)
-                                     .arg(m_catalog->count()));
-                updateCatalogLoadingState();
-            }
-            return;
-        }
-        const quint64 generation = ++m_mergeGeneration;
-        applyMergedCatalogResult(generation, std::move(local), {}, {});
-        return;
-    }
-
     if (loadedSourceIds.isEmpty())
         return;
 
@@ -433,7 +389,7 @@ void CatalogController::rebuildMergedCatalog()
 
             // Steam rows key by app id; FreeTP often has no steamAppId yet and keys by title.
             // Map title → steam:* so "The Forest" from both sources becomes one card.
-            QHash<QString, QString> titleToSteamKey;
+            QVector<CatalogEntry> steamEntries;
             for (const QString& sourceId : activeSourceIds) {
                 if (!enabledIds.contains(sourceId))
                     continue;
@@ -444,12 +400,10 @@ void CatalogController::rebuildMergedCatalog()
                     const QString appId = entry.steamAppId.trimmed();
                     if (appId.isEmpty())
                         continue;
-                    const QString titleKey = normalizeTitleKey(entry.title);
-                    if (titleKey.isEmpty())
-                        continue;
-                    titleToSteamKey.insert(titleKey, QStringLiteral("steam:%1").arg(appId));
+                    steamEntries.append(entry);
                 }
             }
+            const auto titleToSteamKey = catalogSteamTitleKeys(steamEntries);
 
             for (const QString& sourceId : activeSourceIds) {
                 if (!enabledIds.contains(sourceId))
@@ -460,13 +414,7 @@ void CatalogController::rebuildMergedCatalog()
                 for (const CatalogEntry& entry : it.value()) {
                     CatalogEntry copy = entry;
                     copy.id = repairCatalogEntryId(copy.id);
-                    QString key = offerGroupKey(copy);
-                    if (key.startsWith(QLatin1String("title:"))) {
-                        const QString steamKey =
-                            titleToSteamKey.value(normalizeTitleKey(copy.title));
-                        if (!steamKey.isEmpty())
-                            key = steamKey;
-                    }
+                    const QString key = catalogOfferGroupKey(copy, titleToSteamKey);
                     if (!groups.contains(key))
                         groupOrder.append(key);
                     groups[key].append(std::move(copy));
@@ -480,11 +428,15 @@ void CatalogController::rebuildMergedCatalog()
                     continue;
 
                 QVector<CatalogEntry> uniqueOffers;
-                QSet<QString> seenSources;
+                QHash<QString, int> sourceIndices;
                 for (CatalogEntry& offer : offers) {
-                    if (seenSources.contains(offer.sourceId))
+                    const auto existing = sourceIndices.constFind(offer.sourceId);
+                    if (existing != sourceIndices.cend()) {
+                        if (offer.uploadDate > uniqueOffers.at(existing.value()).uploadDate)
+                            uniqueOffers[existing.value()] = std::move(offer);
                         continue;
-                    seenSources.insert(offer.sourceId);
+                    }
+                    sourceIndices.insert(offer.sourceId, uniqueOffers.size());
                     uniqueOffers.append(std::move(offer));
                 }
                 offers = std::move(uniqueOffers);

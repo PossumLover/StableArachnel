@@ -247,6 +247,16 @@ Item {
                             Layout.fillWidth: true
                             spacing: MD.Token.spacing.small
 
+                            PlaytimeLabel {
+                                visible: page.inLibrary
+                                durationMs: page.info.playtimeMs ?? 0
+                            }
+                            PlaytimeLabel {
+                                visible: page.inLibrary && (page.info.lastSessionMs ?? 0) > 0
+                                durationMs: page.info.lastSessionMs ?? 0
+                                caption: qsTr("Last session")
+                            }
+
                             MD.AssistChip {
 
                                 font.capitalization: Font.MixedCase
@@ -576,6 +586,15 @@ Item {
                 }
 
                 }
+
+            GameAchievementsPanel {
+                Layout.fillWidth: true
+                Layout.leftMargin: MD.Token.spacing.large
+                Layout.rightMargin: MD.Token.spacing.large
+                visible: page.inLibrary && ((page.info.steamAppId ?? "").length > 0)
+                gameId: page.gameId
+                active: visible && page.visible && page.enabled
+            }
 
             MD.ElevationRectangle {
                 Layout.fillWidth: true

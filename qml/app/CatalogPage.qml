@@ -269,8 +269,6 @@ Item {
     Connections {
         target: Core
         function onActiveCatalogSourceIdsChanged() {
-            root.searchQuery = ""
-            catalogContent.searchText = ""
             catalogContent.resetScroll()
         }
         function onCatalogFiltersChanged() {

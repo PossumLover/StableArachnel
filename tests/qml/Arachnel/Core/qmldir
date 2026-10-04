@@ -1,0 +1,2 @@
+module Arachnel.Core
+singleton Core 1.0 Core.qml

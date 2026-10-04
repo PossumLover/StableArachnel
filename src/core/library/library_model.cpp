@@ -73,6 +73,8 @@ QVariant LibraryModel::data(const QModelIndex& index, int role) const
         return game.components.size();
     case InstalledComponentCountRole:
         return installedComponentCount(game.components);
+    case PlaytimeMsRole:
+        return game.playtimeMs;
     default:
         return {};
     }
@@ -99,6 +101,7 @@ QHash<int, QByteArray> LibraryModel::roleNames() const
         {LibraryIdRole, "libraryId"},
         {ComponentCountRole, "componentCount"},
         {InstalledComponentCountRole, "installedComponentCount"},
+        {PlaytimeMsRole, "playtimeMs"},
     };
 }
 
@@ -239,6 +242,8 @@ QVariantMap LibraryModel::toMap(const LibraryGame& game) const
         {QStringLiteral("downloadPath"), game.downloadPath},
         {QStringLiteral("libraryId"), game.libraryId},
         {QStringLiteral("lastPlayedAt"), game.lastPlayedAt},
+        {QStringLiteral("playtimeMs"), game.playtimeMs},
+        {QStringLiteral("lastSessionMs"), game.lastSessionMs},
         {QStringLiteral("launchArgs"), game.launchArgs},
         {QStringLiteral("executableOverride"), game.executableOverride},
         {QStringLiteral("protonId"), game.protonId},

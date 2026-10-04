@@ -584,7 +584,7 @@
 <context>
     <name>CatalogStickyToolbar</name>
     <message>
-        <location filename="../qml/components/CatalogStickyToolbar.qml" line="+87"/>
+        <location filename="../qml/components/CatalogStickyToolbar.qml" line="+99"/>
         <source>Type</source>
         <translation>Тип</translation>
     </message>
@@ -820,7 +820,7 @@
         <location filename="../src/core/library/library_controller.cpp" line="+456"/>
         <location line="+42"/>
         <location line="+58"/>
-        <location filename="../src/core/launch/launch_controller.cpp" line="+917"/>
+        <location filename="../src/core/launch/launch_controller.cpp" line="+935"/>
         <source>Couldn&apos;t update DLC unlocks.</source>
         <translation>Не удалось обновить разблокировку DLC.</translation>
     </message>
@@ -931,12 +931,12 @@
         <translation>Ошибка установки</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_controller.cpp" line="+114"/>
+        <location filename="../src/core/catalog/catalog_controller.cpp" line="+115"/>
         <source>Catalog error: %1</source>
         <translation>Ошибка каталога: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+439"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+449"/>
         <source>Game not found for add-on</source>
         <translation>Игра не найдена для дополнения</translation>
     </message>
@@ -952,7 +952,7 @@
         <translation>Не удалось найти игру для установки: %1</translation>
     </message>
     <message>
-        <location line="-459"/>
+        <location line="-469"/>
         <location line="+33"/>
         <source>Moving %1</source>
         <translation>Перемещение %1</translation>
@@ -968,7 +968,7 @@
         <translation>Не удалось переместить</translation>
     </message>
     <message>
-        <location line="+379"/>
+        <location line="+389"/>
         <source>Download complete - install manually</source>
         <translation>Загрузка завершена - установите вручную</translation>
     </message>
@@ -1219,7 +1219,7 @@
     </message>
     <message>
         <location filename="../src/core/catalog/catalog_controller.cpp" line="+275"/>
-        <location line="+214"/>
+        <location line="+206"/>
         <source>%1 · %2 games</source>
         <translation>%1 · %2 игр</translation>
     </message>
@@ -1275,18 +1275,18 @@
         <translation>Установка runtime не зарегистрировалась в префиксе Proton: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/launch/launch_controller.cpp" line="-674"/>
+        <location filename="../src/core/launch/launch_controller.cpp" line="-690"/>
         <source>Game process started (PID %1)</source>
         <translation>Процесс игры запущен (PID %1)</translation>
     </message>
     <message>
-        <location line="-189"/>
-        <location line="+191"/>
+        <location line="-191"/>
+        <location line="+193"/>
         <source>n/a</source>
         <translation>н/д</translation>
     </message>
     <message>
-        <location line="+37"/>
+        <location line="+49"/>
         <source>Game process exited (code %1)</source>
         <translation>Процесс игры завершился (код %1)</translation>
     </message>
@@ -1296,18 +1296,18 @@
         <translation>Остановлено пользователем</translation>
     </message>
     <message>
-        <location line="+48"/>
+        <location line="+50"/>
         <source>Online Fix is off, and the game quit right after start. Turn it back on in game settings.</source>
         <translation>Online Fix выключен, и игра сразу закрылась. Включи его обратно в настройках игры.</translation>
     </message>
     <message>
         <location line="-7"/>
-        <location line="+397"/>
+        <location line="+399"/>
         <source>Online Fix quit right after launch</source>
         <translation>Online Fix сразу завершился после запуска</translation>
     </message>
     <message>
-        <location line="-301"/>
+        <location line="-303"/>
         <source>Disabling Online Fix and launching without it</source>
         <translation>Отключаю Online Fix и запускаю без него</translation>
     </message>
@@ -1333,12 +1333,12 @@
     </message>
     <message>
         <location line="+90"/>
-        <location filename="../src/core/launch/launch_facade.cpp" line="+144"/>
+        <location filename="../src/core/launch/launch_facade.cpp" line="+170"/>
         <source>No launch has been attempted for this game yet.</source>
         <translation>Запуск этой игры ещё не пытались выполнить.</translation>
     </message>
     <message>
-        <location line="+65"/>
+        <location line="+67"/>
         <source>Online Fix showed an error dialog</source>
         <translation>Online Fix показал окно ошибки</translation>
     </message>
@@ -1353,14 +1353,14 @@
         <translation>Запуск %1 (%2)</translation>
     </message>
     <message>
-        <location line="-268"/>
-        <location line="+269"/>
+        <location line="-270"/>
+        <location line="+271"/>
         <source>Install path: %1</source>
         <translation>Путь установки: %1</translation>
     </message>
     <message>
-        <location line="-270"/>
-        <location line="+271"/>
+        <location line="-272"/>
+        <location line="+273"/>
         <source>Source: %1</source>
         <translation>Источник: %1</translation>
     </message>
@@ -1380,13 +1380,13 @@
         <translation>Починены смешанные файлы Unity. Включи Online Fix обратно в настройках игры.</translation>
     </message>
     <message>
-        <location line="-285"/>
-        <location line="+311"/>
+        <location line="-287"/>
+        <location line="+313"/>
         <source>Executable override: %1</source>
         <translation>Переопределение исполняемого файла: %1</translation>
     </message>
     <message>
-        <location line="-672"/>
+        <location line="-690"/>
         <source>not installed</source>
         <translation>не установлен</translation>
     </message>
@@ -1401,7 +1401,7 @@
         <translation>выключен</translation>
     </message>
     <message>
-        <location line="+87"/>
+        <location line="+100"/>
         <source>Session lasted %1 s</source>
         <translation>Сессия длилась %1 с</translation>
     </message>
@@ -1411,7 +1411,7 @@
         <translation>Быстрый выход. Если вывода игры нет, смотри Player.log в диагностике ниже.</translation>
     </message>
     <message>
-        <location line="+53"/>
+        <location line="+56"/>
         <source>Online Fix refused this game: &quot;Self-protection failed&quot; (error 4)</source>
         <translation>Online Fix отказался запускать игру: «Self-protection failed» (ошибка 4)</translation>
     </message>
@@ -1458,12 +1458,12 @@
     <message>
         <location line="+7"/>
         <location line="+78"/>
-        <location line="+555"/>
+        <location line="+557"/>
         <source>Online Fix: %1</source>
         <translation>Online Fix: %1</translation>
     </message>
     <message>
-        <location line="-610"/>
+        <location line="-612"/>
         <source>Player.log has a crash</source>
         <translation>В Player.log есть краш</translation>
     </message>
@@ -1484,18 +1484,18 @@
     </message>
     <message>
         <location line="+13"/>
-        <location line="+555"/>
+        <location line="+557"/>
         <source>Online Fix dir: %1</source>
         <translation>Папка Online Fix: %1</translation>
     </message>
     <message>
-        <location line="-535"/>
-        <location line="+525"/>
+        <location line="-537"/>
+        <location line="+527"/>
         <source>Proton: %1</source>
         <translation>Proton: %1</translation>
     </message>
     <message>
-        <location line="-516"/>
+        <location line="-518"/>
         <location line="+17"/>
         <source>--- Player.log (%1) ---</source>
         <translation>--- Player.log (%1) ---</translation>
@@ -1506,7 +1506,7 @@
         <translation>Player.log: пока нет в префиксе Proton</translation>
     </message>
     <message>
-        <location line="+273"/>
+        <location line="+275"/>
         <source>Failed to prepare runtime (Proton/Wine)</source>
         <translation>Не удалось подготовить runtime (Proton/Wine)</translation>
     </message>
@@ -1748,7 +1748,7 @@
         <translation>Обновление завершено, но сведения о версии неполные. Обновите каталог и повторите обновление, если метка останется.</translation>
     </message>
     <message>
-        <location line="-268"/>
+        <location line="-278"/>
         <source>No catalog sources enabled</source>
         <translation>Нет включённых источников каталога</translation>
     </message>
@@ -1946,9 +1946,9 @@
     </message>
     <message>
         <location line="+17"/>
-        <location filename="../src/core/launch/launch_controller.cpp" line="-685"/>
+        <location filename="../src/core/launch/launch_controller.cpp" line="-687"/>
         <location line="+82"/>
-        <location line="+315"/>
+        <location line="+317"/>
         <location line="+240"/>
         <source>Steamless: %1</source>
         <translation>Steamless: %1</translation>
@@ -2168,7 +2168,7 @@
     </message>
     <message>
         <location line="+3"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+129"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+139"/>
         <source>Sprout %1 is available</source>
         <translation>Доступен Sprout %1</translation>
     </message>
@@ -2443,7 +2443,7 @@
         <translation>Каталог пуст или формат не распознан</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_parser.cpp" line="+470"/>
+        <location filename="../src/core/catalog/catalog_parser.cpp" line="+471"/>
         <source>Empty server response</source>
         <translation>Пустой ответ сервера</translation>
     </message>
@@ -2571,7 +2571,7 @@
     <message>
         <location line="+161"/>
         <location line="+21"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="-294"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="-304"/>
         <source>Game removed: %1</source>
         <translation>Игра удалена: %1</translation>
     </message>
@@ -2895,7 +2895,7 @@
         <translation>Некорректная ссылка на загрузку из Hydra</translation>
     </message>
     <message>
-        <location line="+32"/>
+        <location line="+38"/>
         <source>No available download link in this Hydra source</source>
         <translation>В этом источнике Hydra нет доступной ссылки для загрузки</translation>
     </message>
@@ -3000,6 +3000,16 @@
         <location line="+4"/>
         <source>Could not finish the download file</source>
         <translation>Не удалось завершить загрузку файла</translation>
+    </message>
+    <message>
+        <location filename="../src/core/library/achievement_service.cpp" line="+137"/>
+        <source>Could not load achievement details.</source>
+        <translation>Не удалось загрузить сведения о достижениях.</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>Hidden achievement</source>
+        <translation>Скрытое достижение</translation>
     </message>
 </context>
 <context>
@@ -3385,6 +3395,59 @@
     </message>
 </context>
 <context>
+    <name>GameAchievementsPanel</name>
+    <message>
+        <location filename="../qml/components/GameAchievementsPanel.qml" line="+51"/>
+        <source>Achievements</source>
+        <translation>Достижения</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>%1/%2 unlocked</source>
+        <translation>Открыто: %1/%2</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Refresh</source>
+        <translation>Обновить</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>Loading achievements...</source>
+        <translation>Загрузка достижений...</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>No achievement details available for this game.</source>
+        <translation>Сведения о достижениях для этой игры недоступны.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>No supported achievement save found yet. Play the game, then refresh.</source>
+        <translation>Поддерживаемый файл достижений пока не найден. Запустите игру и обновите список.</translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>Unlocked</source>
+        <translation>Открыто</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Locked</source>
+        <translation>Закрыто</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Show less</source>
+        <translation>Свернуть</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Show all (%1)</source>
+        <translation>Показать все (%1)</translation>
+    </message>
+</context>
+<context>
     <name>GameDetailsContent</name>
     <message>
         <location filename="../qml/app/GameDetailsContent.qml" line="+58"/>
@@ -3402,7 +3465,12 @@
         <translation>К источникам</translation>
     </message>
     <message>
-        <location line="+170"/>
+        <location line="+157"/>
+        <source>Last session</source>
+        <translation>Последний сеанс</translation>
+    </message>
+    <message>
+        <location line="+23"/>
         <source>DRM</source>
         <translation>DRM</translation>
     </message>
@@ -3433,12 +3501,12 @@
     </message>
     <message>
         <location line="+22"/>
-        <location line="+319"/>
+        <location line="+328"/>
         <source>Share</source>
         <translation>Поделиться</translation>
     </message>
     <message>
-        <location line="-309"/>
+        <location line="-318"/>
         <source>Source page</source>
         <translation>Страница на источнике</translation>
     </message>
@@ -3478,12 +3546,12 @@
         <translation>Лог запуска</translation>
     </message>
     <message>
-        <location line="+169"/>
+        <location line="+178"/>
         <source>Copy link</source>
         <translation>Скопировать ссылку</translation>
     </message>
     <message>
-        <location line="-278"/>
+        <location line="-287"/>
         <source>Install failed</source>
         <translation>Ошибка установки</translation>
     </message>
@@ -3519,17 +3587,17 @@
     </message>
     <message>
         <location line="+18"/>
-        <location line="+381"/>
+        <location line="+390"/>
         <source>Delete</source>
         <translation>Удалить</translation>
     </message>
     <message>
-        <location line="-362"/>
+        <location line="-371"/>
         <source>Update</source>
         <translation>Обновление</translation>
     </message>
     <message>
-        <location line="+81"/>
+        <location line="+90"/>
         <source>Description</source>
         <translation>Описание</translation>
     </message>
@@ -3569,7 +3637,7 @@
         <translation>Закрыть</translation>
     </message>
     <message>
-        <location line="-461"/>
+        <location line="-470"/>
         <source>Ready to download from Steam CDN. Online Fix can be included when needed.</source>
         <translation>Готово к загрузке с Steam CDN. При необходимости можно включить Online Fix.</translation>
     </message>
@@ -4237,7 +4305,7 @@
 <context>
     <name>LibraryGameCard</name>
     <message numerus="yes">
-        <location filename="../qml/components/LibraryGameCard.qml" line="+25"/>
+        <location filename="../qml/components/LibraryGameCard.qml" line="+26"/>
         <location line="+3"/>
         <source>%n add-ons</source>
         <translation>
@@ -4282,7 +4350,7 @@
         <translation>Обновить</translation>
     </message>
     <message>
-        <location line="+47"/>
+        <location line="+53"/>
         <source>Running</source>
         <translation>Запущена</translation>
     </message>
@@ -4784,6 +4852,34 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
     </message>
 </context>
 <context>
+    <name>PlaytimeLabel</name>
+    <message>
+        <location filename="../qml/components/PlaytimeLabel.qml" line="+5"/>
+        <source>Playtime</source>
+        <translation>Время в игре</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Less than a minute</source>
+        <translation>Меньше минуты</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1 min</source>
+        <translation>%1 мин</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>%1 h %2 min</source>
+        <translation>%1 ч %2 мин</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>%1: %2</source>
+        <translation>%1: %2</translation>
+    </message>
+</context>
+<context>
     <name>PluginInstallOverlay</name>
     <message>
         <location filename="../qml/app/PluginInstallOverlay.qml" line="+45"/>
@@ -5034,7 +5130,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsDebridPage</name>
     <message>
-        <location filename="../qml/settings/SettingsDebridPage.qml" line="+40"/>
+        <location filename="../qml/settings/SettingsDebridPage.qml" line="+41"/>
         <source>TorBox</source>
         <translation>TorBox</translation>
     </message>
@@ -5044,22 +5140,22 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Загружать все торренты через TorBox.</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+10"/>
         <source>Use TorBox</source>
         <translation>Использовать TorBox</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+8"/>
         <source>API key</source>
         <translation>API-ключ</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Show API key</source>
         <translation>Показать API-ключ</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+9"/>
         <source>Checking...</source>
         <translation>Проверка...</translation>
     </message>
@@ -5069,7 +5165,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Сохранить и проверить</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+11"/>
         <source>Remove key</source>
         <translation>Удалить ключ</translation>
     </message>

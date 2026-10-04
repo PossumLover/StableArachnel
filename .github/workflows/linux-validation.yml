@@ -48,3 +48,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" \
             -DARACHNEL_FAST_BUILD=OFF
           cmake --build build-linux --target arachnel_app --parallel 2
+
+      - name: Test settings, search, and achievement interactions
+        run: |
+          cmake -DSPROUT_BUILD_DIR="$PWD/build-linux" \
+            -DQT_BIN_DIR="$QT_ROOT_DIR/bin" -P tests/run-qml-tests.cmake

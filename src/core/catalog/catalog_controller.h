@@ -112,7 +112,6 @@ private:
     void applyMergedCatalogResult(quint64 generation, QVector<CatalogEntry> merged,
                                   QHash<QString, QVector<CatalogEntry>> installOffers,
                                   QHash<QString, QString> entryIdToOfferGroup);
-    static QString offerGroupKey(const CatalogEntry& entry);
     static QString normalizeTitleKey(const QString& title);
     static int showcaseScore(const CatalogEntry& entry);
 

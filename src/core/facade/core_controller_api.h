@@ -20,6 +20,8 @@
     Q_INVOKABLE QVariantList gameLaunchOptions(const QString& gameId) const;
     Q_INVOKABLE void setGameSelectedLaunchOption(const QString& gameId, const QString& optionId);
     Q_INVOKABLE void stopRunningGame();
+    Q_INVOKABLE void refreshGameAchievements(const QString& gameId, bool force = false);
+    Q_INVOKABLE QVariantMap gameAchievements(const QString& gameId) const;
     Q_INVOKABLE QString gameLaunchLog() const;
     Q_INVOKABLE QString gameLaunchLog(const QString& gameId) const;
     Q_INVOKABLE QString gameLaunchLogHeadline(const QString& gameId) const;

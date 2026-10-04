@@ -112,6 +112,7 @@
     LibraryMaintenanceService* m_libraryMaintenance = nullptr;
     GameUpdateService* m_gameUpdates = nullptr;
     LaunchController* m_launchController = nullptr;
+    AchievementService* m_achievements = nullptr;
     RuntimeDependencyService* m_runtimeDependencyService = nullptr;
     ProtonManager* m_protonManager = nullptr;
     SteamlessService* m_steamlessService = nullptr;

@@ -20,12 +20,13 @@ Flickable {
         width: root.width
         spacing: MD.Token.spacing.medium
 
-        MD.Card {
+        MD.Pane {
             Layout.fillWidth: true
             Layout.leftMargin: contentMargin
             Layout.rightMargin: contentMargin
             Layout.topMargin: MD.Token.spacing.small
-            type: MD.Enum.CardFilled
+            radius: MD.Token.shape.corner.large
+            backgroundColor: MD.Token.color.surface_container_highest
             horizontalPadding: MD.Token.spacing.large
             verticalPadding: MD.Token.spacing.large
             contentItem: ColumnLayout {
@@ -49,12 +50,14 @@ Flickable {
                         }
                     }
                     MD.Switch {
+                        objectName: "torboxSwitch"
                         checked: Core.settings.torboxEnabled
                         onToggled: Core.settings.torboxEnabled = checked
                         Accessible.name: qsTr("Use TorBox")
                     }
                 }
                 AppTextField {
+                    objectName: "torboxKeyField"
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
                     text: root.draftKey
@@ -63,6 +66,7 @@ Flickable {
                     onTextEdited: root.draftKey = text
                 }
                 MD.CheckBox {
+                    objectName: "torboxShowKey"
                     text: qsTr("Show API key")
                     checked: root.showKey
                     onToggled: root.showKey = checked
@@ -71,6 +75,7 @@ Flickable {
                     Layout.fillWidth: true
                     spacing: MD.Token.spacing.small
                     MD.Button {
+                        objectName: "torboxSaveKey"
                         text: Core.settings.torboxChecking ? qsTr("Checking...") : qsTr("Save and test")
                         mdState.type: MD.Enum.BtFilled
                         enabled: !Core.settings.torboxChecking && root.draftKey.trim().length > 0
@@ -81,6 +86,7 @@ Flickable {
                         }
                     }
                     MD.Button {
+                        objectName: "torboxRemoveKey"
                         text: qsTr("Remove key")
                         mdState.type: MD.Enum.BtText
                         enabled: !Core.settings.torboxChecking && Core.settings.torboxApiKey.length > 0
