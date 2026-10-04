@@ -31,8 +31,29 @@ public:
     bool nativeEventFilter(const QByteArray&, void* message, qintptr* result) override
     {
         const auto* event = static_cast<MSG*>(message);
-        if (event->hwnd != m_handle || event->message != WM_NCCALCSIZE || !event->wParam
+        if (event->hwnd != m_handle
             || !(GetWindowLongPtrW(event->hwnd, GWL_STYLE) & WS_THICKFRAME))
+            return false;
+
+        if (event->message == WM_NCHITTEST && !IsZoomed(m_handle) && !IsIconic(m_handle)) {
+            RECT frame{};
+            if (!GetWindowRect(m_handle, &frame))
+                return false;
+            const auto x = static_cast<short>(LOWORD(event->lParam));
+            const auto y = static_cast<short>(HIWORD(event->lParam));
+            const auto dpi = GetDpiForWindow(m_handle);
+            const auto border = GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi)
+                + GetSystemMetricsForDpi(SM_CXPADDEDBORDER, dpi);
+            // The painted top border still needs native resize hit testing.
+            if (y >= frame.top && y < frame.top + border
+                && x >= frame.left && x < frame.right) {
+                *result = x < frame.left + border ? HTTOPLEFT
+                    : x >= frame.right - border ? HTTOPRIGHT : HTTOP;
+                return true;
+            }
+            return false;
+        }
+        if (event->message != WM_NCCALCSIZE || !event->wParam)
             return false;
 
         auto* size = reinterpret_cast<NCCALCSIZE_PARAMS*>(event->lParam);

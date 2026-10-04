@@ -85,6 +85,43 @@ private slots:
         QCOMPARE(content.y, frame.top);
     }
 
+    void nativeResizeHitTargets_data()
+    {
+        QTest::addColumn<int>("horizontal");
+        QTest::addColumn<int>("vertical");
+        QTest::addColumn<int>("target");
+        QTest::newRow("top") << 0 << -1 << int(HTTOP);
+        QTest::newRow("bottom") << 0 << 1 << int(HTBOTTOM);
+        QTest::newRow("left") << -1 << 0 << int(HTLEFT);
+        QTest::newRow("right") << 1 << 0 << int(HTRIGHT);
+        QTest::newRow("top-left") << -1 << -1 << int(HTTOPLEFT);
+        QTest::newRow("top-right") << 1 << -1 << int(HTTOPRIGHT);
+        QTest::newRow("bottom-left") << -1 << 1 << int(HTBOTTOMLEFT);
+        QTest::newRow("bottom-right") << 1 << 1 << int(HTBOTTOMRIGHT);
+    }
+
+    void nativeResizeHitTargets()
+    {
+        QFETCH(int, horizontal);
+        QFETCH(int, vertical);
+        QFETCH(int, target);
+        QWindow window;
+        window.setFlags(flags);
+        window.setProperty("customTitleBar", true);
+        arachnel::configureWindowFrame(&window);
+        window.setGeometry(50, 50, 620, 440);
+        window.show();
+        QTRY_VERIFY(window.isExposed());
+        const auto handle = reinterpret_cast<HWND>(window.winId());
+        RECT frame{};
+        QVERIFY(GetWindowRect(handle, &frame));
+        const auto x = horizontal < 0 ? frame.left + 2
+            : horizontal > 0 ? frame.right - 2 : (frame.left + frame.right) / 2;
+        const auto y = vertical < 0 ? frame.top + 2
+            : vertical > 0 ? frame.bottom - 2 : (frame.top + frame.bottom) / 2;
+        QCOMPARE(SendMessageW(handle, WM_NCHITTEST, 0, MAKELPARAM(x, y)), LRESULT(target));
+    }
+
     void standardWindowsKeepTheirFrame()
     {
         QWindow window;
