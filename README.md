@@ -34,9 +34,9 @@ This is my fork of Arachnel, all credits go to the original author. My fork is f
 
 Also, in-app I renamed it to Sprout, as Arachnel is a rather ominous name.
 
-Builds: [Releases](https://github.com/BadKiko/Arachnel/releases)
+Builds: [Releases](https://github.com/PossumLover/StableArachnel/releases)
 
-Bugs/ideas: [Issues](https://github.com/BadKiko/Arachnel/issues)
+Bugs/ideas: [Issues](https://github.com/PossumLover/StableArachnel/issues)
 
 Build from source: [CONTRIBUTING.md](CONTRIBUTING.md)
 

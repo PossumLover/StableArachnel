@@ -33,9 +33,9 @@
 
 Главная идея лаунчера - plug and play. Выбрал игру, скачал, нажал Играть. На Windows просто запускается. На Linux сам подтягивает что нужно (Proton и такое), чтобы не возиться с системой.
 
-Сборки: [Releases](https://github.com/BadKiko/Arachnel/releases)
+Сборки: [Releases](https://github.com/PossumLover/StableArachnel/releases)
 
-Баги/идеи: [Issues](https://github.com/BadKiko/Arachnel/issues)
+Баги/идеи: [Issues](https://github.com/PossumLover/StableArachnel/issues)
 
 Сборка из исходников: [CONTRIBUTING.md](CONTRIBUTING.md)
 
