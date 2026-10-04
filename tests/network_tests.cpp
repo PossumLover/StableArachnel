@@ -436,6 +436,34 @@ private slots:
         QFile file(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/settings.json"));
         QVERIFY(file.open(QIODevice::ReadOnly));
         QVERIFY(!file.readAll().contains("unique-test-secret"));
+#ifndef Q_OS_WIN
+        const QFileInfo keyFile(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/torbox.key"));
+        const auto publicPermissions = QFileDevice::ReadGroup | QFileDevice::WriteGroup | QFileDevice::ExeGroup
+            | QFileDevice::ReadOther | QFileDevice::WriteOther | QFileDevice::ExeOther;
+        QVERIFY(!(keyFile.permissions() & publicPermissions));
+#endif
+    }
+    void torboxRejectsSymlinks()
+    {
+#ifdef Q_OS_WIN
+        QSKIP("Unix symlink test");
+#else
+        QTemporaryDir dir;
+        QTemporaryDir outside;
+        const QString root = outputPath(dir, {});
+        QVERIFY(QDir().mkpath(root));
+        QVERIFY(QFile::link(outside.path(), root + QStringLiteral("linked")));
+        SettingsStore settings;
+        settings.setTorboxApiKey(QStringLiteral("test-key"));
+        FakeNetwork network;
+        torboxFixture(network, "content", QStringLiteral("linked/escape.bin"));
+        TorBoxDownloadSession session(&settings, nullptr, QUrl(QStringLiteral("https://torbox.example")), &network);
+        QSignalSpy failed(&session, &TorBoxDownloadSession::failed);
+        session.addJob(QStringLiteral("job"), magnet, dir.path());
+        QTRY_COMPARE(failed.size(), 1);
+        QCOMPARE(network.requests.size(), 2);
+        QVERIFY(!QFileInfo::exists(outside.path() + QStringLiteral("/escape.bin")));
+#endif
     }
 };
 

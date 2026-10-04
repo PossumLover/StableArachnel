@@ -19,3 +19,5 @@ cmake -S tests -B build-network-tests -DCMAKE_PREFIX_PATH=/path/to/Qt
 cmake --build build-network-tests
 ctest --test-dir build-network-tests --output-on-failure
 ```
+
+The Linux validation workflow builds the full launcher with Qt 6.11.1 on Ubuntu 24.04 and runs these tests on every push to `main`. Linux tests also check private key-file permissions and reject download paths through symlinks. Actual TorBox transfers and game installation still need testing on your Linux machine.
