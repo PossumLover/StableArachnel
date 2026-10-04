@@ -14,6 +14,7 @@ class QTimer;
 namespace arachnel::core {
 
 class InstallAnalyzer;
+class MagnetMetadataProbe;
 
 class InstallKindProbeService : public QObject
 {
@@ -45,6 +46,7 @@ private:
 
     void enqueueTask(ProbeTask task, bool front = false);
     void pumpQueue();
+    void handleProbeFinished(const QStringList& fileNames);
     void persistCache() const;
     void loadCache();
 
@@ -53,11 +55,10 @@ private:
     QSet<QString> m_queuedHashes;
     QSet<QString> m_inFlightHashes;
     QHash<QString, InstallKind> m_cacheByHash;
-    int m_activeTasks = 0;
+    MagnetMetadataProbe* m_probe = nullptr;
+    ProbeTask m_current;
     bool m_probesEnabled = true;
     QTimer* m_persistTimer = nullptr;
-
-    static constexpr int kMaxConcurrent = 1;
 };
 
 } // namespace arachnel::core

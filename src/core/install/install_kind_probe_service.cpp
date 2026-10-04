@@ -8,7 +8,6 @@
 #include <QJsonObject>
 #include <QStandardPaths>
 #include <QTimer>
-#include <QtConcurrent>
 
 #include <algorithm>
 
@@ -44,6 +43,12 @@ InstallKindProbeService::InstallKindProbeService(InstallAnalyzer* analyzer, QObj
     m_persistTimer->setSingleShot(true);
     m_persistTimer->setInterval(5000);
     connect(m_persistTimer, &QTimer::timeout, this, &InstallKindProbeService::persistCache);
+
+    m_probe = new MagnetMetadataProbe(this);
+    connect(m_probe, &MagnetMetadataProbe::finished, this,
+            [this](const QString&, const QStringList& fileNames) {
+                handleProbeFinished(fileNames);
+            });
 }
 
 std::optional<InstallKind> InstallKindProbeService::cachedKindForMagnet(
@@ -168,39 +173,37 @@ void InstallKindProbeService::pumpQueue()
     if (!m_probesEnabled)
         return;
 
-    while (m_activeTasks < kMaxConcurrent && !m_queue.isEmpty()) {
+    while (!m_probe->busy() && !m_queue.isEmpty()) {
         const ProbeTask task = m_queue.dequeue();
         m_queuedHashes.remove(task.hashKey);
+        if (!m_probe->start(task.magnetUri))
+            continue;
         m_inFlightHashes.insert(task.hashKey);
-        ++m_activeTasks;
-
-        QtConcurrent::run([this, task]() {
-            QStringList fileNames;
-            if (const std::optional<QStringList> fetched = fetchMagnetFileNames(task.magnetUri))
-                fileNames = *fetched;
-
-            QTimer::singleShot(0, this, [this, task, fileNames]() {
-                m_inFlightHashes.remove(task.hashKey);
-                --m_activeTasks;
-
-                InstallKind kind = InstallKind::PortableArchive;
-                bool resolved = false;
-                if (!fileNames.isEmpty() && m_analyzer) {
-                    const InstallPlan plan = m_analyzer->resolveFileNames(task.sourceId, fileNames);
-                    kind = plan.analysis.kind;
-                    resolved = plan.analysis.confidence > 0;
-                }
-
-                if (resolved && !task.hashKey.isEmpty()) {
-                    m_cacheByHash.insert(task.hashKey, kind);
-                    m_persistTimer->start();
-                    emit installKindResolved(task.entryId, kind);
-                }
-
-                pumpQueue();
-            });
-        });
+        m_current = task;
     }
+}
+
+void InstallKindProbeService::handleProbeFinished(const QStringList& fileNames)
+{
+    const ProbeTask task = m_current;
+    m_current = {};
+    m_inFlightHashes.remove(task.hashKey);
+
+    InstallKind kind = InstallKind::PortableArchive;
+    bool resolved = false;
+    if (!fileNames.isEmpty() && m_analyzer) {
+        const InstallPlan plan = m_analyzer->resolveFileNames(task.sourceId, fileNames);
+        kind = plan.analysis.kind;
+        resolved = plan.analysis.confidence > 0;
+    }
+
+    if (resolved && !task.hashKey.isEmpty()) {
+        m_cacheByHash.insert(task.hashKey, kind);
+        m_persistTimer->start();
+        emit installKindResolved(task.entryId, kind);
+    }
+
+    pumpQueue();
 }
 
 void InstallKindProbeService::persistCache() const
