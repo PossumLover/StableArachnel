@@ -73,6 +73,10 @@ QVariant LibraryModel::data(const QModelIndex& index, int role) const
         return game.components.size();
     case InstalledComponentCountRole:
         return installedComponentCount(game.components);
+    case LastPlayedAtRole:
+        return game.lastPlayedAt;
+    case PlayStatusRole:
+        return game.playStatus;
     case PlaytimeMsRole:
         return game.playtimeMs;
     default:
@@ -102,6 +106,8 @@ QHash<int, QByteArray> LibraryModel::roleNames() const
         {ComponentCountRole, "componentCount"},
         {InstalledComponentCountRole, "installedComponentCount"},
         {PlaytimeMsRole, "playtimeMs"},
+        {LastPlayedAtRole, "lastPlayedAt"},
+        {PlayStatusRole, "playStatus"},
     };
 }
 
@@ -242,6 +248,7 @@ QVariantMap LibraryModel::toMap(const LibraryGame& game) const
         {QStringLiteral("downloadPath"), game.downloadPath},
         {QStringLiteral("libraryId"), game.libraryId},
         {QStringLiteral("lastPlayedAt"), game.lastPlayedAt},
+        {QStringLiteral("playStatus"), game.playStatus},
         {QStringLiteral("playtimeMs"), game.playtimeMs},
         {QStringLiteral("lastSessionMs"), game.lastSessionMs},
         {QStringLiteral("launchArgs"), game.launchArgs},

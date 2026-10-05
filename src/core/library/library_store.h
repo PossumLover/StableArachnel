@@ -22,6 +22,7 @@ public:
     void removeGame(const QString& id);
     void recordPlaytime(const QString& id, qint64 deltaMs, qint64 sessionMs, bool ended);
 
+    void setPlayStatus(const QString& id, const QString& status);
     void load();
     void save();
 

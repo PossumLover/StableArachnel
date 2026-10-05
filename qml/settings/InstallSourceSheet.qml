@@ -21,6 +21,7 @@ MD.BottomSheet {
         entryTitle = title || ""
         _pendingChoice = null
         offers = entryId.length ? Core.installOffersForEntry(entryId) : []
+        Core.checkTorboxCache(entryId)
         open()
     }
 
@@ -116,6 +117,11 @@ MD.BottomSheet {
                                 color: MD.Token.color.on_surface_variant
                                 typescale: MD.Token.typescale.body_small
                             }
+                        }
+
+                        TorBoxCacheBadge {
+                            cacheHash: modelData.cacheHash || ""
+                            directDownload: modelData.directDownload || false
                         }
 
                         MD.Icon {

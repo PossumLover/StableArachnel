@@ -129,6 +129,7 @@ MD.BottomSheet {
         draftPlayMode = Core.catalogPlayModeFilter
         draftHiddenSources = Core.hiddenCatalogSourceIds.slice()
         genreSearch = ""
+        filterScroll.contentY = 0
         moreOpen = draftSize > 0 || draftRecency > 0 || draftHasAddons
                    || draftHiddenSources.length > 0
         open()
@@ -166,17 +167,53 @@ MD.BottomSheet {
         }
 
         Flickable {
+            id: filterScroll
             Layout.fillWidth: true
             Layout.preferredHeight: Math.min(contentCol.implicitHeight, 620)
             contentWidth: width
             contentHeight: contentCol.implicitHeight
             clip: true
             boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: MD.ScrollBar {}
 
             ColumnLayout {
                 id: contentCol
                 width: parent.width
                 spacing: MD.Token.spacing.medium
+
+                // A saved preference, not a draft filter: applies at once and
+                // "Clear all" leaves it alone.
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: MD.Token.spacing.large
+                    Layout.rightMargin: MD.Token.spacing.large
+                    spacing: MD.Token.spacing.small
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+
+                        MD.Label {
+                            Layout.fillWidth: true
+                            text: qsTr("Hide adult games")
+                            typescale: MD.Token.typescale.body_large
+                        }
+
+                        MD.Label {
+                            Layout.fillWidth: true
+                            text: qsTr("Games Steam marks as sexual content. Mature games like Baldur's Gate 3 stay.")
+                            color: MD.Token.color.on_surface_variant
+                            typescale: MD.Token.typescale.body_small
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+
+                    MD.Switch {
+                        Accessible.name: qsTr("Hide adult games")
+                        checked: Core.settings.hideAdultGames
+                        onToggled: Core.settings.hideAdultGames = checked
+                    }
+                }
 
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -366,37 +403,6 @@ MD.BottomSheet {
                             MD.Switch {
                                 checked: root.draftHasAddons
                                 onToggled: root.draftHasAddons = checked
-                            }
-                        }
-
-                        // A saved preference, not a draft filter: applies at once and
-                        // "Clear all" leaves it alone.
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: MD.Token.spacing.small
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                MD.Label {
-                                    Layout.fillWidth: true
-                                    text: qsTr("Hide adult games")
-                                    typescale: MD.Token.typescale.body_large
-                                }
-
-                                MD.Label {
-                                    Layout.fillWidth: true
-                                    text: qsTr("Games Steam marks as sexual content. Mature games like Baldur's Gate 3 stay.")
-                                    color: MD.Token.color.on_surface_variant
-                                    typescale: MD.Token.typescale.body_small
-                                    wrapMode: Text.WordWrap
-                                }
-                            }
-
-                            MD.Switch {
-                                checked: Core.settings.hideAdultGames
-                                onToggled: Core.settings.hideAdultGames = checked
                             }
                         }
                     }

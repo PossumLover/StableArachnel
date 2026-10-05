@@ -159,6 +159,19 @@ void LibraryStore::recordPlaytime(const QString& id, qint64 deltaMs, qint64 sess
     upsertGame(updated);
 }
 
+void LibraryStore::setPlayStatus(const QString& id, const QString& status)
+{
+    if (!status.isEmpty() && status != QStringLiteral("backlog") && status != QStringLiteral("playing")
+        && status != QStringLiteral("completed"))
+        return;
+    const auto* existing = gameById(id);
+    if (!existing || existing->playStatus == status)
+        return;
+    LibraryGame updated = *existing;
+    updated.playStatus = status;
+    upsertGame(updated);
+}
+
 void LibraryStore::load()
 {
     QFile file(libraryFilePath());
@@ -196,6 +209,9 @@ void LibraryStore::load()
         game.downloadPath = obj.value(QStringLiteral("downloadPath")).toString();
         game.libraryId = obj.value(QStringLiteral("libraryId")).toString();
         game.lastPlayedAt = obj.value(QStringLiteral("lastPlayedAt")).toString();
+        const QString status = obj.value(QStringLiteral("playStatus")).toString();
+        if (status == QStringLiteral("backlog") || status == QStringLiteral("playing") || status == QStringLiteral("completed"))
+            game.playStatus = status;
         game.playtimeMs = qMax<qint64>(0, obj.value(QStringLiteral("playtimeMs")).toInteger());
         game.lastSessionMs = qMax<qint64>(0, obj.value(QStringLiteral("lastSessionMs")).toInteger());
         game.launchArgs = obj.value(QStringLiteral("launchArgs")).toString();
@@ -234,6 +250,7 @@ void LibraryStore::save()
         obj.insert(QStringLiteral("downloadPath"), game.downloadPath);
         obj.insert(QStringLiteral("libraryId"), game.libraryId);
         obj.insert(QStringLiteral("lastPlayedAt"), game.lastPlayedAt);
+        obj.insert(QStringLiteral("playStatus"), game.playStatus);
         obj.insert(QStringLiteral("playtimeMs"), game.playtimeMs);
         obj.insert(QStringLiteral("lastSessionMs"), game.lastSessionMs);
         obj.insert(QStringLiteral("launchArgs"), game.launchArgs);

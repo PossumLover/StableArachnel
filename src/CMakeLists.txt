@@ -16,6 +16,8 @@ set(ARACHNEL_APP_SOURCES
     src/core/catalog/catalog_types.cpp
     src/core/social/friends_model.cpp
     src/core/library/library_model.cpp
+    src/core/library/library_view_model.cpp
+    src/core/catalog/torbox_cache_service.cpp
     src/core/plugins/source_plugin_model.cpp
     src/core/catalog/catalog_model.cpp
     src/core/settings/notification_model.cpp

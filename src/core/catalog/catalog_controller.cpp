@@ -1,4 +1,5 @@
 #include "catalog_controller.h"
+#include "torbox_cache_service.h"
 
 #include "catalog_disk_cache.h"
 #include "catalog_feed_loader.h"
@@ -574,6 +575,10 @@ QVariantList CatalogController::installOffersForEntry(const QString& entryId) co
         row.insert(QStringLiteral("sourceId"), offer.sourceId);
         row.insert(QStringLiteral("sourceName"), m_sources->nameForId(offer.sourceId));
         row.insert(QStringLiteral("title"), offer.title);
+        const QString uri = offer.magnetUris.value(0);
+        row.insert(QStringLiteral("cacheHash"), TorBoxCacheService::magnetHash(uri));
+        row.insert(QStringLiteral("directDownload"), QUrl(uri).scheme() == QStringLiteral("https")
+            || QUrl(uri).scheme() == QStringLiteral("http"));
         row.insert(QStringLiteral("sizeBytes"), offer.sizeBytes);
         const QString sizeLabel =
             offer.sizeLabel.isEmpty() ? formatSizeLabelBytes(offer.sizeBytes) : offer.sizeLabel;

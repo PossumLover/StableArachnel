@@ -130,6 +130,12 @@ jobs:
       - name: Run regression and QML interaction tests
         shell: pwsh
         run: |
+          cmake --build build-win --target torrent_shutdown_tests --parallel 4
+          if ($LASTEXITCODE -ne 0) { throw "Shutdown test build failed" }
+          & ./build-win/torrent_shutdown_tests.exe -o shutdown-results.txt,txt
+          $shutdownResult = $LASTEXITCODE
+          Get-Content shutdown-results.txt
+          if ($shutdownResult -ne 0) { throw "Shutdown tests failed" }
           cmake -S tests -B build-network-tests -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++ "-DCMAKE_PREFIX_PATH=$env:QT_ROOT_DIR"
           if ($LASTEXITCODE -ne 0) { throw "Test configuration failed" }
           cmake --build build-network-tests --parallel 4
@@ -226,6 +232,8 @@ jobs:
 
       - name: Run regression and QML interaction tests
         run: |
+          cmake --build build-linux --target torrent_shutdown_tests --parallel 4
+          ./build-linux/torrent_shutdown_tests -o -,txt
           cmake -S tests -B build-network-tests -G Ninja \
             -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
           cmake --build build-network-tests --parallel 4

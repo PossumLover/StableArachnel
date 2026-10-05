@@ -65,7 +65,7 @@
 <context>
     <name>AppWindow</name>
     <message>
-        <location filename="../qml/app/AppWindow.qml" line="+294"/>
+        <location filename="../qml/app/AppWindow.qml" line="+296"/>
         <source>Library</source>
         <translation>Library</translation>
     </message>
@@ -252,17 +252,17 @@
         <translation>Last year</translation>
     </message>
     <message>
-        <location line="+147"/>
+        <location line="+182"/>
         <source>Players</source>
         <translation>Players</translation>
     </message>
     <message>
-        <location line="-24"/>
+        <location line="-59"/>
         <source>Filters</source>
         <translation>Filters</translation>
     </message>
     <message>
-        <location line="+105"/>
+        <location line="+140"/>
         <source>Less</source>
         <translation>Less</translation>
     </message>
@@ -302,17 +302,18 @@
         <translation>Source</translation>
     </message>
     <message>
-        <location line="+100"/>
+        <location line="-123"/>
+        <location line="+14"/>
         <source>Hide adult games</source>
         <translation>Hide adult games</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="-8"/>
         <source>Games Steam marks as sexual content. Mature games like Baldur&apos;s Gate 3 stay.</source>
         <translation>Games Steam marks as sexual content. Mature games like Baldur&apos;s Gate 3 stay.</translation>
     </message>
     <message>
-        <location line="+32"/>
+        <location line="+224"/>
         <source>Clear all</source>
         <translation>Clear all</translation>
     </message>
@@ -729,7 +730,7 @@
     </message>
     <message>
         <location line="+1"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+273"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+275"/>
         <source>Preparing…</source>
         <translation>Preparing…</translation>
     </message>
@@ -925,18 +926,18 @@
     <message>
         <location line="+1"/>
         <location filename="../src/core/jobs/job_status.cpp" line="+8"/>
-        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="+293"/>
+        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="+308"/>
         <location filename="../src/core/library/library_facade_sync.cpp" line="+245"/>
         <source>Install failed</source>
         <translation>Install failed</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_controller.cpp" line="+115"/>
+        <location filename="../src/core/catalog/catalog_controller.cpp" line="+116"/>
         <source>Catalog error: %1</source>
         <translation>Catalog error: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+449"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+472"/>
         <source>Game not found for add-on</source>
         <translation>Game not found for add-on</translation>
     </message>
@@ -952,7 +953,7 @@
         <translation>Could not find game to install: %1</translation>
     </message>
     <message>
-        <location line="-469"/>
+        <location line="-492"/>
         <location line="+33"/>
         <source>Moving %1</source>
         <translation>Moving %1</translation>
@@ -968,7 +969,12 @@
         <translation>Move failed</translation>
     </message>
     <message>
-        <location line="+389"/>
+        <location line="+65"/>
+        <source>Achievement unlocked: %1 - %2</source>
+        <translation>Achievement unlocked: %1 - %2</translation>
+    </message>
+    <message>
+        <location line="+347"/>
         <source>Download complete - install manually</source>
         <translation>Download complete - install manually</translation>
     </message>
@@ -1037,7 +1043,7 @@
     <message>
         <location filename="../src/core/library/library_controller.cpp" line="+83"/>
         <location filename="../src/core/jobs/job_facade_lifecycle.cpp" line="+175"/>
-        <location filename="../src/core/library/library_facade_ops.cpp" line="+217"/>
+        <location filename="../src/core/library/library_facade_ops.cpp" line="+224"/>
         <location line="+39"/>
         <location line="+37"/>
         <source>Game not found</source>
@@ -1218,8 +1224,7 @@
         <translation>Steamless is not available</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_controller.cpp" line="+275"/>
-        <location line="+206"/>
+        <location filename="../src/core/catalog/catalog_controller.cpp" line="+440"/>
         <source>%1 · %2 games</source>
         <translation>%1 · %2 games</translation>
     </message>
@@ -1229,7 +1234,7 @@
         <translation>%1 sources · %2 games</translation>
     </message>
     <message>
-        <location line="+299"/>
+        <location line="+303"/>
         <source>Catalog empty or unavailable: %1</source>
         <translation>Catalog empty or unavailable: %1</translation>
     </message>
@@ -1333,7 +1338,7 @@
     </message>
     <message>
         <location line="+90"/>
-        <location filename="../src/core/launch/launch_facade.cpp" line="+170"/>
+        <location filename="../src/core/launch/launch_facade.cpp" line="+176"/>
         <source>No launch has been attempted for this game yet.</source>
         <translation>No launch has been attempted for this game yet.</translation>
     </message>
@@ -1646,7 +1651,7 @@
         <translation>Source &quot;%1&quot; is disabled in settings</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="-273"/>
+        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="-288"/>
         <source>Could not resolve application data folder</source>
         <translation>Could not resolve application data folder</translation>
     </message>
@@ -1676,7 +1681,7 @@
         <translation>Application data deleted. Sprout will quit now.</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+39"/>
         <location line="+20"/>
         <location filename="../src/core/library/library_facade_sync.cpp" line="-220"/>
         <source>Catalog entry not found: %1</source>
@@ -1728,7 +1733,7 @@
         <translation>Update finished, but version info is incomplete. Refresh the catalog and update again if the chip stays.</translation>
     </message>
     <message>
-        <location line="-278"/>
+        <location line="-301"/>
         <source>No catalog sources enabled</source>
         <translation>No catalog sources enabled</translation>
     </message>
@@ -2142,7 +2147,7 @@
         <translation>Could not delete plugin files</translation>
     </message>
     <message>
-        <location filename="../src/core/torrent/torrent_session.cpp" line="+139"/>
+        <location filename="../src/core/torrent/torrent_session.cpp" line="+151"/>
         <source>No download link</source>
         <translation>No download link</translation>
     </message>
@@ -2168,7 +2173,7 @@
     </message>
     <message>
         <location line="+3"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+139"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+162"/>
         <source>Sprout %1 is available</source>
         <translation>Sprout %1 is available</translation>
     </message>
@@ -2571,7 +2576,7 @@
     <message>
         <location line="+161"/>
         <location line="+21"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="-304"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="-327"/>
         <source>Game removed: %1</source>
         <translation>Game removed: %1</translation>
     </message>
@@ -2624,7 +2629,7 @@
         <translation>Drive removed</translation>
     </message>
     <message>
-        <location filename="../src/core/settings/settings_store_persistence.cpp" line="+142"/>
+        <location filename="../src/core/settings/settings_store_persistence.cpp" line="+144"/>
         <source>FreeTP torrent catalog - magnet links and add-ons</source>
         <translation>FreeTP torrent catalog - magnet links and add-ons</translation>
     </message>
@@ -3002,7 +3007,7 @@
         <translation>Could not finish the download file</translation>
     </message>
     <message>
-        <location filename="../src/core/library/achievement_service.cpp" line="+137"/>
+        <location filename="../src/core/library/achievement_service.cpp" line="+152"/>
         <source>Could not load achievement details.</source>
         <translation>Could not load achievement details.</translation>
     </message>
@@ -3397,7 +3402,7 @@
 <context>
     <name>GameAchievementsPanel</name>
     <message>
-        <location filename="../qml/components/GameAchievementsPanel.qml" line="+51"/>
+        <location filename="../qml/components/GameAchievementsPanel.qml" line="+52"/>
         <source>Achievements</source>
         <translation>Achievements</translation>
     </message>
@@ -3407,7 +3412,7 @@
         <translation>%1/%2 unlocked</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+5"/>
         <source>Refresh</source>
         <translation>Refresh</translation>
     </message>
@@ -3427,17 +3432,44 @@
         <translation>No supported achievement save found yet. Play the game, then refresh.</translation>
     </message>
     <message>
-        <location line="+40"/>
+        <location line="+13"/>
+        <source>Search achievements</source>
+        <translation>Search achievements</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <location line="+50"/>
         <source>Unlocked</source>
         <translation>Unlocked</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="-50"/>
+        <location line="+51"/>
         <source>Locked</source>
         <translation>Locked</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="-51"/>
+        <source>All</source>
+        <translation>All</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Filter achievements</source>
+        <translation>Filter achievements</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>No achievements match your search or filter.</source>
+        <translation>No achievements match your search or filter.</translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>Unlocked %1</source>
+        <translation>Unlocked %1</translation>
+    </message>
+    <message>
+        <location line="+11"/>
         <source>Show less</source>
         <translation>Show less</translation>
     </message>
@@ -3465,7 +3497,7 @@
         <translation>Open sources</translation>
     </message>
     <message>
-        <location line="+157"/>
+        <location line="+162"/>
         <source>Last session</source>
         <translation>Last session</translation>
     </message>
@@ -3691,6 +3723,35 @@
     </message>
 </context>
 <context>
+    <name>GameOrganizationControl</name>
+    <message>
+        <location filename="../qml/components/GameOrganizationControl.qml" line="+13"/>
+        <location line="+10"/>
+        <source>Library list</source>
+        <translation>Library list</translation>
+    </message>
+    <message>
+        <location line="-4"/>
+        <source>Unorganized</source>
+        <translation>Unorganized</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Backlog</source>
+        <translation>Backlog</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Playing</source>
+        <translation>Playing</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Completed</source>
+        <translation>Completed</translation>
+    </message>
+</context>
+<context>
     <name>GameSettingsRuntimePanel</name>
     <message>
         <location filename="../qml/app/GameSettingsRuntimePanel.qml" line="+58"/>
@@ -3751,7 +3812,7 @@
         <translation>Game settings</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+33"/>
         <source>Desktop shortcut</source>
         <translation>Desktop shortcut</translation>
     </message>
@@ -4113,7 +4174,7 @@
 <context>
     <name>InstallSourceSheet</name>
     <message>
-        <location filename="../qml/settings/InstallSourceSheet.qml" line="+54"/>
+        <location filename="../qml/settings/InstallSourceSheet.qml" line="+55"/>
         <source>Choose download source</source>
         <translation>Choose download source</translation>
     </message>
@@ -4128,7 +4189,7 @@
         <translation>Unknown source</translation>
     </message>
     <message>
-        <location line="+29"/>
+        <location line="+34"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
@@ -4237,6 +4298,11 @@
         <location line="+5"/>
         <source>%1 games</source>
         <translation>%1 games</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>No games match your search or list.</source>
+        <translation>No games match your search or list.</translation>
     </message>
 </context>
 <context>
@@ -4390,6 +4456,64 @@
         <location line="+1"/>
         <source>Downloading %1%</source>
         <translation>Downloading %1%</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryToolbar</name>
+    <message>
+        <location filename="../qml/components/LibraryToolbar.qml" line="+11"/>
+        <source>Search library</source>
+        <translation>Search library</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>All games</source>
+        <translation>All games</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Backlog</source>
+        <translation>Backlog</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Playing</source>
+        <translation>Playing</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Completed</source>
+        <translation>Completed</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Unorganized</source>
+        <translation>Unorganized</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Filter library</source>
+        <translation>Filter library</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Title</source>
+        <translation>Title</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Recently played</source>
+        <translation>Recently played</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Most played</source>
+        <translation>Most played</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Sort library</source>
+        <translation>Sort library</translation>
     </message>
 </context>
 <context>
@@ -5381,7 +5505,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsLaunchPage</name>
     <message>
-        <location filename="../qml/settings/SettingsLaunchPage.qml" line="+59"/>
+        <location filename="../qml/settings/SettingsLaunchPage.qml" line="+68"/>
         <source>Linux: all games run through Proton (Windows builds).</source>
         <translation>Linux: all games run through Proton (Windows builds).</translation>
     </message>
@@ -5426,7 +5550,12 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Proton runtime</translation>
     </message>
     <message>
-        <location line="-46"/>
+        <location line="-56"/>
+        <source>Achievement unlock notifications</source>
+        <translation>Achievement unlock notifications</translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Extra options added to every game launch.</source>
         <translation>Extra options added to every game launch.</translation>
     </message>
@@ -5946,6 +6075,39 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="-12"/>
         <source>Suggested by %1</source>
         <translation>Suggested by %1</translation>
+    </message>
+</context>
+<context>
+    <name>TorBoxCacheBadge</name>
+    <message>
+        <location filename="../qml/components/TorBoxCacheBadge.qml" line="+26"/>
+        <source>Direct download</source>
+        <translation>Direct download</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>TorBox key needed</source>
+        <translation>TorBox key needed</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Cached on TorBox</source>
+        <translation>Cached on TorBox</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Not cached on TorBox</source>
+        <translation>Not cached on TorBox</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Cache status unavailable</source>
+        <translation>Cache status unavailable</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Checking TorBox cache...</source>
+        <translation>Checking TorBox cache...</translation>
     </message>
 </context>
 <context>

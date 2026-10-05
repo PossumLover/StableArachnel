@@ -45,6 +45,7 @@ class SettingsStore : public QObject
                    protonPriorityChanged)
     Q_PROPERTY(QStringList bookmarkedEntryIds READ bookmarkedEntryIds NOTIFY bookmarkedEntryIdsChanged)
     Q_PROPERTY(QVariantList bookmarks READ bookmarks NOTIFY bookmarkedEntryIdsChanged)
+    Q_PROPERTY(bool achievementNotifications READ achievementNotifications WRITE setAchievementNotifications NOTIFY achievementNotificationsChanged)
     Q_PROPERTY(bool torboxEnabled READ torboxEnabled WRITE setTorboxEnabled NOTIFY debridChanged)
     Q_PROPERTY(QString torboxApiKey READ torboxApiKey WRITE setTorboxApiKey NOTIFY debridChanged)
     Q_PROPERTY(QString torboxStatus READ torboxStatus NOTIFY debridStatusChanged)
@@ -52,6 +53,8 @@ class SettingsStore : public QObject
 
 public:
     explicit SettingsStore(QObject* parent = nullptr);
+    bool achievementNotifications() const { return m_achievementNotifications; }
+    void setAchievementNotifications(bool enabled);
     bool torboxEnabled() const { return m_torboxEnabled; }
     QString torboxApiKey() const { return m_torboxApiKey; }
     QString torboxStatus() const { return m_torboxStatus; }
@@ -129,6 +132,7 @@ public:
     void save();
 
 signals:
+    void achievementNotificationsChanged();
     void debridChanged();
     void debridStatusChanged();
     void libraryRootChanged();
@@ -153,6 +157,7 @@ private:
     void loadTorboxKey();
     bool saveTorboxKey(const QString& key);
 
+    bool m_achievementNotifications = true;
     bool m_torboxEnabled = false;
     QString m_torboxApiKey;
     QString m_torboxStatus;

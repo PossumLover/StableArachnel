@@ -267,6 +267,22 @@ qt_import_qml_plugins(arachnel_app)
 
 arachnel_setup_libtorrent(arachnel_app)
 
+find_package(Qt6 QUIET COMPONENTS Test)
+if(TARGET Qt6::Test)
+    add_executable(torrent_shutdown_tests EXCLUDE_FROM_ALL
+        tests/torrent_shutdown_tests.cpp
+        src/core/torrent/torrent_session.cpp
+        src/core/torrent/torrent_session_poll.cpp
+        src/core/torrent/torrent_settings.cpp)
+    target_include_directories(torrent_shutdown_tests PRIVATE src/core/torrent)
+    target_link_libraries(torrent_shutdown_tests PRIVATE Qt6::Core Qt6::Network Qt6::Concurrent Qt6::Test)
+    if(TARGET torrent-rasterbar)
+        target_link_libraries(torrent_shutdown_tests PRIVATE torrent-rasterbar)
+    else()
+        target_link_libraries(torrent_shutdown_tests PRIVATE PkgConfig::LIBTORRENT)
+    endif()
+endif()
+
 if(WIN32)
     target_link_libraries(arachnel_app PRIVATE ole32 shell32 dbghelp crypt32)
 else()

@@ -30,6 +30,15 @@ Flickable {
         width: root.width
         spacing: MD.Token.spacing.medium
 
+        MD.Switch {
+            Layout.fillWidth: true
+            Layout.leftMargin: contentMargin
+            Layout.rightMargin: contentMargin
+            text: qsTr("Achievement unlock notifications")
+            checked: Core.settings.achievementNotifications
+            onToggled: Core.settings.achievementNotifications = checked
+        }
+
         MD.Label {
             Layout.fillWidth: true
             Layout.leftMargin: contentMargin

@@ -26,6 +26,15 @@ SettingsStore::SettingsStore(QObject* parent)
     ensureDefaultStorageLibraries();
 }
 
+void SettingsStore::setAchievementNotifications(bool enabled)
+{
+    if (m_achievementNotifications == enabled)
+        return;
+    m_achievementNotifications = enabled;
+    emit achievementNotificationsChanged();
+    save();
+}
+
 void SettingsStore::setSources(QVector<SourcePluginInfo> sources)
 {
     m_sources = std::move(sources);

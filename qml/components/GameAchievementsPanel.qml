@@ -9,6 +9,11 @@ MD.Pane {
     property bool active: true
     property int revision: 0
     property bool expanded: false
+    property int filterIndex: 0
+    property string search: ""
+    readonly property var filteredRows: rows.filter(row =>
+        (filterIndex === 0 || (filterIndex === 1 ? row.unlocked : !row.unlocked))
+        && (row.title + " " + row.description).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
     readonly property var info: {
         root.revision
         return Core.gameAchievements(root.gameId)
@@ -24,6 +29,8 @@ MD.Pane {
     }
     onGameIdChanged: {
         expanded = false
+        filterIndex = 0
+        search = ""
         refresh(false)
     }
     onActiveChanged: refresh(false)
@@ -34,12 +41,6 @@ MD.Pane {
             if (gameId === root.gameId)
                 root.revision++
         }
-    }
-    Timer {
-        interval: 15000
-        repeat: true
-        running: root.active && Core.gameRunning && Core.runningGameId === root.gameId
-        onTriggered: root.refresh(false)
     }
 
     contentItem: ColumnLayout {
@@ -82,8 +83,34 @@ MD.Pane {
             color: MD.Token.color.on_surface_variant
             wrapMode: Text.WordWrap
         }
+        RowLayout {
+            Layout.fillWidth: true
+            visible: root.rows.length > 0
+            AppTextField {
+                objectName: "achievementSearch"
+                Layout.fillWidth: true
+                placeholderText: qsTr("Search achievements")
+                text: root.search
+                onTextEdited: root.search = text
+            }
+            MD.ComboBox {
+                objectName: "achievementFilter"
+                Layout.preferredWidth: 150
+                model: [qsTr("All"), qsTr("Unlocked"), qsTr("Locked")]
+                currentIndex: root.filterIndex
+                onActivated: root.filterIndex = currentIndex
+                Accessible.name: qsTr("Filter achievements")
+            }
+        }
+        MD.Label {
+            Layout.fillWidth: true
+            visible: root.rows.length > 0 && root.filteredRows.length === 0
+            text: qsTr("No achievements match your search or filter.")
+            typescale: MD.Token.typescale.body_small
+            color: MD.Token.color.on_surface_variant
+        }
         Repeater {
-            model: root.expanded ? root.rows : root.rows.slice(0, 5)
+            model: root.expanded ? root.filteredRows : root.filteredRows.slice(0, 5)
             delegate: RowLayout {
                 required property var modelData
                 objectName: "achievement-" + modelData.name
@@ -116,7 +143,11 @@ MD.Pane {
                     }
                 }
                 MD.Label {
-                    text: modelData.unlocked ? qsTr("Unlocked") : qsTr("Locked")
+                    text: modelData.unlocked
+                        ? ((modelData.unlockedAt ?? 0) > 0
+                            ? qsTr("Unlocked %1").arg(Qt.formatDateTime(new Date(modelData.unlockedAt), Qt.DefaultLocaleShortDate))
+                            : qsTr("Unlocked"))
+                        : qsTr("Locked")
                     typescale: MD.Token.typescale.label_medium
                     color: modelData.unlocked ? MD.Token.color.primary : MD.Token.color.on_surface_variant
                 }
@@ -124,8 +155,8 @@ MD.Pane {
         }
         MD.Button {
             objectName: "expandAchievements"
-            visible: root.rows.length > 5
-            text: root.expanded ? qsTr("Show less") : qsTr("Show all (%1)").arg(root.rows.length)
+            visible: root.filteredRows.length > 5
+            text: root.expanded ? qsTr("Show less") : qsTr("Show all (%1)").arg(root.filteredRows.length)
             mdState.type: MD.Enum.BtText
             onClicked: root.expanded = !root.expanded
         }

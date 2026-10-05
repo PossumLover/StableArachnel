@@ -18,6 +18,8 @@ namespace arachnel::core {
 
 void CoreController::initializeServices()
 {
+    m_torboxCache = new TorBoxCacheService(&m_settings, this);
+    connect(m_torboxCache, &TorBoxCacheService::changed, this, &CoreController::torboxCacheChanged);
     m_metadataService = new GameMetadataService(this);
     {
         const QUrl catalogUrl(m_settings.catalogUrlForSource(QStringLiteral("steamidra")));
@@ -435,11 +437,34 @@ void CoreController::initializeServices()
     LaunchController::Hooks launchHooks;
     m_achievements = new AchievementService(this);
     connect(m_achievements, &AchievementService::changed, this, &CoreController::gameAchievementsChanged);
+    connect(m_achievements, &AchievementService::unlocked, this,
+        [this](const QString& gameId, const QString&, const QString& title) {
+            if (!m_settings.achievementNotifications())
+                return;
+            const auto* game = m_libraryStore.gameById(gameId);
+            if (game)
+                showNotice(QCoreApplication::translate("Core", "Achievement unlocked: %1 - %2").arg(game->title, title));
+        });
     launchHooks.notice = [this](const QString& message) { showNotice(message); };
     launchHooks.ensureRuntime = [this](const LibraryGame& game) {
         return ensureRuntimeDependenciesForGame(game);
     };
-    launchHooks.touchLastPlayed = [this](const QString& gameId) { touchLastPlayed(gameId); };
+    launchHooks.touchLastPlayed = [this](const QString& gameId) {
+        touchLastPlayed(gameId);
+        refreshGameAchievements(gameId);
+    };
+    auto* achievementTimer = new QTimer(this);
+    achievementTimer->setInterval(15000);
+    connect(achievementTimer, &QTimer::timeout, this, [this]() {
+        if (gameRunning())
+            refreshGameAchievements(runningGameId());
+    });
+    connect(this, &CoreController::runningGameChanged, achievementTimer, [this, achievementTimer]() {
+        if (gameRunning())
+            achievementTimer->start();
+        else
+            achievementTimer->stop();
+    });
     launchHooks.playtimeProgress = [this](const QString& gameId, qint64 deltaMs,
                                          qint64 sessionMs, bool ended) {
         m_libraryStore.recordPlaytime(gameId, deltaMs, sessionMs, ended);
@@ -468,7 +493,7 @@ void CoreController::initializeServices()
     connect(m_launchController, &LaunchController::launchSessionEnded, this,
             &CoreController::launchSessionEnded);
     connect(m_launchController, &LaunchController::launchSessionEnded, this,
-            [this](const QString& gameId, qint64, bool) { refreshGameAchievements(gameId); });
+            [this](const QString& gameId, qint64, bool) { refreshGameAchievementsForSession(gameId, false, true); });
     connect(m_launchController, &LaunchController::launchOptionSelectionRequested, this,
             [this](const QString& gameId, const QVector<GameLaunchOption>& options) {
                 QVariantList list;

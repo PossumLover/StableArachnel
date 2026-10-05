@@ -121,6 +121,8 @@ void CoreController::refreshSelectedCatalogs()
 void registerCoreTypes()
 {
     qmlRegisterSingletonType<CoreController>("Arachnel.Core", 1, 0, "Core", &CoreController::create);
+    qmlRegisterUncreatableType<LibraryViewModel>("Arachnel.Core", 1, 0, "LibraryViewModel",
+                                                  QStringLiteral("Use Core.libraryView"));
     qmlRegisterUncreatableType<LibraryModel>("Arachnel.Core", 1, 0, "LibraryModel",
                                              QStringLiteral("Use Core.library"));
     qmlRegisterUncreatableType<SourcePluginModel>("Arachnel.Core", 1, 0, "SourcePluginModel",

@@ -68,7 +68,7 @@ void AchievementService::save(const QString& gameId)
 }
 
 void AchievementService::refresh(const QString& gameId, const QString& appId, const QString& language,
-                                 const AchievementLocations& locations, bool force)
+                                 const AchievementLocations& locations, bool force, bool notifyUnlocks)
 {
     static const QRegularExpression numericId(QStringLiteral("^[0-9]+$"));
     if (gameId.isEmpty() || !numericId.match(appId).hasMatch())
@@ -87,6 +87,7 @@ void AchievementService::refresh(const QString& gameId, const QString& appId, co
         state.generation = ++m_generation;
     }
     bool unlocksChanged = false;
+    QStringList newUnlocks;
     state.localFileFound = false;
     for (const auto& path : achievementFileCandidates(appId, locations)) {
         bool valid = false;
@@ -94,13 +95,27 @@ void AchievementService::refresh(const QString& gameId, const QString& appId, co
         state.localFileFound |= valid;
         for (auto it = unlocks.begin(); it != unlocks.end(); ++it) {
             if (!state.unlocks.contains(it.key()) || (state.unlocks.value(it.key()) == 0 && it.value() > 0)) {
+                if (!state.unlocks.contains(it.key()) && state.scanned && notifyUnlocks)
+                    newUnlocks.append(it.key());
                 state.unlocks.insert(it.key(), it.value());
                 unlocksChanged = true;
             }
         }
     }
+    state.scanned = true;
     if (unlocksChanged)
         save(gameId);
+    for (const auto& name : newUnlocks) {
+        QString title = name;
+        for (const auto& value : state.metadata) {
+            const auto object = value.toObject();
+            if (object.value(QStringLiteral("name")).toString() == name) {
+                title = object.value(QStringLiteral("displayName")).toString(name);
+                break;
+            }
+        }
+        emit unlocked(gameId, name, title);
+    }
     const qint64 now = QDateTime::currentMSecsSinceEpoch();
     if (state.loading || (!force && state.language == lang
         && (now < state.retryAt || (state.fetchedAt > 0 && now - state.fetchedAt < 24 * 60 * 60 * 1000)))) {
@@ -165,8 +180,11 @@ QVariantMap AchievementService::info(const QString& gameId) const
         unlockedCount += unlocked;
     }
     std::stable_sort(rows.begin(), rows.end(), [](const QVariant& a, const QVariant& b) {
-        return a.toMap().value(QStringLiteral("unlocked")).toBool()
-            > b.toMap().value(QStringLiteral("unlocked")).toBool();
+        const auto left = a.toMap();
+        const auto right = b.toMap();
+        if (left.value(QStringLiteral("unlocked")).toBool() != right.value(QStringLiteral("unlocked")).toBool())
+            return left.value(QStringLiteral("unlocked")).toBool();
+        return left.value(QStringLiteral("unlockedAt")).toLongLong() > right.value(QStringLiteral("unlockedAt")).toLongLong();
     });
     return {{QStringLiteral("rows"), rows}, {QStringLiteral("total"), rows.size()},
         {QStringLiteral("unlocked"), unlockedCount}, {QStringLiteral("loading"), state.loading},

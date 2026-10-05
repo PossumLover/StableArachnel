@@ -3,6 +3,7 @@
 
     explicit CoreController(QObject* parent = nullptr);
     void initializeServices();
+    void refreshGameAchievementsForSession(const QString& gameId, bool force, bool notifyUnlocks);
 
     QString sourceWebsiteFor(const QString&) const;
     void applyMetadataToEntry(CatalogEntry&, const GameMetadata&) const;
@@ -88,6 +89,8 @@
     bool installPluginArachInternal(const QUrl& fileUrl, bool quiet);
 
     LibraryModel m_library;
+    LibraryViewModel m_libraryView{&m_library, nullptr, true};
+    TorBoxCacheService* m_torboxCache = nullptr;
     SourcePluginModel m_sources;
     CatalogModel m_catalog;
     JobModel m_jobs;

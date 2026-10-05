@@ -3,14 +3,13 @@
 #include "torrent_settings.h"
 
 
+#include <QtConcurrent/QtConcurrentRun>
 #include "torrent_session_internal.h"
 
 TorrentSession::TorrentSession(QObject* parent)
     : QObject(parent)
-    , m_impl(std::make_unique<Impl>())
     , m_available(true)
 {
-    torrent_settings::applySessionDefaults(m_impl->session);
     QDir().mkpath(resumeDirectory());
 
     m_pollTimer = new QTimer(this);
@@ -46,14 +45,23 @@ TorrentSession::~TorrentSession()
 
 void TorrentSession::shutdown()
 {
+    if (m_shuttingDown)
+        return;
+    m_shuttingDown = true;
+    m_available = false;
+    m_pollTimer->stop();
+    m_resumeTimer->stop();
     if (!m_impl)
         return;
 
     if (QCoreApplication::instance())
         flushResumeData();
 
+    // Tracker shutdown can block for seconds. Keep its proxy alive until a worker
+    // finishes joining the engine, so the updater can keep processing window events.
+    auto proxy = std::make_unique<lt::session_proxy>(m_impl->session.abort());
     m_impl.reset();
-    m_available = false;
+    (void)QtConcurrent::run([proxy = std::move(proxy)]() mutable { proxy.reset(); });
 }
 
 QString TorrentSession::resumeDirectory()
@@ -107,8 +115,12 @@ void TorrentSession::removeResumeFile(const QString& jobId)
 
 bool TorrentSession::addJob(const QString& jobId, const QString& magnetUri, const QString& savePath)
 {
-    if (!m_impl)
+    if (m_shuttingDown)
         return false;
+    if (!m_impl) {
+        m_impl = std::make_unique<Impl>();
+        torrent_settings::applySessionDefaults(m_impl->session);
+    }
 
     if (m_impl->handles.contains(jobId)) {
         torrent_settings::tuneActiveDownloadHandle(m_impl->handles.value(jobId));

@@ -37,6 +37,11 @@ void CoreController::launchGame(const QString& gameId, const QString& optionId)
 
 void CoreController::refreshGameAchievements(const QString& gameId, bool force)
 {
+    refreshGameAchievementsForSession(gameId, force, gameRunning() && runningGameId() == gameId);
+}
+
+void CoreController::refreshGameAchievementsForSession(const QString& gameId, bool force, bool notifyUnlocks)
+{
     const auto* game = m_libraryStore.gameById(gameId);
     if (!game || !m_achievements || game->installPath.isEmpty())
         return;
@@ -52,7 +57,8 @@ void CoreController::refreshGameAchievements(const QString& gameId, bool force)
     if (m_protonManager)
         locations.prefixPath = m_protonManager->compatDataRoot() + QLatin1Char('/') + game->id + QStringLiteral("/pfx");
 #endif
-    m_achievements->refresh(game->id, appId, m_settings.uiLanguage(), locations, force);
+    m_achievements->refresh(game->id, appId, m_settings.uiLanguage(), locations, force,
+        m_settings.achievementNotifications() && notifyUnlocks);
 }
 
 QVariantMap CoreController::gameAchievements(const QString& gameId) const

@@ -107,6 +107,21 @@ QVariantList CoreController::installOffersForEntry(const QString& entryId) const
     return m_catalogController->installOffersForEntry(entryId);
 }
 
+void CoreController::checkTorboxCache(const QString& entryId)
+{
+    if (!m_torboxCache)
+        return;
+    QStringList hashes;
+    for (const auto& offer : installOffersForEntry(entryId))
+        hashes.append(offer.toMap().value(QStringLiteral("cacheHash")).toString());
+    m_torboxCache->check(hashes);
+}
+
+QString CoreController::torboxCacheStatus(const QString& hash) const
+{
+    return m_torboxCache ? m_torboxCache->status(hash) : QString();
+}
+
 void CoreController::installCatalogEntryFromSource(const QString& entryId, const QString& sourceId,
                                                    const QString& libraryId,
                                                    const QVariantList& addonIdsVariant,

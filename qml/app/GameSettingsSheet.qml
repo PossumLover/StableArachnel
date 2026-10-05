@@ -151,6 +151,15 @@ MD.BottomSheet {
             elide: Text.ElideRight
         }
 
+        GameOrganizationControl {
+            Layout.fillWidth: true
+            Layout.leftMargin: MD.Token.spacing.large
+            Layout.rightMargin: MD.Token.spacing.large
+            visible: !!root.info.installed
+            gameId: root.gameId
+            playStatus: root.info.playStatus ?? ""
+        }
+
         Flow {
             Layout.fillWidth: true
             Layout.leftMargin: MD.Token.spacing.large

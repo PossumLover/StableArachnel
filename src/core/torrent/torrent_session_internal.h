@@ -62,7 +62,8 @@ namespace arachnel::core {
 
 struct TorrentSession::Impl
 {
-    lt::session session{lt::session_params{}};
+    explicit Impl(const lt::settings_pack& settings = {}) : session(lt::session_params{settings}) {}
+    lt::session session;
     QHash<QString, lt::torrent_handle> handles;
     QHash<QString, QString> savePaths;
     QHash<QString, QString> magnetUris;

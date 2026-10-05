@@ -11,6 +11,10 @@ This version reads these local formats:
 - **CODEX / RUNE:** `Public/Documents/Steam/<provider>/<appId>/achievements.ini`; CODEX is also checked under roaming AppData.
 - Compatible `achievements.ini` and `achievements.json` files in the game's installation directory.
 
-On Linux, these locations are checked inside the game's Sprout Proton prefix, including the `steamuser` and `Public` directories. Achievement files are read without modifying game saves. Unlocks refresh while the game's details page is open and after a tracked session ends.
+On Linux, these locations are checked inside the game's Sprout Proton prefix, including the `steamuser` and `Public` directories. Achievement files are read without modifying game saves. Sprout scans at launch, every 15 seconds during a tracked session, and when the session ends, even when the details page is closed.
 
-Achievement names and icons come from Hydra's metadata API. Sprout does not require a Hydra login. A game without a supported local achievement file can show its achievement list, but unlock progress cannot be inferred. Other formats, Steam account syncing, friends, and achievement notifications are not included in this version.
+The panel supports search and All/Unlocked/Locked filters. Newly unlocked achievements appear first, with their local unlock date when available. Secret achievements remain hidden until unlocked.
+
+Enable or disable **Achievement unlock notifications** in Settings > Launch. Notifications appear inside Sprout and in its notification list; they do not overlay a running game. Existing achievements are treated as a baseline at launch and are not announced again. Notifications do not change local saves.
+
+Achievement names and icons come from Hydra's metadata API. Sprout does not require a Hydra login. A game without a supported local achievement file can show its achievement list, but unlock progress cannot be inferred. Steam account syncing and other local formats are not included.

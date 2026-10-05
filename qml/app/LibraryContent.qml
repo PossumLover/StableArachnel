@@ -332,14 +332,25 @@ Item {
                     }
 
                     MD.Label {
-                        text: qsTr("%1 games").arg(Core.library.count)
+                        text: qsTr("%1 games").arg(Core.libraryView.count)
                         color: MD.Token.color.on_surface_variant
                         typescale: MD.Token.typescale.label_large
                     }
                 }
 
+                LibraryToolbar { Layout.fillWidth: true }
+
+                MD.Label {
+                    Layout.fillWidth: true
+                    visible: Core.libraryView.count === 0
+                    text: qsTr("No games match your search or list.")
+                    typescale: MD.Token.typescale.body_medium
+                    color: MD.Token.color.on_surface_variant
+                }
+
                 Item {
                     id: gridHost
+                    visible: Core.libraryView.count > 0
                     Layout.fillWidth: true
 
                     // N cards + (N-1) gaps: floor((w + gap) / (min + gap)).
@@ -360,7 +371,7 @@ Item {
                     readonly property int cardHeight: Math.ceil(cardWidth * 4 / 3) + page.metaHeight
                     readonly property int cellH: cardHeight + gap
                     readonly property int rows: Math.max(
-                        1, Math.ceil(Core.library.count / Math.max(1, columns)))
+                        1, Math.ceil(Core.libraryView.count / Math.max(1, columns)))
                     // Full cell rows so GridView never clips the next line.
                     Layout.preferredHeight: rows * cellH
 
@@ -370,7 +381,7 @@ Item {
                         height: parent.height
                         clip: false
                         interactive: false
-                        model: Core.library
+                        model: Core.libraryView
                         cellWidth: gridHost.cellW
                         cellHeight: gridHost.cellH
                         cacheBuffer: 0

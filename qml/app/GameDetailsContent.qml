@@ -243,6 +243,11 @@ Item {
                             }
                         }
 
+                        DownloadAvailability {
+                            Layout.fillWidth: true
+                            entryId: page.gameId
+                        }
+
                         Flow {
                             Layout.fillWidth: true
                             spacing: MD.Token.spacing.small

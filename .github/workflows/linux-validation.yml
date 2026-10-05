@@ -47,7 +47,8 @@ jobs:
           cmake -S . -B build-linux -G Ninja \
             -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR" \
             -DARACHNEL_FAST_BUILD=OFF
-          cmake --build build-linux --target arachnel_app --parallel 2
+          cmake --build build-linux --target arachnel_app torrent_shutdown_tests --parallel 2
+          ./build-linux/torrent_shutdown_tests -o -,txt
 
       - name: Test settings, search, and achievement interactions
         run: |

@@ -41,6 +41,8 @@ void SettingsStore::load()
     }
 
     const QJsonObject obj = QJsonDocument::fromJson(file.readAll()).object();
+    m_achievementNotifications = obj.value(QStringLiteral("achievementNotifications")).toBool(true);
+    emit achievementNotificationsChanged();
     m_torboxEnabled = obj.value(QStringLiteral("torboxEnabled")).toBool(false);
     emit debridChanged();
     if (obj.contains(QStringLiteral("maxConcurrentDownloads")))
@@ -184,6 +186,7 @@ void SettingsStore::load()
 void SettingsStore::save()
 {
     QJsonObject obj;
+    obj.insert(QStringLiteral("achievementNotifications"), m_achievementNotifications);
     obj.insert(QStringLiteral("torboxEnabled"), m_torboxEnabled);
     obj.insert(QStringLiteral("libraryRoot"), m_libraryRoot);
     obj.insert(QStringLiteral("downloadsRoot"), m_downloadsRoot);

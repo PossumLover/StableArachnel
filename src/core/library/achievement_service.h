@@ -15,9 +15,10 @@ public:
     explicit AchievementService(QObject* parent = nullptr, QNetworkAccessManager* network = nullptr,
                                 const QString& cacheDirectory = {});
     void refresh(const QString& gameId, const QString& appId, const QString& language,
-                 const AchievementLocations& locations, bool force = false);
+                 const AchievementLocations& locations, bool force = false, bool notifyUnlocks = false);
     QVariantMap info(const QString& gameId) const;
 signals:
+    void unlocked(const QString& gameId, const QString& name, const QString& title);
     void changed(const QString& gameId);
 private:
     struct State {
@@ -29,6 +30,7 @@ private:
         qint64 retryAt = 0;
         quint64 generation = 0;
         bool loading = false;
+        bool scanned = false;
         bool localFileFound = false;
         QString error;
     };

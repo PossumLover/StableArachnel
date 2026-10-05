@@ -65,7 +65,7 @@
 <context>
     <name>AppWindow</name>
     <message>
-        <location filename="../qml/app/AppWindow.qml" line="+294"/>
+        <location filename="../qml/app/AppWindow.qml" line="+296"/>
         <source>Library</source>
         <translation>Библиотека</translation>
     </message>
@@ -252,17 +252,17 @@
         <translation>За год</translation>
     </message>
     <message>
-        <location line="+147"/>
+        <location line="+182"/>
         <source>Players</source>
         <translation>Игроки</translation>
     </message>
     <message>
-        <location line="-24"/>
+        <location line="-59"/>
         <source>Filters</source>
         <translation>Фильтры</translation>
     </message>
     <message>
-        <location line="+105"/>
+        <location line="+140"/>
         <source>Less</source>
         <translation>Меньше</translation>
     </message>
@@ -302,17 +302,18 @@
         <translation>Поиск жанров</translation>
     </message>
     <message>
-        <location line="+158"/>
+        <location line="-65"/>
+        <location line="+14"/>
         <source>Hide adult games</source>
         <translation>Скрывать игры для взрослых</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="-8"/>
         <source>Games Steam marks as sexual content. Mature games like Baldur&apos;s Gate 3 stay.</source>
         <translation>Игры, которые Steam помечает как сексуальный контент. Взрослые игры вроде Baldur&apos;s Gate 3 остаются.</translation>
     </message>
     <message>
-        <location line="+32"/>
+        <location line="+224"/>
         <source>Clear all</source>
         <translation>Сбросить всё</translation>
     </message>
@@ -729,7 +730,7 @@
     </message>
     <message>
         <location line="+1"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+273"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+275"/>
         <source>Preparing…</source>
         <translation>Подготовка…</translation>
     </message>
@@ -909,7 +910,7 @@
         <location line="+5"/>
         <location filename="../src/core/jobs/job_status.cpp" line="+2"/>
         <source>Completed</source>
-        <translation>Завершено</translation>
+        <translation>Пройдено</translation>
     </message>
     <message>
         <location filename="../src/core/jobs/job_status.cpp" line="+2"/>
@@ -925,18 +926,18 @@
     <message>
         <location line="+1"/>
         <location filename="../src/core/jobs/job_status.cpp" line="+8"/>
-        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="+293"/>
+        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="+308"/>
         <location filename="../src/core/library/library_facade_sync.cpp" line="+245"/>
         <source>Install failed</source>
         <translation>Ошибка установки</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_controller.cpp" line="+115"/>
+        <location filename="../src/core/catalog/catalog_controller.cpp" line="+116"/>
         <source>Catalog error: %1</source>
         <translation>Ошибка каталога: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+449"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+472"/>
         <source>Game not found for add-on</source>
         <translation>Игра не найдена для дополнения</translation>
     </message>
@@ -952,7 +953,7 @@
         <translation>Не удалось найти игру для установки: %1</translation>
     </message>
     <message>
-        <location line="-469"/>
+        <location line="-492"/>
         <location line="+33"/>
         <source>Moving %1</source>
         <translation>Перемещение %1</translation>
@@ -968,7 +969,12 @@
         <translation>Не удалось переместить</translation>
     </message>
     <message>
-        <location line="+389"/>
+        <location line="+65"/>
+        <source>Achievement unlocked: %1 - %2</source>
+        <translation>Достижение получено: %1 - %2</translation>
+    </message>
+    <message>
+        <location line="+347"/>
         <source>Download complete - install manually</source>
         <translation>Загрузка завершена - установите вручную</translation>
     </message>
@@ -1037,7 +1043,7 @@
     <message>
         <location filename="../src/core/library/library_controller.cpp" line="+83"/>
         <location filename="../src/core/jobs/job_facade_lifecycle.cpp" line="+175"/>
-        <location filename="../src/core/library/library_facade_ops.cpp" line="+217"/>
+        <location filename="../src/core/library/library_facade_ops.cpp" line="+224"/>
         <location line="+39"/>
         <location line="+37"/>
         <source>Game not found</source>
@@ -1218,8 +1224,7 @@
         <translation>Steamless недоступен</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_controller.cpp" line="+275"/>
-        <location line="+206"/>
+        <location filename="../src/core/catalog/catalog_controller.cpp" line="+440"/>
         <source>%1 · %2 games</source>
         <translation>%1 · %2 игр</translation>
     </message>
@@ -1229,7 +1234,7 @@
         <translation>%1 источников · %2 игр</translation>
     </message>
     <message>
-        <location line="+299"/>
+        <location line="+303"/>
         <source>Catalog empty or unavailable: %1</source>
         <translation>Каталог пуст или недоступен: %1</translation>
     </message>
@@ -1333,7 +1338,7 @@
     </message>
     <message>
         <location line="+90"/>
-        <location filename="../src/core/launch/launch_facade.cpp" line="+170"/>
+        <location filename="../src/core/launch/launch_facade.cpp" line="+176"/>
         <source>No launch has been attempted for this game yet.</source>
         <translation>Запуск этой игры ещё не пытались выполнить.</translation>
     </message>
@@ -1646,7 +1651,7 @@
         <translation>Источник «%1» выключен в настройках</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="-273"/>
+        <location filename="../src/core/catalog/catalog_facade_install.cpp" line="-288"/>
         <source>Could not resolve application data folder</source>
         <translation>Не удалось определить папку данных приложения</translation>
     </message>
@@ -1666,7 +1671,7 @@
         <translation>Данные приложения удалены. Sprout сейчас закроется.</translation>
     </message>
     <message>
-        <location line="+353"/>
+        <location line="+368"/>
         <source>%1 updated, but %2 content packs were left at the old version. The game may report corrupted data - reinstalling is the reliable fix.</source>
         <translation>%1 обновлена, но пакеты контента (%2) остались старой версии. Игра может сообщать о повреждённых данных - надёжнее всего переустановить её.</translation>
     </message>
@@ -1748,7 +1753,7 @@
         <translation>Обновление завершено, но сведения о версии неполные. Обновите каталог и повторите обновление, если метка останется.</translation>
     </message>
     <message>
-        <location line="-278"/>
+        <location line="-301"/>
         <source>No catalog sources enabled</source>
         <translation>Нет включённых источников каталога</translation>
     </message>
@@ -2142,7 +2147,7 @@
         <translation>Не удалось открыть папку плагинов</translation>
     </message>
     <message>
-        <location filename="../src/core/torrent/torrent_session.cpp" line="+139"/>
+        <location filename="../src/core/torrent/torrent_session.cpp" line="+151"/>
         <source>No download link</source>
         <translation>Нет ссылки для загрузки</translation>
     </message>
@@ -2168,7 +2173,7 @@
     </message>
     <message>
         <location line="+3"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+139"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+162"/>
         <source>Sprout %1 is available</source>
         <translation>Доступен Sprout %1</translation>
     </message>
@@ -2571,7 +2576,7 @@
     <message>
         <location line="+161"/>
         <location line="+21"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="-304"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="-327"/>
         <source>Game removed: %1</source>
         <translation>Игра удалена: %1</translation>
     </message>
@@ -2624,7 +2629,7 @@
         <translation>Диск убран</translation>
     </message>
     <message>
-        <location filename="../src/core/settings/settings_store_persistence.cpp" line="+142"/>
+        <location filename="../src/core/settings/settings_store_persistence.cpp" line="+144"/>
         <source>FreeTP torrent catalog - magnet links and add-ons</source>
         <translation>Торрент-каталог FreeTP - magnet-ссылки и дополнения</translation>
     </message>
@@ -3002,7 +3007,7 @@
         <translation>Не удалось завершить загрузку файла</translation>
     </message>
     <message>
-        <location filename="../src/core/library/achievement_service.cpp" line="+137"/>
+        <location filename="../src/core/library/achievement_service.cpp" line="+152"/>
         <source>Could not load achievement details.</source>
         <translation>Не удалось загрузить сведения о достижениях.</translation>
     </message>
@@ -3397,7 +3402,7 @@
 <context>
     <name>GameAchievementsPanel</name>
     <message>
-        <location filename="../qml/components/GameAchievementsPanel.qml" line="+51"/>
+        <location filename="../qml/components/GameAchievementsPanel.qml" line="+52"/>
         <source>Achievements</source>
         <translation>Достижения</translation>
     </message>
@@ -3407,7 +3412,7 @@
         <translation>Открыто: %1/%2</translation>
     </message>
     <message>
-        <location line="+4"/>
+        <location line="+5"/>
         <source>Refresh</source>
         <translation>Обновить</translation>
     </message>
@@ -3427,17 +3432,44 @@
         <translation>Поддерживаемый файл достижений пока не найден. Запустите игру и обновите список.</translation>
     </message>
     <message>
-        <location line="+40"/>
+        <location line="+13"/>
+        <source>Search achievements</source>
+        <translation>Поиск достижений</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <location line="+50"/>
         <source>Unlocked</source>
         <translation>Открыто</translation>
     </message>
     <message>
-        <location line="+0"/>
+        <location line="-50"/>
+        <location line="+51"/>
         <source>Locked</source>
         <translation>Закрыто</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="-51"/>
+        <source>All</source>
+        <translation>Все</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Filter achievements</source>
+        <translation>Фильтр достижений</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>No achievements match your search or filter.</source>
+        <translation>Нет достижений, соответствующих поиску или фильтру.</translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>Unlocked %1</source>
+        <translation>Получено %1</translation>
+    </message>
+    <message>
+        <location line="+11"/>
         <source>Show less</source>
         <translation>Свернуть</translation>
     </message>
@@ -3465,7 +3497,7 @@
         <translation>К источникам</translation>
     </message>
     <message>
-        <location line="+157"/>
+        <location line="+162"/>
         <source>Last session</source>
         <translation>Последний сеанс</translation>
     </message>
@@ -3693,6 +3725,35 @@
     </message>
 </context>
 <context>
+    <name>GameOrganizationControl</name>
+    <message>
+        <location filename="../qml/components/GameOrganizationControl.qml" line="+13"/>
+        <location line="+10"/>
+        <source>Library list</source>
+        <translation>Список библиотеки</translation>
+    </message>
+    <message>
+        <location line="-4"/>
+        <source>Unorganized</source>
+        <translation>Без списка</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Backlog</source>
+        <translation>На потом</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Playing</source>
+        <translation>Играю</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Completed</source>
+        <translation>Пройдено</translation>
+    </message>
+</context>
+<context>
     <name>GameSettingsRuntimePanel</name>
     <message>
         <location filename="../qml/app/GameSettingsRuntimePanel.qml" line="+58"/>
@@ -3753,7 +3814,7 @@
         <translation>Настройки игры</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+33"/>
         <source>Desktop shortcut</source>
         <translation>Ярлык на рабочий стол</translation>
     </message>
@@ -4118,7 +4179,7 @@
 <context>
     <name>InstallSourceSheet</name>
     <message>
-        <location filename="../qml/settings/InstallSourceSheet.qml" line="+54"/>
+        <location filename="../qml/settings/InstallSourceSheet.qml" line="+55"/>
         <source>Choose download source</source>
         <translation>Выберите источник загрузки</translation>
     </message>
@@ -4133,7 +4194,7 @@
         <translation>Неизвестный источник</translation>
     </message>
     <message>
-        <location line="+29"/>
+        <location line="+34"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
@@ -4243,6 +4304,11 @@
         <source>%1 games</source>
         <translation>%1 игр</translation>
     </message>
+    <message>
+        <location line="+11"/>
+        <source>No games match your search or list.</source>
+        <translation>Нет игр, соответствующих поиску или списку.</translation>
+    </message>
 </context>
 <context>
     <name>LibraryEmptyState</name>
@@ -4342,7 +4408,7 @@
     <message>
         <location line="+51"/>
         <source>Playing</source>
-        <translation>Играет</translation>
+        <translation>Играю</translation>
     </message>
     <message>
         <location line="+11"/>
@@ -4396,6 +4462,64 @@
         <location line="+1"/>
         <source>Downloading %1%</source>
         <translation>Загрузка %1%</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryToolbar</name>
+    <message>
+        <location filename="../qml/components/LibraryToolbar.qml" line="+11"/>
+        <source>Search library</source>
+        <translation>Поиск в библиотеке</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>All games</source>
+        <translation>Все игры</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Backlog</source>
+        <translation>На потом</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Playing</source>
+        <translation>Играю</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Completed</source>
+        <translation>Пройдено</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Unorganized</source>
+        <translation>Без списка</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Filter library</source>
+        <translation>Фильтр библиотеки</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Title</source>
+        <translation>Название</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Recently played</source>
+        <translation>Недавно играли</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Most played</source>
+        <translation>Больше всего времени</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Sort library</source>
+        <translation>Сортировка библиотеки</translation>
     </message>
 </context>
 <context>
@@ -5387,7 +5511,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsLaunchPage</name>
     <message>
-        <location filename="../qml/settings/SettingsLaunchPage.qml" line="+59"/>
+        <location filename="../qml/settings/SettingsLaunchPage.qml" line="+68"/>
         <source>Linux: all games run through Proton (Windows builds).</source>
         <translation>Linux: все игры запускаются через Proton (Windows-сборки).</translation>
     </message>
@@ -5432,7 +5556,12 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Среда Proton</translation>
     </message>
     <message>
-        <location line="-46"/>
+        <location line="-56"/>
+        <source>Achievement unlock notifications</source>
+        <translation>Уведомления о получении достижений</translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Extra options added to every game launch.</source>
         <translation>Дополнительные параметры для каждого запуска игры.</translation>
     </message>
@@ -5952,6 +6081,39 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="-12"/>
         <source>Suggested by %1</source>
         <translation>Предложил %1</translation>
+    </message>
+</context>
+<context>
+    <name>TorBoxCacheBadge</name>
+    <message>
+        <location filename="../qml/components/TorBoxCacheBadge.qml" line="+26"/>
+        <source>Direct download</source>
+        <translation>Прямая загрузка</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>TorBox key needed</source>
+        <translation>Нужен ключ TorBox</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Cached on TorBox</source>
+        <translation>Есть в кэше TorBox</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Not cached on TorBox</source>
+        <translation>Нет в кэше TorBox</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Cache status unavailable</source>
+        <translation>Статус кэша недоступен</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Checking TorBox cache...</source>
+        <translation>Проверка кэша TorBox...</translation>
     </message>
 </context>
 <context>

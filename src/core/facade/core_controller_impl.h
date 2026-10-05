@@ -26,6 +26,7 @@
 #include "game_update_service.h"
 #include "launch_controller.h"
 #include "achievement_service.h"
+#include "torbox_cache_service.h"
 #include "plugin_host.h"
 #include "plugin_catalog_service.h"
 #include "plugin_interface.h"

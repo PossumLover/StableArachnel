@@ -37,6 +37,7 @@ signals:
     void torrentFailed(const QString& jobId, const QString& error);
 
 private:
+    friend class TorrentSessionTests;
     void pollAlerts();
     QString resumeFilePath(const QString& jobId) const;
     void requestResumeSave(const QString& jobId);
@@ -47,6 +48,7 @@ private:
     QTimer* m_pollTimer = nullptr;
     QTimer* m_resumeTimer = nullptr;
     bool m_available = true;
+    bool m_shuttingDown = false;
 };
 
 } // namespace arachnel::core

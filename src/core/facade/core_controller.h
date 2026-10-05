@@ -5,6 +5,7 @@
 #include "job_store.h"
 #include "library_store.h"
 #include "library_model.h"
+#include "library_view_model.h"
 #include "notification_model.h"
 #include "settings_store.h"
 #include "social_controller.h"
@@ -59,12 +60,14 @@ class ProtonManager;
 class RuntimeDependencyService;
 class SteamlessService;
 class TorrentSession;
+class TorBoxCacheService;
 
 /** QML singleton façade (`Arachnel.Core`). Bodies live in domain TUs. */
 class CoreController : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(LibraryModel* library READ library CONSTANT)
+    Q_PROPERTY(LibraryViewModel* libraryView READ libraryView CONSTANT)
     Q_PROPERTY(SourcePluginModel* sources READ sources CONSTANT)
     Q_PROPERTY(CatalogModel* catalog READ catalog CONSTANT)
     Q_PROPERTY(JobModel* jobs READ jobs CONSTANT)
@@ -120,6 +123,7 @@ public:
     static void setCrashReporterMode(bool);
 
     LibraryModel* library() { return &m_library; }
+    LibraryViewModel* libraryView() { return &m_libraryView; }
     SourcePluginModel* sources() { return &m_sources; }
     CatalogModel* catalog() { return &m_catalog; }
     JobModel* jobs() { return &m_jobs; }
@@ -198,6 +202,7 @@ signals:
     void pluginAutoUpdatingChanged();
     void runningGameChanged();
     void launchSessionEnded(const QString& gameId, qint64 elapsedMs, bool suppressQuickExitLog);
+    void torboxCacheChanged();
     void gameAchievementsChanged(const QString& gameId);
     void launchOptionSelectionRequested(const QString& gameId, const QVariantList& options);
     void runtimeSetupChanged();

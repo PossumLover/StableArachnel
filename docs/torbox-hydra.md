@@ -8,6 +8,10 @@ TorBox fetches the torrent remotely. Sprout waits until its files are ready, the
 
 The key is stored separately from settings and download history. Windows protects it with DPAPI for the current user; Linux uses a file readable and writable only by its owner. It is sent to the TorBox API, never as an authorization header to file servers.
 
+With TorBox enabled, game details and the download source picker show cache availability for known torrent hashes. Cached items can be served from TorBox immediately; uncached items must first be fetched remotely. Badges are informational and availability can change. A failed check shows **Cache status unavailable**, and a missing key shows **TorBox key needed**. Direct HTTP offers are labeled **Direct download** in the picker. Sources whose torrent link is resolved only when starting the download cannot show a cache badge in advance.
+
+Sprout uses TorBox's read-only `torrents/checkcached` endpoint, batches up to 100 hashes, keeps successful results briefly in memory, and backs off after errors. Checks send hashes to TorBox and do not fetch torrent metadata locally, create transfers, or change routing.
+
 Catalog URLs hosted on `hydralinks.cloud` or `hydralinks.pages.dev` use Hydra's indexed API rather than downloading the protected JSON directly. Catalog loading is paginated; download links are fetched when a game is downloaded. The newest available release from the selected source is used. Sources must be indexed by Hydra, and availability depends on that service. Direct links use Sprout's existing HTTP downloader; hoster pages requiring a dedicated downloader are not supported by this integration.
 
 ## Validation

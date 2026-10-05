@@ -5,6 +5,8 @@
 #include "catalog_filter_service.h"
 #include "library_store.h"
 #include "achievement_service.h"
+#include "library_view_model.h"
+#include "torbox_cache_service.h"
 #include "hydra_catalog_client.h"
 #include "job_store.h"
 #include "job_orchestrator.h"
@@ -327,6 +329,144 @@ private slots:
         QVERIFY(!restored.info(QStringLiteral("game")).value(QStringLiteral("error")).toString().isEmpty());
         restored.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("ru"), locations);
         QCOMPARE(network.requests.size(), 2);
+    }
+    void libraryListsPersistAndFilterLive()
+    {
+        LibraryStore store;
+        LibraryGame a; a.id = QStringLiteral("list-a"); a.title = QStringLiteral("Game 10");
+        a.lastPlayedAt = QStringLiteral("2026-10-01T23:00:00-07:00"); a.playtimeMs = 90000;
+        LibraryGame b; b.id = QStringLiteral("list-b"); b.title = QStringLiteral("Game 2");
+        b.lastPlayedAt = QStringLiteral("2026-10-02T05:00:00Z"); b.playtimeMs = 120000;
+        store.setGames({a, b});
+        store.setPlayStatus(a.id, QStringLiteral("backlog"));
+        store.setPlayStatus(b.id, QStringLiteral("completed"));
+        store.setPlayStatus(a.id, QStringLiteral("invalid"));
+        LibraryStore restored; restored.load();
+        QCOMPARE(restored.gameById(a.id)->playStatus, QStringLiteral("backlog"));
+        QCOMPARE(restored.gameById(b.id)->playStatus, QStringLiteral("completed"));
+        LibraryModel model; model.setGames(restored.games());
+        LibraryViewModel view(&model);
+        QCOMPARE(view.index(0, 0).data(LibraryModel::GameIdRole).toString(), b.id);
+        view.setSortMode(1);
+        QCOMPARE(view.index(0, 0).data(LibraryModel::GameIdRole).toString(), a.id);
+        view.setSortMode(2);
+        QCOMPARE(view.index(0, 0).data(LibraryModel::GameIdRole).toString(), b.id);
+        view.setPlayStatus(QStringLiteral("backlog"));
+        QCOMPARE(view.count(), 1);
+        view.setSearch(QStringLiteral("GAME 10"));
+        QCOMPARE(view.count(), 1);
+        view.setSearch(QStringLiteral("Game 2"));
+        QCOMPARE(view.count(), 0);
+        view.setSearch({});
+        QSignalSpy counts(&view, &LibraryViewModel::countChanged);
+        restored.setPlayStatus(a.id, QStringLiteral("playing"));
+        model.replaceGame(*restored.gameById(a.id));
+        QCOMPARE(view.count(), 0);
+        QVERIFY(counts.count() > 0);
+        QCOMPARE(model.count(), 2);
+        view.setPlayStatus(QStringLiteral("playing"));
+        QCOMPARE(view.count(), 1);
+        restored.setPlayStatus(a.id, {});
+        model.replaceGame(*restored.gameById(a.id));
+        view.setPlayStatus(QStringLiteral("unorganized"));
+        QCOMPARE(view.count(), 1);
+        model.setGames({});
+        QCOMPARE(view.count(), 0);
+        restored.setGames({});
+    }
+    void torboxCacheBatchesAndCredentialReset()
+    {
+        SettingsStore settings;
+        FakeNetwork network;
+        network.handler = [](const auto& request, const auto&) {
+            const QString first = QUrlQuery(request.url()).queryItemValue(QStringLiteral("hash")).split(',').first();
+            return json(QJsonObject{{first.toUpper(), QJsonObject{{QStringLiteral("hash"), first}, {QStringLiteral("name"), QStringLiteral("Cached game")}}}});
+        };
+        TorBoxCacheService cache(&settings, nullptr, &network, QUrl(QStringLiteral("https://torbox.example")));
+        QCOMPARE(TorBoxCacheService::magnetHash(magnet), hash);
+        QCOMPARE(TorBoxCacheService::magnetHash(QStringLiteral("magnet:?xt=urn:btih:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")), QString(40, QLatin1Char('0')));
+        QVERIFY(TorBoxCacheService::magnetHash(QStringLiteral("https://example.com/file.zip")).isEmpty());
+        QVERIFY(TorBoxCacheService::magnetHash(QStringLiteral("magnet:?xt=urn:btih:bad" )).isEmpty());
+        settings.setTorboxEnabled(false);
+        cache.check({hash});
+        QCOMPARE(network.requests.size(), 0);
+        settings.setTorboxApiKey(QStringLiteral("cache-test-key")); settings.setTorboxEnabled(true);
+        QStringList hashes;
+        for (int i = 1; i <= 101; ++i)
+            hashes.append(QString::number(i, 16).rightJustified(40, QLatin1Char('0')));
+        cache.check(hashes); cache.check(hashes);
+        QCOMPARE(cache.status(hashes.first()), QStringLiteral("checking"));
+        QTRY_COMPARE(network.requests.size(), 2);
+        QTRY_VERIFY(std::all_of(hashes.begin(), hashes.end(), [&](const QString& hash) {
+            return cache.status(hash) != QStringLiteral("checking");
+        }));
+        int hits = 0, misses = 0;
+        for (const auto& hash : hashes) {
+            hits += cache.status(hash) == QStringLiteral("cached");
+            misses += cache.status(hash) == QStringLiteral("uncached");
+        }
+        QCOMPARE(hits, 2); QCOMPARE(misses, 99);
+        for (const auto& request : network.requests) {
+            QCOMPARE(request.url().path(), QStringLiteral("/torrents/checkcached"));
+            QVERIFY(!request.url().toString().contains(QStringLiteral("cache-test-key")));
+            QCOMPARE(request.rawHeader("Authorization"), QByteArray("Bearer cache-test-key"));
+            QVERIFY(QUrlQuery(request.url()).queryItemValue(QStringLiteral("hash")).split(',').size() <= 100);
+        }
+        cache.check(hashes); QTest::qWait(150); QCOMPARE(network.requests.size(), 2);
+        settings.setTorboxApiKey(QStringLiteral("changed-test-key"));
+        QCOMPARE(cache.status(hashes.first()), QStringLiteral("unknown"));
+        cache.check({hash});
+        QTRY_COMPARE(network.requests.size(), 3);
+        settings.setTorboxEnabled(false);
+        QTest::qWait(100);
+        QCOMPARE(cache.status(hash), QString());
+        settings.setTorboxEnabled(true);
+        QCOMPARE(cache.status(hash), QStringLiteral("unknown"));
+        settings.setTorboxApiKey({}); settings.setTorboxEnabled(false);
+    }
+    void torboxCacheErrorsAreNotMisses()
+    {
+        for (const auto& response : {Response{R"({"success":true,"data":"bad"})"},
+             Response{R"({"success":false,"data":{}})"}, Response{R"({"success":true,"data":{}})", 429}}) {
+            SettingsStore settings; settings.setTorboxApiKey(QStringLiteral("test")); settings.setTorboxEnabled(true);
+            FakeNetwork network; network.handler = [response](const auto&, const auto&) { return response; };
+            TorBoxCacheService cache(&settings, nullptr, &network, QUrl(QStringLiteral("https://torbox.example")));
+            cache.check({hash});
+            QTRY_COMPARE(cache.status(hash), QStringLiteral("unavailable"));
+            cache.check({QString(40, QLatin1Char('b'))});
+            QCOMPARE(cache.status(QString(40, QLatin1Char('b'))), QStringLiteral("unavailable"));
+            QTest::qWait(150); QCOMPARE(network.requests.size(), 1);
+            settings.setTorboxApiKey({}); settings.setTorboxEnabled(false);
+        }
+    }
+    void achievementNotificationsBaselineAndDeduplication()
+    {
+        QTemporaryDir dir; FakeNetwork network;
+        network.handler = [](const auto&, const auto&) { return Response{R"([{"name":"OLD","displayName":"Old"},{"name":"NEW","displayName":"New"},{"name":"QUIET","displayName":"Quiet"}])"}; };
+        AchievementLocations locations; locations.installPath = dir.path();
+        auto write = [&](const QByteArray& data) { QFile file(dir.path() + QStringLiteral("/achievements.json"));
+            QVERIFY(file.open(QIODevice::WriteOnly)); file.write(data); };
+        write(R"({"OLD":{"earned":true,"earned_time":1700000000}})");
+        AchievementService service(nullptr, &network, dir.path() + QStringLiteral("/cache"));
+        QSignalSpy unlocks(&service, &AchievementService::unlocked);
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations, false, true);
+        QTRY_VERIFY(!service.info(QStringLiteral("game")).value(QStringLiteral("loading")).toBool());
+        QCOMPARE(unlocks.count(), 0);
+        write(R"({"OLD":{"earned":true,"earned_time":1700000000},"NEW":{"earned":true,"earned_time":1800000000}})");
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations, false, true);
+        QCOMPARE(unlocks.count(), 1); QCOMPARE(unlocks.first().last().toString(), QStringLiteral("New"));
+        QCOMPARE(service.info(QStringLiteral("game")).value(QStringLiteral("rows")).toList().first().toMap().value(QStringLiteral("name")).toString(), QStringLiteral("NEW"));
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations, false, true);
+        QCOMPARE(unlocks.count(), 1);
+        write(R"({"QUIET":{"earned":true}})");
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations);
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations, false, true);
+        QCOMPARE(unlocks.count(), 1);
+        AchievementService restored(nullptr, &network, dir.path() + QStringLiteral("/cache"));
+        QSignalSpy restarted(&restored, &AchievementService::unlocked);
+        restored.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations, false, true);
+        QCOMPARE(restarted.count(), 0);
+        QCOMPARE(restored.info(QStringLiteral("game")).value(QStringLiteral("unlocked")).toInt(), 3);
     }
     void hydraPaginationAndLazyLinks()
     {

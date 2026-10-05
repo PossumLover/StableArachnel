@@ -34,6 +34,8 @@ add_executable(network_tests
     ${core}/settings/settings_store_debrid.cpp
     ${core}/library/storage_library.cpp
     ${core}/library/library_model.cpp
+    ${core}/library/library_view_model.cpp
+    ${core}/catalog/torbox_cache_service.cpp
     ${core}/library/library_store.cpp
     ${core}/library/achievement_files.cpp
     ${core}/library/achievement_service.cpp

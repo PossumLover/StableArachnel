@@ -51,6 +51,13 @@ void setDialogStartFolder(IFileDialog* dialog, const QString& folderPath)
 
 } // namespace
 
+void CoreController::setGamePlayStatus(const QString& gameId, const QString& status)
+{
+    m_libraryStore.setPlayStatus(gameId, status);
+    if (const auto* game = m_libraryStore.gameById(gameId))
+        m_library.replaceGame(*game);
+}
+
 QString CoreController::browseGameExecutable(const QString& currentPath,
                                              const QString& preferredDir)
 {

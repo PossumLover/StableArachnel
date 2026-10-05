@@ -47,6 +47,7 @@ struct LibraryGame {
     QString downloadPath;
     QString libraryId;
     QString lastPlayedAt;
+    QString playStatus;
     qint64 playtimeMs = 0;
     qint64 lastSessionMs = 0;
     QString launchArgs;
@@ -84,6 +85,8 @@ public:
         ComponentCountRole,
         InstalledComponentCountRole,
         PlaytimeMsRole,
+        LastPlayedAtRole,
+        PlayStatusRole,
     };
     Q_ENUM(Role)
 
