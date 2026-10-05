@@ -186,6 +186,48 @@ private slots:
         QCOMPARE(catalogOfferGroupKey(original, keys), QStringLiteral("steam:1234"));
         QCOMPARE(catalogOfferGroupKey(conflicting, keys), QStringLiteral("steam:5678"));
     }
+    void catalogGroupsAdditionalReleaseFormats()
+    {
+        CatalogEntry original;
+        original.title = QStringLiteral("Core Keeper");
+        original.steamAppId = QStringLiteral("1621690");
+        const auto keys = catalogSteamTitleKeys({original});
+        const QStringList releases{
+            QStringLiteral("Core Keeper (Build 25625027)"),
+            QStringLiteral("Core Keeper [v10.2.1]"),
+            QStringLiteral("Core Keeper- Free Download (GOG)"),
+            QStringLiteral("Core Keeper- Free Download (P2P)"),
+            QStringLiteral("Core Keeper .a156 Free Download (v1.1.0.2)"),
+            QStringLiteral("Core Keeper d6 Free Download (v1.1.0.1.46)"),
+            QStringLiteral("Core Keeper Blossom Event Free Download"),
+            QStringLiteral("Core Keeper Deluxe Edition Free Download (v4.2.1)"),
+            QStringLiteral("Core Keeper 1.0 Free Download [v1.2.1.5/Build-23543556+Online]"),
+            QStringLiteral("Core Keeper [v 1.1.2.10] (2024) PC | RePack от Pioneer"),
+            QStringLiteral("Core Keeper [L] [RUS + ENG +11] (2024, Arcade) (1.3.0.4) [GOG]"),
+            QStringLiteral("Core Keeper [P] [RUS + ENG + 11] (2024, Arcade, RPG) (1.1.0.2) [Portable]")};
+        for (const auto& title : releases) {
+            CatalogEntry release; release.title = title;
+            QCOMPARE(catalogOfferGroupKey(release, keys), QStringLiteral("steam:1621690"));
+        }
+        for (const auto& suffix : {"2", "Demo", "Playtest", "Dedicated Server", "Remastered", "Definitive Edition"}) {
+            CatalogEntry distinct; distinct.title = original.title + QLatin1Char(' ') + QLatin1String(suffix) + QStringLiteral(" Free Download");
+            QVERIFY(catalogOfferGroupKey(distinct, keys) != QStringLiteral("steam:1621690"));
+        }
+        CatalogEntry edition; edition.title = QStringLiteral("Core Keeper Deluxe Edition");
+        edition.steamAppId = QStringLiteral("999");
+        CatalogEntry release; release.title = QStringLiteral("Core Keeper Deluxe Edition Free Download");
+        QCOMPARE(catalogOfferGroupKey(release, catalogSteamTitleKeys({original, edition})), QStringLiteral("steam:999"));
+        release.itemKind = CatalogItemKind::Dlc;
+        QVERIFY(catalogOfferGroupKey(release, keys) != QStringLiteral("steam:1621690"));
+        release.itemKind = CatalogItemKind::Game;
+        auto conflicting = original; conflicting.steamAppId = QStringLiteral("456");
+        QVERIFY(catalogOfferGroupKey(release, catalogSteamTitleKeys({original, conflicting})) != QStringLiteral("steam:1621690"));
+        CatalogEntry shorter; shorter.title = QStringLiteral("Core"); shorter.steamAppId = QStringLiteral("789");
+        release.title = QStringLiteral("Core Keeper Blossom Event Free Download");
+        QVERIFY(catalogOfferGroupKey(release, catalogSteamTitleKeys({shorter})) != QStringLiteral("steam:789"));
+        release.steamAppId = QStringLiteral("456");
+        QCOMPARE(catalogOfferGroupKey(release, keys), QStringLiteral("steam:456"));
+    }
     void catalogSearchKeepsLatestQueryDuringReload()
     {
         QVector<CatalogEntry> cache;
