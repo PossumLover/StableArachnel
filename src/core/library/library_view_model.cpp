@@ -90,6 +90,8 @@ bool LibraryViewModel::lessThan(const QModelIndex& left, const QModelIndex& righ
             return a > b;
     }
     QCollator collator;
+    if (collator.locale().language() == QLocale::C)
+        collator.setLocale(QLocale(QLocale::English));
     collator.setCaseSensitivity(Qt::CaseInsensitive);
     collator.setNumericMode(true);
     const int comparison = collator.compare(left.data(LibraryModel::TitleRole).toString(),

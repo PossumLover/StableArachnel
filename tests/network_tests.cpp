@@ -1,4 +1,6 @@
 #include <QtTest>
+#include <QLocale>
+#include <QScopeGuard>
 
 #include "catalog_parser.h"
 #include "catalog_identity.h"
@@ -329,6 +331,17 @@ private slots:
         QVERIFY(!restored.info(QStringLiteral("game")).value(QStringLiteral("error")).toString().isEmpty());
         restored.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("ru"), locations);
         QCOMPARE(network.requests.size(), 2);
+    }
+    void libraryTitleSortingInCLocale()
+    {
+        const auto previous = QLocale();
+        const auto restore = qScopeGuard([previous]() { QLocale::setDefault(previous); });
+        QLocale::setDefault(QLocale::c());
+        LibraryGame a; a.id = QStringLiteral("10"); a.title = QStringLiteral("Game 10");
+        LibraryGame b; b.id = QStringLiteral("2"); b.title = QStringLiteral("game 2");
+        LibraryModel model; model.setGames({a, b});
+        LibraryViewModel view(&model);
+        QCOMPARE(view.index(0, 0).data(LibraryModel::GameIdRole).toString(), b.id);
     }
     void libraryListsPersistAndFilterLive()
     {
