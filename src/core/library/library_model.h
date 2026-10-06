@@ -28,6 +28,13 @@ struct GameLaunchOption {
     bool isDefault = false;
 };
 
+/**
+ * Crosses the plugin DLL boundary by const reference (launchInfo, detectUpdate,
+ * applySelectedDlc, updateMayBreakDlc, launchOptions). Plugins built against an
+ * older SDK read members at the offsets they were compiled with, so the layout up
+ * to `launchOptions` is frozen: append new host-only fields at the end, never in
+ * the middle. plugin_host.cpp static_asserts the frozen prefix.
+ */
 struct LibraryGame {
     QString id;
     QString title;
@@ -47,9 +54,6 @@ struct LibraryGame {
     QString downloadPath;
     QString libraryId;
     QString lastPlayedAt;
-    QString playStatus;
-    qint64 playtimeMs = 0;
-    qint64 lastSessionMs = 0;
     QString launchArgs;
     QString executableOverride;
     QString protonId;
@@ -57,6 +61,10 @@ struct LibraryGame {
     QVector<InstalledComponent> components;
     QString selectedLaunchOptionId;
     QVector<GameLaunchOption> launchOptions;
+    // ---- end of the plugin-visible layout; host-only fields below ----
+    QString playStatus;
+    qint64 playtimeMs = 0;
+    qint64 lastSessionMs = 0;
 };
 
 class LibraryModel : public QAbstractListModel

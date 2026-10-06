@@ -52,6 +52,25 @@ namespace arachnel::core {
  */
 constexpr int kCatalogEntrySizeRev1 = 592;
 
+/*
+ * LibraryGame goes to plugins by const reference, and no plugin reports its
+ * sizeof, so nothing at runtime can catch drift. v0.2.7 and v0.2.10 inserted
+ * playtimeMs / lastSessionMs / playStatus after lastPlayedAt; steamidra then read
+ * launchArgs..launchOptions 40 bytes early, took a static QString data pointer in
+ * Qt6Core for a refcount and crashed writing to it in launchInfo() after every
+ * Steam install. Pin the prefix plugins were built against: 536 bytes on 64-bit,
+ * ending at launchOptions. New fields go after it.
+ */
+static_assert(offsetof(LibraryGame, launchArgs) == offsetof(LibraryGame, lastPlayedAt) + sizeof(QString),
+              "LibraryGame: new fields must be appended after launchOptions (plugin ABI)");
+static_assert(offsetof(LibraryGame, launchOptions)
+                  == offsetof(LibraryGame, launchArgs) + 4 * sizeof(QString)
+                         + sizeof(QVector<InstalledComponent>) + sizeof(QString),
+              "LibraryGame: new fields must be appended after launchOptions (plugin ABI)");
+static_assert(sizeof(void*) != 8
+                  || offsetof(LibraryGame, launchOptions) + sizeof(QVector<GameLaunchOption>) == 536,
+              "LibraryGame: plugin-visible prefix changed size (plugin ABI)");
+
 // Layout claim inside an abiToken, e.g. "api=4;entry=544". Returns 0 when the
 // token carries no claim, which is the case for every plugin built before the
 // fork started asking for one.
