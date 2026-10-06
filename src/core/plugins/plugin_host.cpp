@@ -5,6 +5,7 @@
 #include "catalog_types.h"
 #include "file_utils.h"
 #include "plugin_api.h"
+#include "plugin_boundary.h"
 #include "plugin_interface_rev1.h"
 #include "plugin_catalog_json.h"
 #include "plugin_urls.h"
@@ -168,7 +169,10 @@ void PluginHost::unloadPlugin(const QString& pluginId)
         loaded->instance = nullptr;
         loaded->rawInstance = nullptr;
     }
-    // The shim is ours, holds no plugin state, and must go before the DSO does.
+    // The boundary and the shim are ours, hold no plugin state, and must go before the
+    // DSO does.
+    delete loaded->ownedBoundary;
+    loaded->ownedBoundary = nullptr;
     delete loaded->ownedShim;
     loaded->ownedShim = nullptr;
     if (loaded->library.isLoaded()) {
@@ -752,6 +756,11 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
             return abandon();
         }
     }
+
+    // Everything the host gets from the plugin from here on, starting with its id and
+    // name, is copied out of the plugin's image (see PluginBoundaryAdapter).
+    loaded->ownedBoundary = new PluginBoundaryAdapter(loaded->instance);
+    loaded->instance = loaded->ownedBoundary;
 
     SourcePluginInfo info;
     info.id = loaded->instance->id();

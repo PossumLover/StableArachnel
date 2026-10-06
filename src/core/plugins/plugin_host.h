@@ -20,12 +20,14 @@ struct LoadedPlugin {
     QString rootPath;
     SourcePluginInfo info;
     QLibrary library;
-    /** What the host calls. Equals rawInstance unless a revision shim wraps it. */
+    /** What the host calls: ownedBoundary once loaded, wrapping the shim or rawInstance. */
     ISourcePlugin* instance = nullptr;
     /** What arachnel_plugin_* C exports must be handed - never the shim. */
     ISourcePlugin* rawInstance = nullptr;
     /** Host-allocated shim, deleted on unload (the plugin's own instance is not). */
     ISourcePlugin* ownedShim = nullptr;
+    /** Host-allocated PluginBoundaryAdapter around everything the host calls; deleted on unload. */
+    ISourcePlugin* ownedBoundary = nullptr;
     /** Vtable layout the plugin was built against. */
     int interfaceRevision = 0;
     void (*destroyFn)(ISourcePlugin*) = nullptr;
