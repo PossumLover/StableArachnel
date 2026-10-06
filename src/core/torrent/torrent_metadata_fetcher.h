@@ -32,6 +32,7 @@ public:
     bool busy() const { return m_busy; }
     /** Start reading the file list. False when a probe is running or the link can't be parsed. */
     bool start(const QString& magnetUri, int timeoutMs = 12000);
+    /** Drop the running probe and the session without a finished() signal. Never waits. */
     void cancel();
     /** How long the session outlives the last probe. */
     void setIdleTimeout(int ms);
@@ -46,12 +47,14 @@ private:
     void poll();
     void finish(const QStringList& fileNames);
     void dropIdleSession();
+    void releaseSession();
 
     std::unique_ptr<Session> m_session;
     QTimer* m_pollTimer = nullptr;
     QTimer* m_idleTimer = nullptr;
     QString m_magnetUri;
     qint64 m_deadlineMs = 0;
+    quint64 m_generation = 0;
     bool m_busy = false;
 };
 

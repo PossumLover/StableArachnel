@@ -47,6 +47,7 @@ struct Response {
     int status = 200;
     QByteArray range;
     bool split = false;
+    int chunks = 0;
 };
 
 Response json(const QJsonValue& data)
@@ -70,6 +71,10 @@ public:
             if (m_aborted)
                 return;
             emit metaDataChanged();
+            if (m_response.chunks > 0) {
+                deliverChunk(0);
+                return;
+            }
             const int first = m_response.split ? m_response.body.size() / 2 : m_response.body.size();
             m_available = m_response.body.left(first);
             emit readyRead();
@@ -103,6 +108,23 @@ protected:
         return count;
     }
 private:
+    // One read per chunk, each on its own turn of the event loop, like a fast transfer.
+    void deliverChunk(int index)
+    {
+        if (m_aborted)
+            return;
+        const qsizetype size = m_response.body.size() / m_response.chunks;
+        const bool last = index == m_response.chunks - 1;
+        m_available += last ? m_response.body.mid(index * size) : m_response.body.mid(index * size, size);
+        emit readyRead();
+        if (last) {
+            setFinished(true);
+            emit finished();
+            return;
+        }
+        QTimer::singleShot(0, this, [this, index]() { deliverChunk(index + 1); });
+    }
+
     Response m_response;
     QByteArray m_available;
     bool m_aborted = false;
@@ -615,6 +637,63 @@ private slots:
         QCOMPARE(transport_test::httpStarts, QStringList{direct});
         QVERIFY(!store.jobById(direct)->torboxDownload);
         orchestrator.shutdownDownloads();
+    }
+    void downloadSpeedShowsWithFrequentProgress()
+    {
+        transport_test::reset();
+        SettingsStore settings;
+        settings.setTorboxEnabled(false);
+        JobStore store;
+        store.setJobs({});
+        JobModel jobs;
+        TorrentSession torrent;
+        HttpDownloadSession http;
+        JobOrchestrator orchestrator(&settings, &store, &torrent, &http, &jobs);
+        CatalogEntry entry;
+        entry.id = QStringLiteral("direct-speed");
+        entry.title = QStringLiteral("Direct");
+        entry.magnetUris = {QStringLiteral("https://cdn.example/game.zip")};
+        const QString id = orchestrator.startCatalogDownload(entry, JobKind::Download);
+        QCOMPARE(transport_test::httpStarts, QStringList{id});
+        // Qt reports HTTP progress about every 100 ms. TorBox progress takes the same path.
+        const qint64 total = 1024LL * 1024 * 1024;
+        qint64 downloaded = 0;
+        for (int tick = 0; tick < 15; ++tick) {
+            downloaded += 1024 * 1024;
+            emit http.httpProgress(id, static_cast<int>(downloaded * 100 / total), downloaded, total);
+            QTest::qWait(100);
+        }
+        const QString detail = store.jobById(id)->detail;
+        QVERIFY2(detail.contains(QStringLiteral("/s")) && detail.contains(QStringLiteral("ETA")),
+                 qPrintable(detail));
+        orchestrator.shutdownDownloads();
+    }
+    void torboxProgressIsThrottled()
+    {
+        QTemporaryDir dir;
+        SettingsStore settings;
+        settings.setTorboxApiKey(QStringLiteral("test-key"));
+        const QByteArray content(3 * 1024 * 1024, 'x');
+        FakeNetwork network;
+        torboxFixture(network, content, QStringLiteral("Example/data.bin"));
+        const auto api = network.handler;
+        network.handler = [api](const QNetworkRequest& req, const QByteArray& body) {
+            Response response = api(req, body);
+            if (req.url().host() == QStringLiteral("cdn.example"))
+                response.chunks = 300;
+            return response;
+        };
+        TorBoxDownloadSession session(&settings, nullptr, QUrl(QStringLiteral("https://torbox.example")), &network);
+        QSignalSpy progress(&session, &TorBoxDownloadSession::progress);
+        QSignalSpy done(&session, &TorBoxDownloadSession::finished);
+        session.addJob(QStringLiteral("job"), magnet, dir.path());
+        QTRY_COMPARE(done.size(), 1);
+        // 300 reads; every progress signal redraws the job list, so only a few may go out.
+        QVERIFY2(progress.size() < 30, qPrintable(QString::number(progress.size())));
+        QCOMPARE(progress.last().at(1).toInt(), 100);
+        QFile output(outputPath(dir, QStringLiteral("Example/data.bin")));
+        QVERIFY(output.open(QIODevice::ReadOnly));
+        QCOMPARE(output.readAll(), content);
     }
     void torboxMigratesRestoredAndActiveTorrents()
     {

@@ -5,6 +5,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QHttpMultiPart>
@@ -39,6 +40,7 @@ struct TorBoxDownloadSession::Transfer {
     bool headersChecked = false;
     QPointer<QNetworkReply> reply;
     QFile output;
+    QElapsedTimer progressClock;
 };
 
 TorBoxDownloadSession::TorBoxDownloadSession(SettingsStore* settings, QObject* parent, const QUrl& api,
@@ -396,6 +398,11 @@ void TorBoxDownloadSession::downloadFile(const TransferPtr& t, const QUrl& url)
                 return;
             }
         }
+        // Reads arrive hundreds of times a second on a fast link, and every progress
+        // signal redraws the job list. A few updates a second are plenty.
+        if (t->progressClock.isValid() && t->progressClock.elapsed() < 250)
+            return;
+        t->progressClock.start();
         const qint64 downloaded = t->completed + t->output.pos();
         emit progress(t->id, t->total > 0 ? static_cast<int>(downloaded * 100 / t->total) : 0, downloaded, t->total);
     };

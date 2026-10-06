@@ -158,6 +158,7 @@ void JobOrchestrator::toggleJobPause(const QString& jobId)
                 resolver->deleteLater();
             }
             m_torbox->setPaused(jobId, true);
+            m_pluginSpeed.remove(jobId);
             job.status = QStringLiteral("paused");
             job.detail = QCoreApplication::translate("Core", "Paused");
             persistJob(job);
@@ -411,15 +412,22 @@ void JobOrchestrator::onHttpProgress(const QString& jobId, int progress, qint64 
     job.totalBytes = total;
     job.status = QStringLiteral("downloading");
 
+    // Measure over a second or more and show the last rate in between. Qt reports HTTP
+    // progress about every 100 ms and TorBox several times a second; comparing each tick
+    // with the one just before never reached the old 200 ms minimum, so direct and TorBox
+    // downloads never showed a speed or ETA. A long gap (pause, retry) starts over.
     int rate = 0;
     const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
     const auto it = m_pluginSpeed.constFind(jobId);
-    if (it != m_pluginSpeed.cend() && nowMs > it->ms && downloaded >= it->bytes) {
-        const qint64 dt = nowMs - it->ms;
-        if (dt >= 200)
-            rate = static_cast<int>((downloaded - it->bytes) * 1000 / dt);
+    if (it == m_pluginSpeed.cend() || downloaded < it->bytes || nowMs < it->ms
+        || nowMs - it->ms > 10000) {
+        m_pluginSpeed.insert(jobId, {downloaded, nowMs, 0});
+    } else if (nowMs - it->ms >= 1000) {
+        rate = static_cast<int>((downloaded - it->bytes) * 1000 / (nowMs - it->ms));
+        m_pluginSpeed.insert(jobId, {downloaded, nowMs, rate});
+    } else {
+        rate = it->rate;
     }
-    m_pluginSpeed.insert(jobId, {downloaded, nowMs});
 
     job.detail = buildTransferDetail(downloaded, total, rate);
     updateJobInModel(job);

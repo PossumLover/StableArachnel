@@ -1,10 +1,13 @@
 #include <QtTest>
 #include <QSemaphore>
 #include <QStandardPaths>
+#include <QTcpServer>
+#include <QTcpSocket>
 #include <QTemporaryDir>
 #include <QThreadPool>
 #include <atomic>
 #include <libtorrent/extensions.hpp>
+#include "torrent_metadata_fetcher.h"
 #include "torrent_session.h"
 #include "../src/core/torrent/torrent_session_internal.h"
 } // namespace arachnel::core
@@ -72,6 +75,73 @@ private slots:
         QTRY_VERIFY(latch->done.load());
         session.shutdown();
         QVERIFY(!session.addJob(QStringLiteral("late"), {}, dir.path()));
+    }
+    void magnetProbeCancelKeepsEventLoopAlive() {
+        // A tracker that answers "started" but never "stopped", so the probe's engine has to
+        // wait for it while shutting down. Turning TorBox on cancels the probe from the UI.
+        QTcpServer tracker;
+        QVERIFY(tracker.listen(QHostAddress::LocalHost));
+        int announces = 0;
+        connect(&tracker, &QTcpServer::newConnection, this, [&]() {
+            while (QTcpSocket* socket = tracker.nextPendingConnection()) {
+                connect(socket, &QTcpSocket::readyRead, socket, [&announces, socket]() {
+                    if (socket->readAll().contains("event=stopped"))
+                        return;
+                    ++announces;
+                    socket->write("HTTP/1.0 200 OK\r\n\r\nd8:intervali1800e5:peers0:e");
+                    socket->disconnectFromHost();
+                });
+            }
+        });
+        const QString magnet =
+            QStringLiteral("magnet:?xt=urn:btih:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                           "&tr=http://127.0.0.1:%1/announce").arg(tracker.serverPort());
+        MagnetMetadataProbe probe;
+        QSignalSpy finished(&probe, &MagnetMetadataProbe::finished);
+        QVERIFY(probe.start(magnet, 60000));
+        QTRY_VERIFY(announces > 0);
+        QTest::qWait(300);
+        QElapsedTimer elapsed; elapsed.start();
+        probe.cancel();
+        QVERIFY2(elapsed.elapsed() < 500, "cancel() waited for the engine on the caller thread");
+        QVERIFY(!probe.busy());
+        QVERIFY(probe.start(magnet, 60000));
+        QVERIFY(probe.busy());
+        probe.cancel();
+        QTest::qWait(300);
+        QCOMPARE(finished.size(), 0);
+    }
+    void magnetProbeCancelDropsQueuedResult() {
+        // Cancel after a probe has queued its result but before it is delivered, as when
+        // TorBox is turned on just as a probe ends.
+        struct CancelOnDelivery : QObject {
+            MagnetMetadataProbe* probe = nullptr;
+            bool armed = true;
+            bool eventFilter(QObject*, QEvent* event) override {
+                if (armed && event->type() == QEvent::MetaCall) {
+                    armed = false;
+                    probe->cancel();
+                }
+                return false;
+            }
+        };
+        MagnetMetadataProbe probe;
+        QSignalSpy finished(&probe, &MagnetMetadataProbe::finished);
+        CancelOnDelivery filter;
+        filter.probe = &probe;
+        probe.installEventFilter(&filter);
+        // A zero timeout ends the probe with an empty result on its first poll.
+        const QString first = QStringLiteral("magnet:?xt=urn:btih:cccccccccccccccccccccccccccccccccccccccc");
+        QVERIFY(probe.start(first, 0));
+        QTRY_VERIFY(!filter.armed);
+        QTest::qWait(100);
+        QCOMPARE(finished.size(), 0);
+        QVERIFY(!probe.busy());
+        const QString second = QStringLiteral("magnet:?xt=urn:btih:dddddddddddddddddddddddddddddddddddddddd");
+        QVERIFY(probe.start(second, 0));
+        QTRY_COMPARE(finished.size(), 1);
+        QCOMPARE(finished.first().first().toString(), second);
+        probe.cancel();
     }
     void cleanupTestCase() {
         QVERIFY(QThreadPool::globalInstance()->waitForDone(5000));

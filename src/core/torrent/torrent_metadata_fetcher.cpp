@@ -107,9 +107,11 @@ void MagnetMetadataProbe::cancel()
 {
     m_pollTimer->stop();
     m_idleTimer->stop();
+    // A result finish() already queued belongs to the cancelled probe; drop it.
+    ++m_generation;
     m_busy = false;
     m_magnetUri.clear();
-    m_session.reset();
+    releaseSession();
 }
 
 bool MagnetMetadataProbe::start(const QString& magnetUri, int timeoutMs)
@@ -220,9 +222,12 @@ void MagnetMetadataProbe::finish(const QStringList& fileNames)
     m_idleTimer->start();
     // Queued, so a slot that starts the next probe never runs inside this one's poll().
     // Busy until it is delivered: a probe started in between would take this result.
+    const quint64 generation = m_generation;
     QMetaObject::invokeMethod(
         this,
-        [this, magnetUri, fileNames]() {
+        [this, generation, magnetUri, fileNames]() {
+            if (generation != m_generation)
+                return;
             m_busy = false;
             emit finished(magnetUri, fileNames);
         },
@@ -231,11 +236,19 @@ void MagnetMetadataProbe::finish(const QStringList& fileNames)
 
 void MagnetMetadataProbe::dropIdleSession()
 {
-    if (m_busy || !m_session)
+    if (m_busy)
         return;
-    // Destroying a session joins its network thread; keep that wait off this thread.
-    Session* idle = m_session.release();
-    QThreadPool::globalInstance()->start([idle]() { delete idle; });
+    releaseSession();
+}
+
+void MagnetMetadataProbe::releaseSession()
+{
+    if (!m_session)
+        return;
+    // Destroying a session joins its network thread and waits on its trackers; keep that
+    // wait off this thread.
+    Session* session = m_session.release();
+    QThreadPool::globalInstance()->start([session]() { delete session; });
 }
 
 } // namespace arachnel::core

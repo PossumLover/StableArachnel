@@ -271,6 +271,7 @@ find_package(Qt6 QUIET COMPONENTS Test)
 if(TARGET Qt6::Test)
     add_executable(torrent_shutdown_tests EXCLUDE_FROM_ALL
         tests/torrent_shutdown_tests.cpp
+        src/core/torrent/torrent_metadata_fetcher.cpp
         src/core/torrent/torrent_session.cpp
         src/core/torrent/torrent_session_poll.cpp
         src/core/torrent/torrent_settings.cpp)
