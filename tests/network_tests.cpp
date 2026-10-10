@@ -20,6 +20,7 @@
 #include "torbox_download_session.h"
 
 #include <QFile>
+#include <QCryptographicHash>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QNetworkAccessManager>
@@ -346,6 +347,125 @@ private slots:
         QCOMPARE(unlocks.size(), 2);
         QCOMPARE(unlocks.value(QStringLiteral("FIRST")), 1700000000000LL);
         QCOMPARE(unlocks.value(QStringLiteral("SECOND")), 1700000001000LL);
+    }
+    void achievementGameLocalGoldbergSave_data()
+    {
+        QTest::addColumn<QByteArray>("save");
+        QTest::newRow("object") << QByteArray(R"({"FirstUnlock":{"earned":true,"earned_time":1700000000}})");
+        QTest::newRow("array") << QByteArray(R"([{"name":"FirstUnlock","earned":true,"earned_time":1700000000}])");
+    }
+    void achievementGameLocalGoldbergSave()
+    {
+        QFETCH(QByteArray, save);
+        QTemporaryDir dir;
+        FakeNetwork network;
+        network.handler = [](const auto&, const auto&) {
+            return Response{R"([{"name":"FirstUnlock","displayName":"First step"}])"};
+        };
+        AchievementLocations locations;
+        locations.installPath = dir.path() + QStringLiteral("/game");
+        auto write = [&](const QString& relativePath) {
+            const QString path = locations.installPath + relativePath;
+            QVERIFY(QDir().mkpath(QFileInfo(path).absolutePath()));
+            QFile file(path);
+            QVERIFY(file.open(QIODevice::WriteOnly));
+            QCOMPARE(file.write(save), save.size());
+        };
+        write(QStringLiteral("/steam_settings/999/achievements.json"));
+        write(QStringLiteral("/steam_settings/achievements.json"));
+        AchievementService service(nullptr, &network, dir.path() + QStringLiteral("/cache"));
+        QSignalSpy notifications(&service, &AchievementService::unlocked);
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations);
+        QTRY_VERIFY(!service.info(QStringLiteral("game")).value(QStringLiteral("loading")).toBool());
+        QCOMPARE(service.info(QStringLiteral("game")).value(QStringLiteral("unlocked")).toInt(), 0);
+        QVERIFY(!service.info(QStringLiteral("game")).value(QStringLiteral("localFileFound")).toBool());
+        write(QStringLiteral("/steam_settings/123/achievements.json"));
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations, false, true);
+        const auto info = service.info(QStringLiteral("game"));
+        QVERIFY(info.value(QStringLiteral("localFileFound")).toBool());
+        QCOMPARE(info.value(QStringLiteral("unlocked")).toInt(), 1);
+        QCOMPARE(info.value(QStringLiteral("rows")).toList().first().toMap()
+            .value(QStringLiteral("unlockedAt")).toLongLong(), 1700000000000LL);
+        QCOMPARE(notifications.count(), 1);
+        QCOMPARE(notifications.first().last().toString(), QStringLiteral("First step"));
+        QCOMPARE(network.requests.size(), 1);
+    }
+    void achievementNamesIgnoreCaseAcrossSavesAndNotifications()
+    {
+        QTemporaryDir dir;
+        FakeNetwork network;
+        network.handler = [](const auto&, const auto&) {
+            return Response{"[{\"name\":\"FirstUnlock\",\"displayName\":\"First step\",\"hidden\":true,"
+                "\"description\":\"Revealed\",\"icon\":\"https://icons.example/unlocked\","
+                "\"icongray\":\"https://icons.example/locked\"},"
+                "{\"name\":\"NextUnlock\",\"displayName\":\"Next step\"}]"};
+        };
+        AchievementLocations locations;
+        locations.installPath = dir.path();
+        auto write = [&](const QString& name, const QByteArray& bytes) {
+            QFile file(dir.path() + QLatin1Char('/') + name);
+            QVERIFY(file.open(QIODevice::WriteOnly));
+            QCOMPARE(file.write(bytes), bytes.size());
+        };
+        write(QStringLiteral("achievements.json"), R"({"firstunlock":{"earned":true,"earned_time":1700000000}})");
+        AchievementService service(nullptr, &network, dir.path() + QStringLiteral("/cache"));
+        QSignalSpy notifications(&service, &AchievementService::unlocked);
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations, false, true);
+        QTRY_VERIFY(!service.info(QStringLiteral("game")).value(QStringLiteral("loading")).toBool());
+        const auto first = service.info(QStringLiteral("game")).value(QStringLiteral("rows")).toList().first().toMap();
+        QVERIFY(first.value(QStringLiteral("unlocked")).toBool());
+        QCOMPARE(first.value(QStringLiteral("name")).toString(), QStringLiteral("FirstUnlock"));
+        QCOMPARE(first.value(QStringLiteral("title")).toString(), QStringLiteral("First step"));
+        QCOMPARE(first.value(QStringLiteral("description")).toString(), QStringLiteral("Revealed"));
+        QCOMPARE(first.value(QStringLiteral("icon")).toString(), QStringLiteral("https://icons.example/unlocked"));
+        QCOMPARE(first.value(QStringLiteral("unlockedAt")).toLongLong(), 1700000000000LL);
+        QCOMPARE(notifications.count(), 0);
+        write(QStringLiteral("achievements.json"), R"({"FIRSTUNLOCK":{"earned":true,"earned_time":1700000000},"nextunlock":{"earned":true,"earned_time":1800000000}})");
+        write(QStringLiteral("achievements.ini"), "[FirstUnlock]\nAchieved=1\nUnlockTime=1700000000\n[NextUnlock]\nAchieved=1\nUnlockTime=1800000000\n");
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations, false, true);
+        QCOMPARE(notifications.count(), 1);
+        QCOMPARE(notifications.first().at(1).toString(), QStringLiteral("NEXTUNLOCK"));
+        QCOMPARE(notifications.first().last().toString(), QStringLiteral("Next step"));
+        QCOMPARE(service.info(QStringLiteral("game")).value(QStringLiteral("unlocked")).toInt(), 2);
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations, false, true);
+        QCOMPARE(notifications.count(), 1);
+        QVERIFY(QFile::remove(dir.path() + QStringLiteral("/achievements.json")));
+        QVERIFY(QFile::remove(dir.path() + QStringLiteral("/achievements.ini")));
+        AchievementService restored(nullptr, &network, dir.path() + QStringLiteral("/cache"));
+        QSignalSpy restarted(&restored, &AchievementService::unlocked);
+        restored.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), locations, false, true);
+        QCOMPARE(restored.info(QStringLiteral("game")).value(QStringLiteral("unlocked")).toInt(), 2);
+        QCOMPARE(restarted.count(), 0);
+        QCOMPARE(network.requests.size(), 1);
+    }
+    void achievementLegacyCacheNamesIgnoreCase()
+    {
+        QTemporaryDir dir;
+        FakeNetwork network;
+        const QString cacheDirectory = dir.path() + QStringLiteral("/cache");
+        QVERIFY(QDir().mkpath(cacheDirectory));
+        const QString cachePath = cacheDirectory + QLatin1Char('/')
+            + QString::fromLatin1(QCryptographicHash::hash("game", QCryptographicHash::Sha256).toHex())
+            + QStringLiteral(".json");
+        QFile file(cachePath);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        const QJsonObject cache{{QStringLiteral("appId"), QStringLiteral("123")},
+            {QStringLiteral("language"), QStringLiteral("en")},
+            {QStringLiteral("fetchedAt"), QDateTime::currentMSecsSinceEpoch()},
+            {QStringLiteral("metadata"), QJsonArray{QJsonObject{{QStringLiteral("name"), QStringLiteral("FirstUnlock")}}}},
+            {QStringLiteral("unlocks"), QJsonObject{{QStringLiteral("FIRSTUNLOCK"), 1700000000000LL},
+                {QStringLiteral("FirstUnlock"), 0}}}};
+        file.write(QJsonDocument(cache).toJson());
+        file.close();
+        AchievementService service(nullptr, &network, cacheDirectory);
+        QSignalSpy notifications(&service, &AchievementService::unlocked);
+        service.refresh(QStringLiteral("game"), QStringLiteral("123"), QStringLiteral("en"), {}, false, true);
+        const auto info = service.info(QStringLiteral("game"));
+        QCOMPARE(info.value(QStringLiteral("unlocked")).toInt(), 1);
+        QCOMPARE(info.value(QStringLiteral("rows")).toList().first().toMap()
+            .value(QStringLiteral("unlockedAt")).toLongLong(), 1700000000000LL);
+        QCOMPARE(notifications.count(), 0);
+        QVERIFY(network.requests.isEmpty());
     }
     void achievementMetadataCachingAndFailures()
     {

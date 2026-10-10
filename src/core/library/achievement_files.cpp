@@ -46,6 +46,8 @@ QStringList achievementFileCandidates(const QString& appId, const AchievementLoc
         for (const auto& suffix : {QStringLiteral("/achievements.json"), QStringLiteral("/achievements.ini"),
                                   QStringLiteral("/SteamData/User/Stats/achievements.ini")})
             files.append(locations.installPath + suffix);
+        files.append(locations.installPath + QStringLiteral("/steam_settings/") + appId
+            + QStringLiteral("/achievements.json"));
     }
     files.removeDuplicates();
     return files;

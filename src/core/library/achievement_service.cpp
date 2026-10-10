@@ -44,8 +44,14 @@ void AchievementService::load(const QString& gameId)
         state.metadata = object.value(QStringLiteral("metadata")).toArray();
         state.fetchedAt = object.value(QStringLiteral("fetchedAt")).toInteger();
         const auto unlocks = object.value(QStringLiteral("unlocks")).toObject();
-        for (auto it = unlocks.begin(); it != unlocks.end(); ++it)
-            state.unlocks.insert(it.key(), it.value().toInteger());
+        // Older caches used the save's capitalization. Merge aliases without
+        // replacing a known unlock date with a missing one.
+        for (auto it = unlocks.begin(); it != unlocks.end(); ++it) {
+            const QString name = it.key().toUpper();
+            const qint64 timestamp = it.value().toInteger();
+            if (!state.unlocks.contains(name) || (state.unlocks.value(name) == 0 && timestamp > 0))
+                state.unlocks.insert(name, timestamp);
+        }
     }
     m_states.insert(gameId, state);
 }
@@ -94,10 +100,11 @@ void AchievementService::refresh(const QString& gameId, const QString& appId, co
         const auto unlocks = readAchievementUnlocks(path, &valid);
         state.localFileFound |= valid;
         for (auto it = unlocks.begin(); it != unlocks.end(); ++it) {
-            if (!state.unlocks.contains(it.key()) || (state.unlocks.value(it.key()) == 0 && it.value() > 0)) {
-                if (!state.unlocks.contains(it.key()) && state.scanned && notifyUnlocks)
-                    newUnlocks.append(it.key());
-                state.unlocks.insert(it.key(), it.value());
+            const QString name = it.key().toUpper();
+            if (!state.unlocks.contains(name) || (state.unlocks.value(name) == 0 && it.value() > 0)) {
+                if (!state.unlocks.contains(name) && state.scanned && notifyUnlocks)
+                    newUnlocks.append(name);
+                state.unlocks.insert(name, it.value());
                 unlocksChanged = true;
             }
         }
@@ -109,7 +116,7 @@ void AchievementService::refresh(const QString& gameId, const QString& appId, co
         QString title = name;
         for (const auto& value : state.metadata) {
             const auto object = value.toObject();
-            if (object.value(QStringLiteral("name")).toString() == name) {
+            if (object.value(QStringLiteral("name")).toString().toUpper() == name) {
                 title = object.value(QStringLiteral("displayName")).toString(name);
                 break;
             }
@@ -168,7 +175,8 @@ QVariantMap AchievementService::info(const QString& gameId) const
         const QString name = object.value(QStringLiteral("name")).toString();
         if (name.isEmpty())
             continue;
-        const bool unlocked = state.unlocks.contains(name);
+        const QString unlockName = name.toUpper();
+        const bool unlocked = state.unlocks.contains(unlockName);
         const bool hidden = object.value(QStringLiteral("hidden")).toBool() && !unlocked;
         const QString icon = object.value(unlocked ? QStringLiteral("icon") : QStringLiteral("icongray")).toString();
         rows.append(QVariantMap{{QStringLiteral("name"), name},
@@ -176,7 +184,7 @@ QVariantMap AchievementService::info(const QString& gameId) const
                 : object.value(QStringLiteral("displayName")).toString(name)},
             {QStringLiteral("description"), hidden ? QString() : object.value(QStringLiteral("description")).toString()},
             {QStringLiteral("icon"), QUrl(icon).scheme() == QStringLiteral("https") ? icon : QString()},
-            {QStringLiteral("unlocked"), unlocked}, {QStringLiteral("unlockedAt"), state.unlocks.value(name)}});
+            {QStringLiteral("unlocked"), unlocked}, {QStringLiteral("unlockedAt"), state.unlocks.value(unlockName)}});
         unlockedCount += unlocked;
     }
     std::stable_sort(rows.begin(), rows.end(), [](const QVariant& a, const QVariant& b) {
