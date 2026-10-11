@@ -64,6 +64,7 @@
     Q_INVOKABLE void setGameUnsteamEnabled(const QString&, bool);
     Q_INVOKABLE void setGameAddonEnabled(const QString& entryId, const QString& addonId, bool enabled);
     Q_INVOKABLE void healInstalledAddons(const QString& entryId);
+    Q_INVOKABLE void openGameFolder(const QString& gameId);
     Q_INVOKABLE void createGameDesktopShortcut(const QString& gameId);
     Q_INVOKABLE void createGameStartMenuShortcut(const QString& gameId);
     Q_INVOKABLE void addGameToSteam(const QString& gameId);

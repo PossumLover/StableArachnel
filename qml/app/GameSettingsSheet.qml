@@ -169,6 +169,13 @@ MD.BottomSheet {
 
             MD.Button {
                 mdState.type: MD.Enum.BtFilledTonal
+                text: qsTr("Open game folder")
+                icon.name: MD.Token.icon.folder_open
+                onClicked: Core.openGameFolder(root.gameId)
+            }
+
+            MD.Button {
+                mdState.type: MD.Enum.BtFilledTonal
                 text: qsTr("Desktop shortcut")
                 icon.name: MD.Token.icon.desktop_windows
                 onClicked: Core.createGameDesktopShortcut(root.gameId)

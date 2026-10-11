@@ -613,6 +613,10 @@
 <context>
     <name>Core</name>
     <message>
+        <source>Could not open game folder</source>
+        <translation>Не удалось открыть папку игры</translation>
+    </message>
+    <message>
         <location filename="../src/core/catalog/catalog_types.cpp" line="+173"/>
         <source>Game</source>
         <translation>Игра</translation>
@@ -3482,6 +3486,10 @@
 <context>
     <name>GameDetailsContent</name>
     <message>
+        <source>Open game folder</source>
+        <translation>Открыть папку игры</translation>
+    </message>
+    <message>
         <location filename="../qml/app/GameDetailsContent.qml" line="+58"/>
         <source>Game details</source>
         <translation>Детали игры</translation>
@@ -3808,6 +3816,10 @@
 </context>
 <context>
     <name>GameSettingsSheet</name>
+    <message>
+        <source>Open game folder</source>
+        <translation>Открыть папку игры</translation>
+    </message>
     <message>
         <location filename="../qml/app/GameSettingsSheet.qml" line="+139"/>
         <source>Game settings</source>

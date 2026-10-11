@@ -577,6 +577,14 @@ Item {
                                 }
                             }
 
+                            MD.Button {
+                                visible: page.installed
+                                text: qsTr("Open game folder")
+                                icon.name: MD.Token.icon.folder_open
+                                mdState.type: MD.Enum.BtOutlined
+                                onClicked: Core.openGameFolder(page.gameId)
+                            }
+
                             MD.Label {
                                 Layout.fillWidth: true
                                 visible: downloadAction.visible && downloadAction.transferDetailVisible

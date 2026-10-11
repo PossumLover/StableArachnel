@@ -613,6 +613,10 @@
 <context>
     <name>Core</name>
     <message>
+        <source>Could not open game folder</source>
+        <translation>Could not open game folder</translation>
+    </message>
+    <message>
         <location filename="../src/core/catalog/catalog_types.cpp" line="+173"/>
         <source>Game</source>
         <translation>Game</translation>
@@ -3482,6 +3486,10 @@
 <context>
     <name>GameDetailsContent</name>
     <message>
+        <source>Open game folder</source>
+        <translation>Open game folder</translation>
+    </message>
+    <message>
         <location filename="../qml/app/GameDetailsContent.qml" line="+58"/>
         <source>Game details</source>
         <translation>Game details</translation>
@@ -3806,6 +3814,10 @@
 </context>
 <context>
     <name>GameSettingsSheet</name>
+    <message>
+        <source>Open game folder</source>
+        <translation>Open game folder</translation>
+    </message>
     <message>
         <location filename="../qml/app/GameSettingsSheet.qml" line="+139"/>
         <source>Game settings</source>

@@ -154,6 +154,22 @@ QString CoreController::browseStorageFolder()
 #endif
 }
 
+void CoreController::openGameFolder(const QString& gameId)
+{
+    const LibraryGame* game = m_libraryStore.gameById(gameId);
+    if (!game) {
+        showNotice(QCoreApplication::translate("Core", "Game not found"));
+        return;
+    }
+    const QFileInfo folder(game->installPath);
+    if (game->installPath.isEmpty() || !folder.isDir()) {
+        showNotice(QCoreApplication::translate("Core", "Game folder not found"));
+        return;
+    }
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(folder.absoluteFilePath())))
+        showNotice(QCoreApplication::translate("Core", "Could not open game folder"));
+}
+
 void CoreController::removeGame(const QString& gameId, bool deleteFiles)
 {
     if (m_libraryController)
