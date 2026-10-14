@@ -62,13 +62,19 @@ void GameMetadataService::requestStoreAssets(const QString& entryId, const QStri
 
 void GameMetadataService::requestAppDetails(const QString& entryId, const QString& title,
                                             const QString& appId, const QString& coverUrl,
-                                            MetadataFetchMode mode, const QString& languageCode)
+                                            MetadataFetchMode mode, const QString& languageCode,
+                                            bool usRegion)
 {
     const QString steamLanguage = steamLanguageForUi(languageCode);
     QUrl detailsUrl(QStringLiteral("https://store.steampowered.com/api/appdetails"));
     QUrlQuery query;
     query.addQueryItem(QStringLiteral("appids"), appId);
     query.addQueryItem(QStringLiteral("l"), steamLanguage);
+    // Without a country Steam picks one from the IP, and answers {"success":false} for every game
+    // that is not sold there (all of CD Projekt, many publishers in Russia): no description, no
+    // screenshots. Ask for the US store first; handleDetailsFinished retries without it.
+    if (usRegion)
+        query.addQueryItem(QStringLiteral("cc"), QStringLiteral("us"));
     detailsUrl.setQuery(query);
 
     QNetworkRequest request(detailsUrl);
@@ -80,6 +86,7 @@ void GameMetadataService::requestAppDetails(const QString& entryId, const QStrin
     detailsReply->setProperty("coverUrl", coverUrl);
     detailsReply->setProperty("fetchMode", static_cast<int>(mode));
     detailsReply->setProperty("languageCode", languageCode);
+    detailsReply->setProperty("usRegion", usRegion);
     connect(detailsReply, &QNetworkReply::finished, this,
             [this, detailsReply]() { handleDetailsFinished(detailsReply); });
     ++m_activeRequests;
@@ -227,6 +234,19 @@ void GameMetadataService::handleDetailsFinished(QNetworkReply* reply)
     const QString coverUrl = reply->property("coverUrl").toString();
     const QString languageCode = reply->property("languageCode").toString();
 
+    QJsonObject appRoot;
+    if (reply->error() == QNetworkReply::NoError) {
+        appRoot = QJsonDocument::fromJson(reply->readAll()).object().value(appId).toObject();
+    }
+    if (reply->property("usRegion").toBool() && !appRoot.value(QStringLiteral("success")).toBool()) {
+        // Not sold in the US store (or the request failed): ask again with Steam's own guess.
+        reply->deleteLater();
+        const auto mode = static_cast<MetadataFetchMode>(reply->property("fetchMode").toInt());
+        requestAppDetails(entryId, entryTitle, appId, coverUrl, mode, languageCode,
+                          /*usRegion=*/false);
+        return;
+    }
+
     GameMetadata metadata;
     {
         QWriteLocker locker(&m_cacheLock);
@@ -236,12 +256,16 @@ void GameMetadataService::handleDetailsFinished(QNetworkReply* reply)
         metadata.descriptionLanguage = languageCode.trimmed().isEmpty() ? QStringLiteral("en")
                                                                         : languageCode.trimmed();
 
-        if (reply->error() == QNetworkReply::NoError) {
-            const QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
-            const QJsonObject appRoot = root.value(appId).toObject();
+        {
             if (appRoot.value(QStringLiteral("success")).toBool()) {
                 const QJsonObject data = appRoot.value(QStringLiteral("data")).toObject();
+                // Steam sends the short description HTML-escaped ("choice &amp; consequence").
                 metadata.description = data.value(QStringLiteral("short_description")).toString();
+                metadata.description.replace(QStringLiteral("&quot;"), QStringLiteral("\""))
+                    .replace(QStringLiteral("&#39;"), QStringLiteral("'"))
+                    .replace(QStringLiteral("&lt;"), QStringLiteral("<"))
+                    .replace(QStringLiteral("&gt;"), QStringLiteral(">"))
+                    .replace(QStringLiteral("&amp;"), QStringLiteral("&"));
                 QStringList genres;
                 for (const QJsonValue& genreValue : data.value(QStringLiteral("genres")).toArray())
                     genres.append(genreValue.toObject().value(QStringLiteral("description")).toString());
@@ -259,7 +283,9 @@ void GameMetadataService::handleDetailsFinished(QNetworkReply* reply)
                 const QJsonArray movies = data.value(QStringLiteral("movies")).toArray();
                 const QString moviesTrailer = pickTrailerFromMovies(movies);
                 if (!moviesTrailer.isEmpty()) {
-                    if (metadata.trailerUrl.isEmpty())
+                    // A full trailer beats the 6-10 s microtrailer; a plain mp4 beats a stream.
+                    if (metadata.trailerUrl.isEmpty()
+                        || metadata.trailerUrl.contains(QStringLiteral("/microtrailer.")))
                         metadata.trailerUrl = moviesTrailer;
                     else if (moviesTrailer.contains(QStringLiteral(".mp4"))
                              && !metadata.trailerUrl.contains(QStringLiteral(".mp4")))

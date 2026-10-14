@@ -237,6 +237,26 @@ the watchdog logged `[hang] main thread resumed after ~53s`.
 
 ## Working notes
 
+**Synced with upstream `master` at `94992c9` (2026-10-11)**, which brought in
+launcher v2 (navigation drawer, two-pane settings, new game page, motion
+system), the faster catalog start and smart search, the plugin catalog-source
+extension, and Snap Layouts. Where they clashed, Sprout keeps its own look and
+behaviour:
+
+- Meadow stays the default palette and appears as a style in the colour picker;
+  Daylight/Dusk theme cards, MeadowMark art in empty states, and the emblem in
+  the drawer and About page replace upstream's spider web.
+- `window_frame.cpp` owns `WM_NCCALCSIZE`. Upstream's Snap Layouts filter only
+  answers the hit test for the maximize button.
+- The fork's Online Fix RealAppId heal (add the key, keep the rest of the ini)
+  replaces upstream's ini rewrite, and the cover-ladder fix still returns while
+  an HQ fetch is queued instead of skipping past it.
+- Adult flags are computed from a copy of the ratings set, because upstream
+  builds the filter table on a worker thread.
+- The plugin catalog-source exports get the plugin's own instance
+  (`rawInstance`), not the rev1 shim, and removing a plugin waits only on that
+  plugin's workers.
+
 Longer-lived notes live in [`docs/fork/`](docs/fork/README.md): the method for
 diagnosing a game that will not launch, how the Steam compatibility layers
 actually work, and the still-open shift+tab overlay investigation with its

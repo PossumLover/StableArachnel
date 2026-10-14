@@ -162,7 +162,7 @@ void CatalogFeedLoader::parsePayload(const QString& sourceId, const QByteArray& 
             parseSourceId = parseSourceId.mid(6);
 
         QVector<CatalogEntry> entries = parseCatalogFeed(payload, parseSourceId);
-        const QByteArray sha = CatalogDiskCache::payloadSha256(payload);
+        const QByteArray sha = CatalogDiskCache::payloadFingerprint(payload);
         if (!entries.isEmpty() && !sourceId.startsWith(QStringLiteral("validate:")))
             CatalogDiskCache::savePayload(parseSourceId, payload, etag);
 

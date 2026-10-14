@@ -2,6 +2,29 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US">
 <context>
+    <name>AppNavDrawer</name>
+    <message>
+        <location filename="../qml/components/AppNavDrawer.qml" line="+80"/>
+        <source>Collapse</source>
+        <translation>Collapse</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Expand</source>
+        <translation>Expand</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>Search games</source>
+        <translation>Search games</translation>
+    </message>
+    <message>
+        <location line="+170"/>
+        <source>Settings</source>
+        <translation>Settings</translation>
+    </message>
+</context>
+<context>
     <name>AppUpdateProgressOverlay</name>
     <message>
         <location filename="../qml/app/AppUpdateProgressOverlay.qml" line="+42"/>
@@ -19,7 +42,7 @@
         <translation>Please wait. Sprout restarts when it&apos;s done.</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+24"/>
         <source>Starting…</source>
         <translation>Starting…</translation>
     </message>
@@ -65,7 +88,7 @@
 <context>
     <name>AppWindow</name>
     <message>
-        <location filename="../qml/app/AppWindow.qml" line="+296"/>
+        <location filename="../qml/app/AppWindow.qml" line="+330"/>
         <source>Library</source>
         <translation>Library</translation>
     </message>
@@ -98,25 +121,33 @@
 <context>
     <name>BookmarksPage</name>
     <message>
-        <location filename="../qml/app/BookmarksPage.qml" line="+114"/>
+        <location filename="../qml/app/BookmarksPage.qml" line="+138"/>
         <source>No favorites</source>
         <translation>No favorites</translation>
     </message>
     <message>
-        <location line="+36"/>
+        <location line="+29"/>
         <source>Favorites</source>
         <translation>Favorites</translation>
     </message>
+    <message numerus="yes">
+        <location line="+1"/>
+        <source>%n game(s)</source>
+        <translation>
+            <numerusform>%n game</numerusform>
+            <numerusform>%n games</numerusform>
+        </translation>
+    </message>
     <message>
-        <location line="+5"/>
-        <source>%1 games</source>
-        <translation>%1 games</translation>
+        <location line="-26"/>
+        <source>Open catalog</source>
+        <translation>Open catalog</translation>
     </message>
 </context>
 <context>
     <name>CatalogCompactBar</name>
     <message>
-        <location filename="../qml/components/CatalogCompactBar.qml" line="+77"/>
+        <location filename="../qml/components/CatalogCompactBar.qml" line="+79"/>
         <source>Catalog</source>
         <translation>Catalog</translation>
     </message>
@@ -130,18 +161,33 @@
         <source>Found: %1</source>
         <translation>Found: %1</translation>
     </message>
+    <message>
+        <location line="+54"/>
+        <source>Grid</source>
+        <translation>Grid</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>List</source>
+        <translation>List</translation>
+    </message>
 </context>
 <context>
     <name>CatalogDiscoveryHeader</name>
     <message>
-        <location filename="../qml/components/CatalogDiscoveryHeader.qml" line="+37"/>
+        <location filename="../qml/components/CatalogDiscoveryHeader.qml" line="+43"/>
         <source>All games</source>
         <translation>All games</translation>
     </message>
     <message>
-        <location line="-15"/>
+        <location line="-16"/>
         <source>Surprise me</source>
         <translation>Surprise me</translation>
+    </message>
+    <message>
+        <location line="-6"/>
+        <source>Discover</source>
+        <translation>Discover</translation>
     </message>
 </context>
 <context>
@@ -159,12 +205,12 @@
         <translation>Tonight&apos;s pick</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+33"/>
         <source>Open game</source>
         <translation>Open game</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+8"/>
         <source>Another pick</source>
         <translation>Another pick</translation>
     </message>
@@ -252,17 +298,17 @@
         <translation>Last year</translation>
     </message>
     <message>
-        <location line="+182"/>
+        <location line="+184"/>
         <source>Players</source>
         <translation>Players</translation>
     </message>
     <message>
-        <location line="-59"/>
+        <location line="-60"/>
         <source>Filters</source>
         <translation>Filters</translation>
     </message>
     <message>
-        <location line="+140"/>
+        <location line="+141"/>
         <source>Less</source>
         <translation>Less</translation>
     </message>
@@ -326,7 +372,7 @@
 <context>
     <name>CatalogGameCard</name>
     <message>
-        <location filename="../qml/components/CatalogGameCard.qml" line="+62"/>
+        <location filename="../qml/components/CatalogGameCard.qml" line="+66"/>
         <location line="+2"/>
         <location line="+1"/>
         <source>playing</source>
@@ -344,12 +390,12 @@
 <context>
     <name>CatalogIntroHeader</name>
     <message>
-        <location filename="../qml/components/CatalogIntroHeader.qml" line="+23"/>
+        <location filename="../qml/components/CatalogIntroHeader.qml" line="+26"/>
         <source>Browse the catalog</source>
         <translation>Browse the catalog</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+5"/>
         <source>Search and filter every game from your enabled sources.</source>
         <translation>Search and filter every game from your enabled sources.</translation>
     </message>
@@ -380,14 +426,14 @@
         <translation>No games</translation>
     </message>
     <message>
-        <location line="+18"/>
-        <source>Add catalog</source>
-        <translation>Add catalog</translation>
-    </message>
-    <message>
-        <location line="+7"/>
+        <location line="+25"/>
         <source>Settings</source>
         <translation>Settings</translation>
+    </message>
+    <message>
+        <location line="-7"/>
+        <source>Add game source</source>
+        <translation>Add game source</translation>
     </message>
 </context>
 <context>
@@ -519,49 +565,6 @@
     </message>
 </context>
 <context>
-    <name>CatalogPageContent</name>
-    <message>
-        <location filename="../qml/app/CatalogPageContent.qml" line="+290"/>
-        <source>With friends</source>
-        <translation>With friends</translation>
-    </message>
-    <message>
-        <location line="-59"/>
-        <source>Couldn&apos;t load discovery</source>
-        <translation>Couldn&apos;t load discovery</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Check your connection, or open All games.</source>
-        <translation>Check your connection, or open All games.</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>All games</source>
-        <translation>All games</translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>No matching games in your catalog</source>
-        <translation>No matching games in your catalog</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Discovery loaded, but none of these titles are in your enabled sources yet.</source>
-        <translation>Discovery loaded, but none of these titles are in your enabled sources yet.</translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>Recommended for you</source>
-        <translation>Recommended for you</translation>
-    </message>
-    <message>
-        <location line="+26"/>
-        <source>Popular this week</source>
-        <translation>Popular this week</translation>
-    </message>
-</context>
-<context>
     <name>CatalogScrollHeader</name>
     <message>
         <location filename="../qml/components/CatalogScrollHeader.qml" line="+68"/>
@@ -572,6 +575,16 @@
         <location line="+1"/>
         <source>Found: %1</source>
         <translation>Found: %1</translation>
+    </message>
+    <message>
+        <location line="+50"/>
+        <source>Grid</source>
+        <translation>Grid</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>List</source>
+        <translation>List</translation>
     </message>
 </context>
 <context>
@@ -585,7 +598,7 @@
 <context>
     <name>CatalogStickyToolbar</name>
     <message>
-        <location filename="../qml/components/CatalogStickyToolbar.qml" line="+99"/>
+        <location filename="../qml/components/CatalogStickyToolbar.qml" line="+115"/>
         <source>Type</source>
         <translation>Type</translation>
     </message>
@@ -609,15 +622,21 @@
         <source>Players</source>
         <translation>Players</translation>
     </message>
+    <message>
+        <location line="-110"/>
+        <source>Catalog</source>
+        <translation>Catalog</translation>
+    </message>
 </context>
 <context>
     <name>Core</name>
     <message>
+        <location filename="../src/core/library/library_facade_ops.cpp" line="+170"/>
         <source>Could not open game folder</source>
         <translation>Could not open game folder</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_types.cpp" line="+173"/>
+        <location filename="../src/core/catalog/catalog_types.cpp" line="+213"/>
         <source>Game</source>
         <translation>Game</translation>
     </message>
@@ -654,7 +673,7 @@
     </message>
     <message>
         <location filename="../src/core/install/install_kind.cpp" line="+11"/>
-        <location filename="../src/core/catalog/catalog_model.cpp" line="+617"/>
+        <location filename="../src/core/catalog/catalog_model.cpp" line="+624"/>
         <source>Portable</source>
         <translation>Portable</translation>
     </message>
@@ -734,7 +753,7 @@
     </message>
     <message>
         <location line="+1"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+275"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+286"/>
         <source>Preparing…</source>
         <translation>Preparing…</translation>
     </message>
@@ -822,10 +841,10 @@
     </message>
     <message>
         <location line="-170"/>
-        <location filename="../src/core/library/library_controller.cpp" line="+456"/>
+        <location filename="../src/core/library/library_controller.cpp" line="+501"/>
         <location line="+42"/>
         <location line="+58"/>
-        <location filename="../src/core/launch/launch_controller.cpp" line="+935"/>
+        <location filename="../src/core/launch/launch_controller.cpp" line="+939"/>
         <source>Couldn&apos;t update DLC unlocks.</source>
         <translation>Couldn&apos;t update DLC unlocks.</translation>
     </message>
@@ -906,7 +925,7 @@
     <message>
         <location filename="../src/core/jobs/job_display.cpp" line="-83"/>
         <location filename="../src/core/jobs/job_status.cpp" line="+2"/>
-        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="+162"/>
+        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="+163"/>
         <source>Paused</source>
         <translation>Paused</translation>
     </message>
@@ -931,17 +950,17 @@
         <location line="+1"/>
         <location filename="../src/core/jobs/job_status.cpp" line="+8"/>
         <location filename="../src/core/catalog/catalog_facade_install.cpp" line="+308"/>
-        <location filename="../src/core/library/library_facade_sync.cpp" line="+245"/>
+        <location filename="../src/core/library/library_facade_sync.cpp" line="+246"/>
         <source>Install failed</source>
         <translation>Install failed</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_controller.cpp" line="+116"/>
+        <location filename="../src/core/catalog/catalog_controller.cpp" line="+186"/>
         <source>Catalog error: %1</source>
         <translation>Catalog error: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+472"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+480"/>
         <source>Game not found for add-on</source>
         <translation>Game not found for add-on</translation>
     </message>
@@ -957,7 +976,7 @@
         <translation>Could not find game to install: %1</translation>
     </message>
     <message>
-        <location line="-492"/>
+        <location line="-500"/>
         <location line="+33"/>
         <source>Moving %1</source>
         <translation>Moving %1</translation>
@@ -973,12 +992,12 @@
         <translation>Move failed</translation>
     </message>
     <message>
-        <location line="+65"/>
+        <location line="+72"/>
         <source>Achievement unlocked: %1 - %2</source>
         <translation>Achievement unlocked: %1 - %2</translation>
     </message>
     <message>
-        <location line="+347"/>
+        <location line="+348"/>
         <source>Download complete - install manually</source>
         <translation>Download complete - install manually</translation>
     </message>
@@ -1047,7 +1066,8 @@
     <message>
         <location filename="../src/core/library/library_controller.cpp" line="+83"/>
         <location filename="../src/core/jobs/job_facade_lifecycle.cpp" line="+175"/>
-        <location filename="../src/core/library/library_facade_ops.cpp" line="+224"/>
+        <location filename="../src/core/library/library_facade_ops.cpp" line="-9"/>
+        <location line="+79"/>
         <location line="+39"/>
         <location line="+37"/>
         <source>Game not found</source>
@@ -1075,7 +1095,7 @@
         <translation>Can&apos;t cancel a move in progress</translation>
     </message>
     <message>
-        <location filename="../src/core/library/library_facade_sync.cpp" line="+203"/>
+        <location filename="../src/core/library/library_facade_sync.cpp" line="+225"/>
         <source>%1 update(s) available</source>
         <translation>%1 update(s) available</translation>
     </message>
@@ -1095,7 +1115,7 @@
         <translation>No download link for %1</translation>
     </message>
     <message>
-        <location filename="../src/core/library/library_facade_ops.cpp" line="-172"/>
+        <location filename="../src/core/library/library_facade_ops.cpp" line="-188"/>
         <location line="+24"/>
         <source>Choose library folder</source>
         <translation>Choose library folder</translation>
@@ -1127,12 +1147,12 @@
         <translation>Manual install complete for %1</translation>
     </message>
     <message>
-        <location filename="../src/core/plugins/plugin_facade.cpp" line="+338"/>
+        <location filename="../src/core/plugins/plugin_facade.cpp" line="+370"/>
         <source>Install plugin</source>
         <translation>Install plugin</translation>
     </message>
     <message>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="-247"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="-248"/>
         <source>Plugin install failed</source>
         <translation>Plugin install failed</translation>
     </message>
@@ -1162,7 +1182,7 @@
         <translation>Executables (*.exe *.sh *.x86_64);;All files (*)</translation>
     </message>
     <message>
-        <location line="+110"/>
+        <location line="+126"/>
         <location line="+39"/>
         <source>Shortcuts are not supported on this platform</source>
         <translation>Shortcuts are not supported on this platform</translation>
@@ -1228,7 +1248,7 @@
         <translation>Steamless is not available</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_controller.cpp" line="+440"/>
+        <location filename="../src/core/catalog/catalog_controller.cpp" line="+452"/>
         <source>%1 · %2 games</source>
         <translation>%1 · %2 games</translation>
     </message>
@@ -1238,12 +1258,12 @@
         <translation>%1 sources · %2 games</translation>
     </message>
     <message>
-        <location line="+303"/>
+        <location line="+389"/>
         <source>Catalog empty or unavailable: %1</source>
         <translation>Catalog empty or unavailable: %1</translation>
     </message>
     <message>
-        <location line="+41"/>
+        <location line="+42"/>
         <source>No catalog URL configured for source %1</source>
         <translation>No catalog URL configured for source %1</translation>
     </message>
@@ -1289,8 +1309,8 @@
         <translation>Game process started (PID %1)</translation>
     </message>
     <message>
-        <location line="-191"/>
-        <location line="+193"/>
+        <location line="-195"/>
+        <location line="+197"/>
         <source>n/a</source>
         <translation>n/a</translation>
     </message>
@@ -1645,7 +1665,7 @@
         <translation>Failed to launch game</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_facade_query.cpp" line="+8"/>
+        <location filename="../src/core/catalog/catalog_facade_query.cpp" line="+12"/>
         <source>Unknown source: %1</source>
         <translation>Unknown source: %1</translation>
     </message>
@@ -1670,7 +1690,7 @@
         <translation>Failed to reset application data</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_facade_query.cpp" line="+76"/>
+        <location filename="../src/core/catalog/catalog_facade_query.cpp" line="+98"/>
         <source>Enter a catalog URL</source>
         <translation>Enter a catalog URL</translation>
     </message>
@@ -1687,7 +1707,7 @@
     <message>
         <location line="+39"/>
         <location line="+20"/>
-        <location filename="../src/core/library/library_facade_sync.cpp" line="-220"/>
+        <location filename="../src/core/library/library_facade_sync.cpp" line="-242"/>
         <source>Catalog entry not found: %1</source>
         <translation>Catalog entry not found: %1</translation>
     </message>
@@ -1732,12 +1752,12 @@
         <translation>Could not start update for %1</translation>
     </message>
     <message>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+110"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+111"/>
         <source>Update finished, but version info is incomplete. Refresh the catalog and update again if the chip stays.</source>
         <translation>Update finished, but version info is incomplete. Refresh the catalog and update again if the chip stays.</translation>
     </message>
     <message>
-        <location line="-301"/>
+        <location line="-309"/>
         <source>No catalog sources enabled</source>
         <translation>No catalog sources enabled</translation>
     </message>
@@ -1779,7 +1799,7 @@
         <translation>Could not find game to install</translation>
     </message>
     <message>
-        <location filename="../src/core/plugins/plugin_facade.cpp" line="-176"/>
+        <location filename="../src/core/plugins/plugin_facade.cpp" line="-207"/>
         <source>Plugin installed</source>
         <translation>Plugin installed</translation>
     </message>
@@ -1790,17 +1810,17 @@
         <translation>Plugin install failed: %1</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+40"/>
         <source>Plugin removed</source>
         <translation>Plugin removed</translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location line="+4"/>
         <source>Could not remove plugin: %1</source>
         <translation>Could not remove plugin: %1</translation>
     </message>
     <message>
-        <location line="+112"/>
+        <location line="+116"/>
         <source>Plugins updated</source>
         <translation>Plugins updated</translation>
     </message>
@@ -1920,6 +1940,7 @@
         <location line="+9"/>
         <location filename="../src/core/install/steamless_service.cpp" line="+11"/>
         <location line="+79"/>
+        <location filename="../src/core/library/library_facade_ops.cpp" line="-45"/>
         <source>Game folder not found</source>
         <translation>Game folder not found</translation>
     </message>
@@ -1996,7 +2017,7 @@
     <message>
         <location line="+43"/>
         <location filename="../src/core/launch/process_launcher.cpp" line="+364"/>
-        <location filename="../src/core/runtime/windows_runner.cpp" line="+117"/>
+        <location filename="../src/core/runtime/windows_runner.cpp" line="+118"/>
         <location line="+108"/>
         <source>File not found: %1</source>
         <translation>File not found: %1</translation>
@@ -2065,13 +2086,13 @@
         <translation>Plugin files were copied but the library failed to load. Update Sprout, or rebuild the plugin for this app version.</translation>
     </message>
     <message>
-        <location filename="../src/core/plugins/plugin_host.cpp" line="+327"/>
-        <location line="+188"/>
+        <location filename="../src/core/plugins/plugin_host.cpp" line="+350"/>
+        <location line="+200"/>
         <source>%1 needs a different Sprout plugin API (plugin=%2, this app supports %3-%4). Update Sprout or install a matching plugin build.</source>
         <translation>%1 needs a different Sprout plugin API (plugin=%2, this app supports %3-%4). Update Sprout or install a matching plugin build.</translation>
     </message>
     <message>
-        <location line="-164"/>
+        <location line="-176"/>
         <source>%1 declares a CatalogEntry of %2 bytes; this app uses %3. Install a plugin build made for this app version.</source>
         <translation>%1 declares a CatalogEntry of %2 bytes; this app uses %3. Install a plugin build made for this app version.</translation>
     </message>
@@ -2091,7 +2112,7 @@
         <translation>Could not load %1: %2</translation>
     </message>
     <message>
-        <location line="+48"/>
+        <location line="+60"/>
         <source>%1 is missing required plugin exports. Reinstall from the store.</source>
         <translation>%1 is missing required plugin exports. Reinstall from the store.</translation>
     </message>
@@ -2111,7 +2132,7 @@
         <translation>%1 was built for a different Sprout SDK (CatalogEntry %2 vs %3 bytes). Update Sprout, or install a plugin build for this app version.</translation>
     </message>
     <message>
-        <location line="+78"/>
+        <location line="+95"/>
         <source>%1 was built against a different Sprout SDK: %2 is %3 bytes in the plugin and %4 bytes here. Rebuild the plugin against this app version.</source>
         <translation>%1 was built against a different Sprout SDK: %2 is %3 bytes in the plugin and %4 bytes here. Rebuild the plugin against this app version.</translation>
     </message>
@@ -2121,12 +2142,12 @@
         <translation>%1 was built against plugin interface revision %2; this app speaks %3 and has no shim for that revision. Rebuild the plugin against this app version.</translation>
     </message>
     <message>
-        <location line="-96"/>
+        <location line="-113"/>
         <source>%1 is missing the CatalogEntry size check. Reinstall a current plugin build.</source>
         <translation>%1 is missing the CatalogEntry size check. Reinstall a current plugin build.</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+33"/>
         <source>%1 failed to start.</source>
         <translation>%1 failed to start.</translation>
     </message>
@@ -2177,7 +2198,7 @@
     </message>
     <message>
         <location line="+3"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+162"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+169"/>
         <source>Sprout %1 is available</source>
         <translation>Sprout %1 is available</translation>
     </message>
@@ -2323,7 +2344,7 @@
         <translation>Automatic installer launch is only available on Windows</translation>
     </message>
     <message>
-        <location filename="../src/core/install/online_fix_overlay.cpp" line="+785"/>
+        <location filename="../src/core/install/online_fix_overlay.cpp" line="+787"/>
         <source>Install folder is missing</source>
         <translation>Install folder is missing</translation>
     </message>
@@ -2452,7 +2473,7 @@
         <translation>Catalog is empty or format not recognized</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_parser.cpp" line="+471"/>
+        <location filename="../src/core/catalog/catalog_parser.cpp" line="+483"/>
         <source>Empty server response</source>
         <translation>Empty server response</translation>
     </message>
@@ -2580,7 +2601,7 @@
     <message>
         <location line="+161"/>
         <location line="+21"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="-327"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="-334"/>
         <source>Game removed: %1</source>
         <translation>Game removed: %1</translation>
     </message>
@@ -2648,7 +2669,7 @@
         <translation>Getting download link from Hydra</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_genre_normalize.cpp" line="+260"/>
+        <location filename="../src/core/catalog/catalog_genre_normalize.cpp" line="+272"/>
         <source>Action</source>
         <translation>Action</translation>
     </message>
@@ -2849,12 +2870,12 @@
         <translation>Hydra Library sent a list Sprout can&apos;t read.</translation>
     </message>
     <message>
-        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="-11"/>
+        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="-12"/>
         <source>Resuming download</source>
         <translation>Resuming download</translation>
     </message>
     <message>
-        <location line="+348"/>
+        <location line="+356"/>
         <source>Download refused by the server</source>
         <translation>Download refused by the server</translation>
     </message>
@@ -2909,7 +2930,7 @@
         <translation>No available download link in this Hydra source</translation>
     </message>
     <message>
-        <location filename="../src/core/jobs/torbox_download_session.cpp" line="+131"/>
+        <location filename="../src/core/jobs/torbox_download_session.cpp" line="+133"/>
         <source>Waiting for a download slot</source>
         <translation>Waiting for a download slot</translation>
     </message>
@@ -2996,7 +3017,7 @@
         <translation>The server returned an invalid download range</translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+39"/>
         <source>TorBox download was interrupted. Retry to resume.</source>
         <translation>TorBox download was interrupted. Retry to resume.</translation>
     </message>
@@ -3011,14 +3032,30 @@
         <translation>Could not finish the download file</translation>
     </message>
     <message>
-        <location filename="../src/core/library/achievement_service.cpp" line="+152"/>
+        <location filename="../src/core/library/achievement_service.cpp" line="+159"/>
         <source>Could not load achievement details.</source>
         <translation>Could not load achievement details.</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+24"/>
         <source>Hidden achievement</source>
         <translation>Hidden achievement</translation>
+    </message>
+    <message>
+        <location filename="../src/core/runtime/proton_manager_download.cpp" line="+189"/>
+        <source>GitHub API rate limit reached. Try again later.</source>
+        <translation>GitHub API rate limit reached. Try again later.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>No Proton-GE archive found in latest release</source>
+        <translation>No Proton-GE archive found in latest release</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <location line="+231"/>
+        <source>GitHub API request failed.</source>
+        <translation>GitHub API request failed.</translation>
     </message>
 </context>
 <context>
@@ -3095,6 +3132,103 @@
         <location filename="../qml/app/CrashReportWindow.qml" line="+16"/>
         <source>Application crashed</source>
         <translation>Application crashed</translation>
+    </message>
+</context>
+<context>
+    <name>DiscoverFeed</name>
+    <message>
+        <location filename="../qml/components/DiscoverFeed.qml" line="+22"/>
+        <source>For you</source>
+        <translation>For you</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>With friends</source>
+        <translation>With friends</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>New</source>
+        <translation>New</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Solo</source>
+        <translation>Solo</translation>
+    </message>
+    <message>
+        <location line="+151"/>
+        <source>Discover</source>
+        <translation>Discover</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <location line="+8"/>
+        <source>All games</source>
+        <translation>All games</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Refresh</source>
+        <translation>Refresh</translation>
+    </message>
+    <message>
+        <location line="+317"/>
+        <source>Open game</source>
+        <translation>Open game</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Saved</source>
+        <translation>Saved</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Save</source>
+        <translation>Save</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Details</source>
+        <translation>Details</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Sound</source>
+        <translation>Sound</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Mute</source>
+        <translation>Mute</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Not for me</source>
+        <translation>Not for me</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>Up next</source>
+        <translation>Up next</translation>
+    </message>
+</context>
+<context>
+    <name>DiscoverHeroCarousel</name>
+    <message>
+        <location filename="../qml/components/DiscoverHeroCarousel.qml" line="+130"/>
+        <source>Tonight&apos;s pick</source>
+        <translation>Tonight&apos;s pick</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Open game</source>
+        <translation>Open game</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Next</source>
+        <translation>Next</translation>
     </message>
 </context>
 <context>
@@ -3217,17 +3351,17 @@
 <context>
     <name>DownloadsPage</name>
     <message>
-        <location filename="../qml/app/DownloadsPage.qml" line="+123"/>
+        <location filename="../qml/app/DownloadsPage.qml" line="+104"/>
         <source>No downloads</source>
         <translation>No downloads</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+21"/>
         <source>Downloads</source>
         <translation>Downloads</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+5"/>
         <source>%1 active · %2 finished</source>
         <translation>%1 active · %2 finished</translation>
     </message>
@@ -3247,15 +3381,20 @@
         <translation>No downloads yet</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+5"/>
         <source>Clear finished</source>
         <translation>Clear finished</translation>
+    </message>
+    <message>
+        <location line="-32"/>
+        <source>Open catalog</source>
+        <translation>Open catalog</translation>
     </message>
 </context>
 <context>
     <name>FriendCodePin</name>
     <message>
-        <location filename="../qml/components/FriendCodePin.qml" line="+23"/>
+        <location filename="../qml/components/FriendCodePin.qml" line="+27"/>
         <source>Friend code</source>
         <translation>Friend code</translation>
     </message>
@@ -3263,7 +3402,8 @@
 <context>
     <name>FriendsPage</name>
     <message>
-        <location filename="../qml/app/FriendsPage.qml" line="+243"/>
+        <location filename="../qml/app/FriendsPage.qml" line="+59"/>
+        <location line="+209"/>
         <source>Friends</source>
         <translation>Friends</translation>
     </message>
@@ -3278,12 +3418,12 @@
         <translation>Offline</translation>
     </message>
     <message>
-        <location line="-319"/>
+        <location line="-320"/>
         <source>Change in settings</source>
         <translation>Change in settings</translation>
     </message>
     <message>
-        <location line="-43"/>
+        <location line="-67"/>
         <source>just now</source>
         <translation>just now</translation>
     </message>
@@ -3303,24 +3443,24 @@
         <translation>%1 d ago</translation>
     </message>
     <message>
-        <location line="+81"/>
+        <location line="+101"/>
         <source>Create a friend code</source>
         <translation>Create a friend code</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+16"/>
         <source>Share it with someone on another device.</source>
         <translation>Share it with someone on another device.</translation>
     </message>
     <message>
         <location line="+9"/>
-        <location line="+117"/>
+        <location line="+121"/>
         <source>New code</source>
         <translation>New code</translation>
     </message>
     <message>
-        <location line="-116"/>
-        <location line="+117"/>
+        <location line="-120"/>
+        <location line="+121"/>
         <source>Create code</source>
         <translation>Create code</translation>
     </message>
@@ -3371,23 +3511,23 @@
         <translation>Pick a game from your library. %1 will see it on their Friends page.</translation>
     </message>
     <message>
-        <location line="-465"/>
-        <location line="+179"/>
+        <location line="-475"/>
+        <location line="+189"/>
         <source>You appear as %1</source>
         <translation>You appear as %1</translation>
     </message>
     <message>
-        <location line="-58"/>
+        <location line="-66"/>
         <source>Add a friend</source>
         <translation>Add a friend</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+13"/>
         <source>Add friend</source>
         <translation>Add friend</translation>
     </message>
     <message>
-        <location line="+187"/>
+        <location line="+194"/>
         <source>Playing %1</source>
         <translation>Playing %1</translation>
     </message>
@@ -3401,6 +3541,11 @@
         <location line="-52"/>
         <source>Online</source>
         <translation>Online</translation>
+    </message>
+    <message>
+        <location line="-325"/>
+        <source>Friends you add can see when you are online and which game you are playing.</source>
+        <translation>Friends you add can see when you are online and which game you are playing.</translation>
     </message>
 </context>
 <context>
@@ -3486,16 +3631,13 @@
 <context>
     <name>GameDetailsContent</name>
     <message>
+        <location filename="../qml/app/GameDetailsContent.qml" line="+494"/>
+        <location line="+5"/>
         <source>Open game folder</source>
         <translation>Open game folder</translation>
     </message>
     <message>
-        <location filename="../qml/app/GameDetailsContent.qml" line="+58"/>
-        <source>Game details</source>
-        <translation>Game details</translation>
-    </message>
-    <message>
-        <location line="+27"/>
+        <location line="-350"/>
         <source>Game not found</source>
         <translation>Game not found</translation>
     </message>
@@ -3505,17 +3647,17 @@
         <translation>Open sources</translation>
     </message>
     <message>
-        <location line="+162"/>
+        <location line="+187"/>
         <source>Last session</source>
         <translation>Last session</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+26"/>
         <source>DRM</source>
         <translation>DRM</translation>
     </message>
     <message numerus="yes">
-        <location line="+16"/>
+        <location line="+12"/>
         <location line="+1"/>
         <source>%n add-ons</source>
         <translation>
@@ -3524,28 +3666,28 @@
         </translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+10"/>
         <source>Workshop</source>
         <translation>Workshop</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+5"/>
         <source>Steam CDN · Online Fix</source>
         <translation>Steam CDN · Online Fix</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+6"/>
         <source>Update available</source>
         <translation>Update available</translation>
     </message>
     <message>
-        <location line="+22"/>
-        <location line="+328"/>
+        <location line="+321"/>
+        <location line="+76"/>
         <source>Share</source>
         <translation>Share</translation>
     </message>
     <message>
-        <location line="-318"/>
+        <location line="-66"/>
         <source>Source page</source>
         <translation>Source page</translation>
     </message>
@@ -3570,37 +3712,27 @@
         <translation>Catalog URL</translation>
     </message>
     <message>
-        <location line="+32"/>
+        <location line="-187"/>
         <source>Download failed</source>
         <translation>Download failed</translation>
     </message>
     <message>
-        <location line="+10"/>
-        <source>Sprout can&apos;t install this one for you. Run the installer from the download folder, then press the folder button below and pick the folder you installed it into.</source>
-        <translation>Sprout can&apos;t install this one for you. Run the installer from the download folder, then press the folder button below and pick the folder you installed it into.</translation>
-    </message>
-    <message>
-        <location line="+76"/>
-        <source>Already installed it yourself? Pick the folder.</source>
-        <translation>Already installed it yourself? Pick the folder.</translation>
-    </message>
-    <message>
-        <location line="+24"/>
+        <location line="-53"/>
         <source>Launch log</source>
         <translation>Launch log</translation>
     </message>
     <message>
-        <location line="+178"/>
+        <location line="+308"/>
         <source>Copy link</source>
         <translation>Copy link</translation>
     </message>
     <message>
-        <location line="-287"/>
+        <location line="-255"/>
         <source>Install failed</source>
         <translation>Install failed</translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="-151"/>
         <source>Stop</source>
         <translation>Stop</translation>
     </message>
@@ -3615,38 +3747,38 @@
         <translation>Play</translation>
     </message>
     <message>
-        <location line="+67"/>
+        <location line="+85"/>
         <source>Remove from favorites</source>
         <translation>Remove from favorites</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+0"/>
         <source>Add to favorites</source>
         <translation>Add to favorites</translation>
     </message>
     <message>
-        <location line="+18"/>
-        <location line="+390"/>
+        <location line="+34"/>
+        <location line="+503"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
     <message>
-        <location line="-371"/>
+        <location line="-581"/>
         <source>Update</source>
         <translation>Update</translation>
     </message>
     <message>
-        <location line="+90"/>
+        <location line="+175"/>
         <source>Description</source>
         <translation>Description</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+25"/>
         <source>Description is not available yet.</source>
         <translation>Description is not available yet.</translation>
     </message>
     <message>
-        <location line="+65"/>
+        <location line="+172"/>
         <source>Suggest to friends</source>
         <translation>Suggest to friends</translation>
     </message>
@@ -3676,32 +3808,87 @@
         <translation>Close</translation>
     </message>
     <message>
-        <location line="-470"/>
+        <location line="-410"/>
         <source>Ready to download from Steam CDN. Online Fix can be included when needed.</source>
         <translation>Ready to download from Steam CDN. Online Fix can be included when needed.</translation>
+    </message>
+    <message>
+        <location line="-90"/>
+        <source>Pick the folder you installed into.</source>
+        <translation>Pick the folder you installed into.</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <source>Game settings</source>
+        <translation>Game settings</translation>
+    </message>
+    <message>
+        <location line="+53"/>
+        <source>Couldn&apos;t install automatically. Run the installer, then pick the folder with the folder button.</source>
+        <translation>Couldn&apos;t install automatically. Run the installer, then pick the folder with the folder button.</translation>
+    </message>
+    <message>
+        <location line="+96"/>
+        <source>Show less</source>
+        <translation>Show less</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Show more</source>
+        <translation>Show more</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>Links</source>
+        <translation>Links</translation>
+    </message>
+    <message>
+        <location line="-414"/>
+        <source>Build number of the game files. A higher number means a newer build.</source>
+        <translation>Build number of the game files. A higher number means a newer build.</translation>
+    </message>
+    <message>
+        <location line="+487"/>
+        <source>Back</source>
+        <translation>Back</translation>
+    </message>
+    <message>
+        <location line="-245"/>
+        <source>More actions</source>
+        <translation>More actions</translation>
     </message>
 </context>
 <context>
     <name>GameDetailsMediaPreview</name>
     <message>
-        <location filename="../qml/components/GameDetailsMediaPreview.qml" line="+75"/>
+        <location filename="../qml/components/GameDetailsMediaPreview.qml" line="+149"/>
         <source>Gameplay video</source>
         <translation>Gameplay video</translation>
     </message>
     <message>
-        <location line="+114"/>
-        <location line="+173"/>
+        <location line="+153"/>
+        <source>Couldn&apos;t load the video</source>
+        <translation>Couldn&apos;t load the video</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Try again</source>
+        <translation>Try again</translation>
+    </message>
+    <message>
+        <location line="+70"/>
+        <location line="+207"/>
         <source>Close</source>
         <translation>Close</translation>
     </message>
     <message>
-        <location line="-155"/>
-        <location line="+164"/>
+        <location line="-181"/>
+        <location line="+190"/>
         <source>Open in browser</source>
         <translation>Open in browser</translation>
     </message>
     <message>
-        <location line="-118"/>
+        <location line="-129"/>
         <source>Screenshot %1 of %2</source>
         <translation>Screenshot %1 of %2</translation>
     </message>
@@ -3722,7 +3909,7 @@
 <context>
     <name>GameDetailsPage</name>
     <message numerus="yes">
-        <location filename="../qml/app/GameDetailsPage.qml" line="+276"/>
+        <location filename="../qml/app/GameDetailsPage.qml" line="+312"/>
         <source>%n source(s)</source>
         <translation>
             <numerusform>%n source</numerusform>
@@ -3815,16 +4002,17 @@
 <context>
     <name>GameSettingsSheet</name>
     <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="+195"/>
         <source>Open game folder</source>
         <translation>Open game folder</translation>
     </message>
     <message>
-        <location filename="../qml/app/GameSettingsSheet.qml" line="+139"/>
+        <location line="-33"/>
         <source>Game settings</source>
         <translation>Game settings</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+40"/>
         <source>Desktop shortcut</source>
         <translation>Desktop shortcut</translation>
     </message>
@@ -3875,12 +4063,12 @@
     </message>
     <message>
         <location line="+11"/>
-        <location line="+132"/>
+        <location line="+129"/>
         <source>Default</source>
         <translation>Default</translation>
     </message>
     <message>
-        <location line="-92"/>
+        <location line="-89"/>
         <source>Launch options</source>
         <translation>Launch options</translation>
     </message>
@@ -3910,7 +4098,7 @@
         <translation>Launch mode</translation>
     </message>
     <message>
-        <location line="+70"/>
+        <location line="+68"/>
         <source>Default launch mode</source>
         <translation>Default launch mode</translation>
     </message>
@@ -3920,12 +4108,12 @@
         <translation>Always ask before launch</translation>
     </message>
     <message>
-        <location line="+59"/>
+        <location line="+62"/>
         <source>Option %1</source>
         <translation>Option %1</translation>
     </message>
     <message>
-        <location line="+53"/>
+        <location line="+58"/>
         <source>Information</source>
         <translation>Information</translation>
     </message>
@@ -3990,12 +4178,12 @@
         <translation>Done</translation>
     </message>
     <message>
-        <location line="-544"/>
+        <location line="-550"/>
         <source>Online Fix for this game</source>
         <translation>Online Fix for this game</translation>
     </message>
     <message>
-        <location line="+477"/>
+        <location line="+483"/>
         <source>DLC</source>
         <translation>DLC</translation>
     </message>
@@ -4017,7 +4205,7 @@
         <translation>Not needed</translation>
     </message>
     <message>
-        <location line="-417"/>
+        <location line="-423"/>
         <source>Game files</source>
         <translation>Game files</translation>
     </message>
@@ -4042,7 +4230,7 @@
         <translation>Verify files</translation>
     </message>
     <message>
-        <location line="+462"/>
+        <location line="+468"/>
         <source>Verify game files?</source>
         <translation>Verify game files?</translation>
     </message>
@@ -4207,6 +4395,75 @@
     </message>
 </context>
 <context>
+    <name>InstallStudio</name>
+    <message>
+        <location filename="../qml/components/InstallStudio.qml" line="+246"/>
+        <source>Installation</source>
+        <translation>Installation</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <location line="+211"/>
+        <source>Cancel</source>
+        <translation>Cancel</translation>
+    </message>
+    <message>
+        <location line="-194"/>
+        <source>Unknown source</source>
+        <translation>Unknown source</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Loading DLC…</source>
+        <translation>Loading DLC…</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>DLC: %1 of %2</source>
+        <translation>DLC: %1 of %2</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Clear all</source>
+        <translation>Clear all</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Select all</source>
+        <translation>Select all</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>This game has no DLC to choose. Everything is included.</source>
+        <translation>This game has no DLC to choose. Everything is included.</translation>
+    </message>
+    <message>
+        <location line="+152"/>
+        <source>Space needed</source>
+        <translation>Space needed</translation>
+    </message>
+    <message>
+        <location line="+58"/>
+        <source>Game</source>
+        <translation>Game</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>DLC</source>
+        <translation>DLC</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Install to</source>
+        <translation>Install to</translation>
+    </message>
+    <message>
+        <location line="+87"/>
+        <source>Install</source>
+        <translation>Install</translation>
+    </message>
+</context>
+<context>
     <name>LaunchLogDialog</name>
     <message>
         <location filename="../qml/components/LaunchLogDialog.qml" line="+13"/>
@@ -4242,12 +4499,12 @@
 <context>
     <name>LibraryContent</name>
     <message>
-        <location filename="../qml/app/LibraryContent.qml" line="+133"/>
+        <location filename="../qml/app/LibraryContent.qml" line="+222"/>
         <source>Running</source>
         <translation>Running</translation>
     </message>
     <message>
-        <location line="+39"/>
+        <location line="+48"/>
         <source>Play</source>
         <translation>Play</translation>
     </message>
@@ -4267,27 +4524,7 @@
         <translation>Update</translation>
     </message>
     <message>
-        <location line="+43"/>
-        <source>In library</source>
-        <translation>In library</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>Sources</source>
-        <translation>Sources</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Tasks</source>
-        <translation>Tasks</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Updates</source>
-        <translation>Updates</translation>
-    </message>
-    <message>
-        <location line="+33"/>
+        <location line="+61"/>
         <source>%1 active downloads</source>
         <translation>%1 active downloads</translation>
     </message>
@@ -4307,20 +4544,58 @@
         <translation>My library</translation>
     </message>
     <message>
-        <location line="+5"/>
-        <source>%1 games</source>
-        <translation>%1 games</translation>
-    </message>
-    <message>
-        <location line="+11"/>
+        <location line="+16"/>
         <source>No games match your search or list.</source>
         <translation>No games match your search or list.</translation>
+    </message>
+    <message>
+        <location line="-358"/>
+        <source>Library</source>
+        <translation>Library</translation>
+    </message>
+    <message numerus="yes">
+        <location line="+25"/>
+        <source>%n source(s)</source>
+        <translation>
+            <numerusform>%n source</numerusform>
+            <numerusform>%n sources</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location line="+1"/>
+        <source>%n task(s)</source>
+        <translation>
+            <numerusform>%n task</numerusform>
+            <numerusform>%n tasks</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location line="+1"/>
+        <source>%n update(s)</source>
+        <translation>
+            <numerusform>%n update</numerusform>
+            <numerusform>%n updates</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location line="+187"/>
+        <source>Open catalog</source>
+        <translation>Open catalog</translation>
+    </message>
+    <message numerus="yes">
+        <location line="-190"/>
+        <location line="+323"/>
+        <source>%n game(s)</source>
+        <translation>
+            <numerusform>%n game</numerusform>
+            <numerusform>%n games</numerusform>
+        </translation>
     </message>
 </context>
 <context>
     <name>LibraryEmptyState</name>
     <message>
-        <location filename="../qml/app/LibraryEmptyState.qml" line="+74"/>
+        <location filename="../qml/app/LibraryEmptyState.qml" line="+80"/>
         <source>Nothing here yet</source>
         <translation>Nothing here yet</translation>
     </message>
@@ -4330,32 +4605,17 @@
         <translation>Open catalog</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Install plugin</source>
-        <translation>Install plugin</translation>
-    </message>
-    <message>
-        <location line="+15"/>
+        <location line="+16"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Catalogs and plugins</source>
-        <translation>Catalogs and plugins</translation>
-    </message>
-    <message>
-        <location line="+16"/>
+        <location line="+24"/>
         <source>Step 1</source>
         <translation>Step 1</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Plugin</source>
-        <translation>Plugin</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Step 2</source>
         <translation>Step 2</translation>
     </message>
@@ -4374,11 +4634,26 @@
         <source>Library</source>
         <translation>Library</translation>
     </message>
+    <message>
+        <location line="-52"/>
+        <source>Add game source</source>
+        <translation>Add game source</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>How it works</source>
+        <translation>How it works</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Source</source>
+        <translation>Source</translation>
+    </message>
 </context>
 <context>
     <name>LibraryGameCard</name>
     <message numerus="yes">
-        <location filename="../qml/components/LibraryGameCard.qml" line="+26"/>
+        <location filename="../qml/components/LibraryGameCard.qml" line="+34"/>
         <location line="+3"/>
         <source>%n add-ons</source>
         <translation>
@@ -4392,7 +4667,7 @@
         <translation>%1/%2 add-ons</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+48"/>
         <source>Installing %1%</source>
         <translation>Installing %1%</translation>
     </message>
@@ -4412,7 +4687,7 @@
         <translation>Downloading %1%</translation>
     </message>
     <message>
-        <location line="+51"/>
+        <location line="+46"/>
         <source>Playing</source>
         <translation>Playing</translation>
     </message>
@@ -4551,7 +4826,7 @@
         <translation>Paste a JSON catalog URL from Hydra or another list.</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+34"/>
         <source>Turn on one or more sources above - or leave them all off.</source>
         <translation>Turn on one or more sources above - or leave them all off.</translation>
     </message>
@@ -4576,17 +4851,17 @@
         <translation>Save games from the catalog - download them here later.</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+10"/>
         <source>It may be missing from your sources, or a plugin is outdated. Check Sources in Settings.</source>
         <translation>It may be missing from your sources, or a plugin is outdated. Check Sources in Settings.</translation>
     </message>
     <message>
-        <location line="-22"/>
+        <location line="-30"/>
         <source>Pick a game in Catalog and start the download.</source>
         <translation>Pick a game in Catalog and start the download.</translation>
     </message>
     <message>
-        <location line="-26"/>
+        <location line="-30"/>
         <source>Install a plugin in Settings → Plugins to browse games, or add a catalog.</source>
         <translation>Install a plugin in Settings → Plugins to browse games, or add a catalog.</translation>
     </message>
@@ -4616,22 +4891,7 @@
         <translation>Use Install plugin below and pick a .arach file.</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Sprout has no games until you install a plugin. Each plugin is a source: it fills Catalog and handles download, install, and Play.</source>
-        <translation>Sprout has no games until you install a plugin. Each plugin is a source: it fills Catalog and handles download, install, and Play.</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Your library is empty. Install a plugin, pick a game in Catalog, and it will appear here.</source>
-        <translation>Your library is empty. Install a plugin, pick a game in Catalog, and it will appear here.</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Install a plugin in Settings → Plugins.</source>
-        <translation>Install a plugin in Settings → Plugins.</translation>
-    </message>
-    <message>
-        <location line="+4"/>
+        <location line="+14"/>
         <source>Installed games live here: launch, updates, and details.</source>
         <translation>Installed games live here: launch, updates, and details.</translation>
     </message>
@@ -4675,14 +4935,59 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Browse games from your catalogs and sources.</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Install a plugin in Settings → Plugins, or add a catalog.</source>
-        <translation>Install a plugin in Settings → Plugins, or add a catalog.</translation>
-    </message>
-    <message>
-        <location line="+14"/>
+        <location line="+24"/>
         <source>Game files will be deleted from disk. This cannot be undone.</source>
         <translation>Game files will be deleted from disk. This cannot be undone.</translation>
+    </message>
+    <message>
+        <location line="-42"/>
+        <source>A plugin is a game source: it fills Catalog and handles download, install, and Play. Install at least one to see games.</source>
+        <translation>A plugin is a game source: it fills Catalog and handles download, install, and Play. Install at least one to see games.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Your library is empty. Add a game source, pick a game in Catalog, and it will appear here.</source>
+        <translation>Your library is empty. Add a game source, pick a game in Catalog, and it will appear here.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Add a game source in Settings → Plugins.</source>
+        <translation>Add a game source in Settings → Plugins.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Add a game source in Settings → Plugins to see games here.</source>
+        <translation>Add a game source in Settings → Plugins to see games here.</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>You can download any game here. Ones with DRM or anti-cheat may not launch.</source>
+        <translation>You can download any game here. Ones with DRM or anti-cheat may not launch.</translation>
+    </message>
+    <message>
+        <location line="-34"/>
+        <source>Your library is empty. Open Catalog, pick a game and press Download - it will appear here when it is ready.</source>
+        <translation>Your library is empty. Open Catalog, pick a game and press Download - it will appear here when it is ready.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Source added. See Settings → Plugins.</source>
+        <translation>Source added. See Settings → Plugins.</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>Open Catalog and pick a game.</source>
+        <translation>Open Catalog and pick a game.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Press Download. Progress shows in the Downloads tab.</source>
+        <translation>Press Download. Progress shows in the Downloads tab.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>When it is done, press Play in your Library.</source>
+        <translation>When it is done, press Play in your Library.</translation>
     </message>
 </context>
 <context>
@@ -4774,7 +5079,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>OnboardingFinalSteps</name>
     <message>
-        <location filename="../qml/onboarding/OnboardingFinalSteps.qml" line="+23"/>
+        <location filename="../qml/onboarding/OnboardingFinalSteps.qml" line="+25"/>
         <source>Updates</source>
         <translation>Updates</translation>
     </message>
@@ -4809,12 +5114,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Proton (Linux)</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Windows games need Proton on Linux. Install it now or later in Settings → Launch.</source>
-        <translation>Windows games need Proton on Linux. Install it now or later in Settings → Launch.</translation>
-    </message>
-    <message>
-        <location line="+8"/>
+        <location line="+11"/>
         <source>Proton ready: %1</source>
         <translation>Proton ready: %1</translation>
     </message>
@@ -4849,14 +5149,39 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>You&apos;re all set</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Open Catalog to browse games. Change language, storage, and plugins anytime in Settings.</source>
-        <translation>Open Catalog to browse games. Change language, storage, and plugins anytime in Settings.</translation>
+        <location line="-46"/>
+        <source>Proton lets Windows games run on Linux. Install it now or later in Settings → Launch.</source>
+        <translation>Proton lets Windows games run on Linux. Install it now or later in Settings → Launch.</translation>
     </message>
     <message>
-        <location line="+7"/>
-        <source>Tip: with a plugin installed, Install runs automatically after download. Catalog-only setups need a manual Install step.</source>
-        <translation>Tip: with a plugin installed, Install runs automatically after download. Catalog-only setups need a manual Install step.</translation>
+        <location line="+125"/>
+        <source>You have no game source yet, so Catalog will be empty. Add one in Settings → Plugins to see games.</source>
+        <translation>You have no game source yet, so Catalog will be empty. Add one in Settings → Plugins to see games.</translation>
+    </message>
+    <message>
+        <location line="-63"/>
+        <source>Games folder</source>
+        <translation>Games folder</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Game source</source>
+        <translation>Game source</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>None yet</source>
+        <translation>None yet</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>How to get your first game</source>
+        <translation>How to get your first game</translation>
+    </message>
+    <message>
+        <location line="-29"/>
+        <source>Language</source>
+        <translation>Language</translation>
     </message>
 </context>
 <context>
@@ -4877,7 +5202,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Skip</translation>
     </message>
     <message>
-        <location line="+55"/>
+        <location line="+57"/>
         <source>Back</source>
         <translation>Back</translation>
     </message>
@@ -4910,12 +5235,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Choose folder…</translation>
     </message>
     <message>
-        <location line="+13"/>
-        <source>Or keep the default path already listed above.</source>
-        <translation>Or keep the default path already listed above.</translation>
-    </message>
-    <message>
-        <location line="+27"/>
+        <location line="+40"/>
         <source>Official plugins</source>
         <translation>Official plugins</translation>
     </message>
@@ -4961,12 +5281,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Or install a plugin file you already have.</translation>
     </message>
     <message>
-        <location line="-89"/>
-        <source>Install a plugin</source>
-        <translation>Install a plugin</translation>
-    </message>
-    <message>
-        <location line="+126"/>
+        <location line="+37"/>
         <source>v%1 · %2</source>
         <translation>v%1 · %2</translation>
     </message>
@@ -4979,6 +5294,16 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+6"/>
         <source>Skip for now</source>
         <translation>Skip for now</translation>
+    </message>
+    <message>
+        <location line="-166"/>
+        <source>The star marks the folder new games go to. Or keep the default path listed above.</source>
+        <translation>The star marks the folder new games go to. Or keep the default path listed above.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Add a game source</source>
+        <translation>Add a game source</translation>
     </message>
 </context>
 <context>
@@ -5012,7 +5337,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>PluginInstallOverlay</name>
     <message>
-        <location filename="../qml/app/PluginInstallOverlay.qml" line="+45"/>
+        <location filename="../qml/app/PluginInstallOverlay.qml" line="+46"/>
         <source>Updating plugins…</source>
         <translation>Updating plugins…</translation>
     </message>
@@ -5020,6 +5345,11 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+1"/>
         <source>Installing plugins…</source>
         <translation>Installing plugins…</translation>
+    </message>
+    <message>
+        <location line="-2"/>
+        <source>Removing plugin…</source>
+        <translation>Removing plugin…</translation>
     </message>
 </context>
 <context>
@@ -5134,52 +5464,52 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>macOS</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+49"/>
         <source>Browse catalogs, download games, and launch from your library.</source>
         <translation>Browse catalogs, download games, and launch from your library.</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+10"/>
         <source>Application</source>
         <translation>Application</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+3"/>
         <source>Version</source>
         <translation>Version</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+4"/>
         <source>Unknown</source>
         <translation>Unknown</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+7"/>
         <source>Platform</source>
         <translation>Platform</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+12"/>
         <source>Danger zone</source>
         <translation>Danger zone</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+3"/>
         <source>Delete application data</source>
         <translation>Delete application data</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+2"/>
         <source>Deletes settings, download history, caches, plugins, and Proton from the app folder. Game files on your disks stay. Sprout will quit afterward.</source>
         <translation>Deletes settings, download history, caches, plugins, and Proton from the app folder. Game files on your disks stay. Sprout will quit afterward.</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+13"/>
         <source>Delete application data…</source>
         <translation>Delete application data…</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+12"/>
         <source>Delete application data?</source>
         <translation>Delete application data?</translation>
     </message>
@@ -5202,7 +5532,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsAppearancePage</name>
     <message>
-        <location filename="../qml/settings/SettingsAppearancePage.qml" line="+16"/>
+        <location filename="../qml/settings/SettingsAppearancePage.qml" line="+14"/>
         <source>English</source>
         <translation>English</translation>
     </message>
@@ -5212,12 +5542,17 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Russian</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+25"/>
         <source>Theme and colors apply across the app.</source>
         <translation>Theme and colors apply across the app.</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+4"/>
+        <source>Light or dark</source>
+        <translation>Light or dark</translation>
+    </message>
+    <message>
+        <location line="+9"/>
         <source>Daylight</source>
         <translation>Daylight</translation>
     </message>
@@ -5227,34 +5562,49 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Dusk</translation>
     </message>
     <message>
-        <location line="+96"/>
-        <source>Palette</source>
-        <translation>Palette</translation>
+        <location line="+136"/>
+        <source>Missing your language? Help translate Sprout on Weblate.</source>
+        <translation>Missing your language? Help translate Sprout on Weblate.</translation>
     </message>
     <message>
-        <location line="+43"/>
-        <source>Primary</source>
-        <translation>Primary</translation>
-    </message>
-    <message>
-        <location line="+10"/>
-        <source>Meadow brings its own sage, olive and rose. Pick another palette to choose a primary color.</source>
-        <translation>Meadow brings its own sage, olive and rose. Pick another palette to choose a primary color.</translation>
-    </message>
-    <message>
-        <location line="+37"/>
+        <location line="-15"/>
         <source>Language</source>
         <translation>Language</translation>
     </message>
     <message>
-        <location line="+35"/>
+        <location line="+14"/>
         <source>Community translations</source>
         <translation>Community translations</translation>
     </message>
     <message>
-        <location line="+16"/>
-        <source>Help translate</source>
-        <translation>Help translate</translation>
+        <location line="-150"/>
+        <source>Theme</source>
+        <translation>Theme</translation>
+    </message>
+    <message>
+        <location line="+120"/>
+        <source>Colors</source>
+        <translation>Colors</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>App colour</source>
+        <translation>App colour</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Each circle shows the colours the app will use.</source>
+        <translation>Each circle shows the colours the app will use.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Interface language</source>
+        <translation>Interface language</translation>
+    </message>
+    <message>
+        <location line="-30"/>
+        <source>Reduce motion</source>
+        <translation>Reduce motion</translation>
     </message>
 </context>
 <context>
@@ -5313,32 +5663,32 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsFriendsPage</name>
     <message>
-        <location filename="../qml/settings/SettingsFriendsPage.qml" line="+70"/>
+        <location filename="../qml/settings/SettingsFriendsPage.qml" line="+46"/>
         <source>Identity</source>
         <translation>Identity</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+1"/>
         <source>This name is shown in invites and presence.</source>
         <translation>This name is shown in invites and presence.</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+8"/>
         <source>Display name</source>
         <translation>Display name</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+7"/>
         <source>Device ID: %1</source>
         <translation>Device ID: %1</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+6"/>
         <source>Relay</source>
         <translation>Relay</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+1"/>
         <source>Used for invites and presence.</source>
         <translation>Used for invites and presence.</translation>
     </message>
@@ -5348,7 +5698,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Relay URL</translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+8"/>
         <source>Save</source>
         <translation>Save</translation>
     </message>
@@ -5361,27 +5711,22 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsHubPage</name>
     <message>
-        <location filename="../qml/settings/SettingsHubPage.qml" line="+20"/>
+        <location filename="../qml/settings/SettingsHubPage.qml" line="+18"/>
         <source>Plugins</source>
         <translation>Plugins</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>Hydra catalogs</source>
         <translation>Hydra catalogs</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>Friends</source>
         <translation>Friends</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Invite codes and relay presence</source>
-        <translation>Invite codes and relay presence</translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location line="+5"/>
         <source>Debrid</source>
         <translation>Debrid</translation>
     </message>
@@ -5391,7 +5736,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>TorBox downloads</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+4"/>
         <source>Storage</source>
         <translation>Storage</translation>
     </message>
@@ -5401,7 +5746,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Library and download folders</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+4"/>
         <source>Updates</source>
         <translation>Updates</translation>
     </message>
@@ -5411,49 +5756,69 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Game and launcher updates</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>Launch options and Proton on Linux</source>
         <translation>Launch options and Proton on Linux</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>Theme, colors, and language</source>
         <translation>Theme, colors, and language</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>Version and app data</source>
         <translation>Version and app data</translation>
     </message>
     <message>
-        <location line="+100"/>
+        <location line="+89"/>
         <source>Sprout v%1</source>
         <translation>Sprout v%1</translation>
     </message>
     <message>
-        <location line="-115"/>
+        <location line="-100"/>
         <source>Launch</source>
         <translation>Launch</translation>
     </message>
     <message>
-        <location line="-41"/>
-        <source>Install plugins to browse and play games.</source>
-        <translation>Install plugins to browse and play games.</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>JSON catalog URLs</source>
-        <translation>JSON catalog URLs</translation>
-    </message>
-    <message>
-        <location line="+41"/>
+        <location line="+5"/>
         <source>Appearance</source>
         <translation>Appearance</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>About</source>
         <translation>About</translation>
+    </message>
+    <message>
+        <location line="-29"/>
+        <source>Friend codes and online status</source>
+        <translation>Friend codes and online status</translation>
+    </message>
+    <message>
+        <location line="+60"/>
+        <source>Games and storage</source>
+        <translation>Games and storage</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>People</source>
+        <translation>People</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>App</source>
+        <translation>App</translation>
+    </message>
+    <message>
+        <location line="-72"/>
+        <source>Game sources - install one to browse and play games.</source>
+        <translation>Game sources - install one to browse and play games.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Add extra game lists from a link, e.g. a Hydra Launcher list (advanced)</source>
+        <translation>Add extra game lists from a link, e.g. a Hydra Launcher list (advanced)</translation>
     </message>
 </context>
 <context>
@@ -5585,14 +5950,14 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../qml/settings/SettingsPage.qml" line="+25"/>
+        <location filename="../qml/settings/SettingsPage.qml" line="+30"/>
         <location line="+3"/>
-        <location line="+121"/>
+        <location line="+159"/>
         <source>Settings</source>
         <translation>Settings</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+10"/>
         <source>Plugins</source>
         <translation>Plugins</translation>
     </message>
@@ -5657,7 +6022,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>About</translation>
     </message>
     <message>
-        <location line="+54"/>
+        <location line="+60"/>
         <source>Back</source>
         <translation>Back</translation>
     </message>
@@ -5670,22 +6035,22 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsPluginStorePage</name>
     <message>
-        <location filename="../qml/settings/SettingsPluginStorePage.qml" line="+82"/>
+        <location filename="../qml/settings/SettingsPluginStorePage.qml" line="+81"/>
         <source>Refresh list</source>
         <translation>Refresh list</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="-10"/>
         <source>Loading official plugins…</source>
         <translation>Loading official plugins…</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+3"/>
         <source>No official plugins available for this platform.</source>
         <translation>No official plugins available for this platform.</translation>
     </message>
     <message>
-        <location line="+85"/>
+        <location line="+79"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
@@ -5704,41 +6069,47 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
+    <message>
+        <location line="-85"/>
+        <source>Official plugins</source>
+        <translation>Official plugins</translation>
+    </message>
 </context>
 <context>
     <name>SettingsPluginsPage</name>
     <message>
-        <location filename="../qml/settings/SettingsPluginsPage.qml" line="+95"/>
+        <location filename="../qml/settings/SettingsPluginsPage.qml" line="+136"/>
         <source>Plugin store</source>
         <translation>Plugin store</translation>
     </message>
     <message>
-        <location line="+42"/>
+        <location line="-52"/>
         <source>No plugins installed</source>
         <translation>No plugins installed</translation>
     </message>
     <message>
-        <location line="+127"/>
+        <location line="+117"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
     <message>
-        <location line="-51"/>
+        <location line="-56"/>
         <source>Install from file…</source>
         <translation>Install from file…</translation>
     </message>
     <message>
-        <location line="-68"/>
+        <location line="-60"/>
         <source>Open the plugin store and install a plugin to browse games.</source>
         <translation>Open the plugin store and install a plugin to browse games.</translation>
     </message>
     <message>
-        <location line="+74"/>
+        <location line="+68"/>
         <source>Open folder</source>
         <translation>Open folder</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="-42"/>
+        <location line="+57"/>
         <source>Remove plugin?</source>
         <translation>Remove plugin?</translation>
     </message>
@@ -5751,6 +6122,94 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+18"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
+    </message>
+    <message>
+        <location line="-115"/>
+        <source>Installed</source>
+        <translation>Installed</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>not loaded</source>
+        <translation>not loaded</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>Get more</source>
+        <translation>Get more</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Official and community plugins.</source>
+        <translation>Official and community plugins.</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsScreen</name>
+    <message>
+        <location filename="../qml/settings/SettingsScreen.qml" line="+19"/>
+        <source>Plugins</source>
+        <translation>Plugins</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Hydra catalogs</source>
+        <translation>Hydra catalogs</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Debrid</source>
+        <translation>Debrid</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Storage</source>
+        <translation>Storage</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Updates</source>
+        <translation>Updates</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Friends</source>
+        <translation>Friends</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Launch</source>
+        <translation>Launch</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Appearance</source>
+        <translation>Appearance</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>About</source>
+        <translation>About</translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>Settings</source>
+        <translation>Settings</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Games and storage</source>
+        <translation>Games and storage</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>People</source>
+        <translation>People</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>App</source>
+        <translation>App</translation>
     </message>
 </context>
 <context>
@@ -5786,27 +6245,30 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Games found: %1</translation>
     </message>
     <message>
-        <location line="+26"/>
+        <location line="+14"/>
+        <location line="+6"/>
         <source>Name</source>
         <translation>Name</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+6"/>
+        <location line="+6"/>
         <source>Catalog URL</source>
         <translation>Catalog URL</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+6"/>
+        <location line="+6"/>
         <source>Short description (optional)</source>
         <translation>Short description (optional)</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+23"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+8"/>
         <source>Validating…</source>
         <translation>Validating…</translation>
     </message>
@@ -5819,6 +6281,11 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+0"/>
         <source>Add</source>
         <translation>Add</translation>
+    </message>
+    <message>
+        <location line="-66"/>
+        <source>Catalog</source>
+        <translation>Catalog</translation>
     </message>
 </context>
 <context>
@@ -5834,17 +6301,17 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Games: %1</translation>
     </message>
     <message>
-        <location line="+66"/>
+        <location line="+120"/>
         <source>Add catalog</source>
         <translation>Add catalog</translation>
     </message>
     <message>
-        <location line="+52"/>
+        <location line="-65"/>
         <source>No catalogs yet</source>
         <translation>No catalogs yet</translation>
     </message>
     <message>
-        <location line="-103"/>
+        <location line="-37"/>
         <source>Off</source>
         <translation>Off</translation>
     </message>
@@ -5854,12 +6321,12 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>No URL - catalog will not load</translation>
     </message>
     <message>
-        <location line="+63"/>
+        <location line="+112"/>
         <source>Browse Hydra Library</source>
         <translation>Browse Hydra Library</translation>
     </message>
     <message>
-        <location line="+156"/>
+        <location line="-36"/>
         <source>Edit</source>
         <translation>Edit</translation>
     </message>
@@ -5869,20 +6336,25 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Open URL</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+6"/>
         <source>Delete</source>
         <translation>Delete</translation>
+    </message>
+    <message>
+        <location line="-60"/>
+        <source>Catalogs</source>
+        <translation>Catalogs</translation>
     </message>
 </context>
 <context>
     <name>SettingsStoragePage</name>
     <message>
-        <location filename="../qml/settings/SettingsStoragePage.qml" line="+191"/>
+        <location filename="../qml/settings/SettingsStoragePage.qml" line="+122"/>
         <source>Add drive…</source>
         <translation>Add drive…</translation>
     </message>
     <message>
-        <location line="+203"/>
+        <location line="+132"/>
         <source>Remove drive?</source>
         <translation>Remove drive?</translation>
     </message>
@@ -5892,32 +6364,32 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Remove</translation>
     </message>
     <message>
-        <location line="-229"/>
+        <location line="-158"/>
         <source>Scan for installed games</source>
         <translation>Scan for installed games</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+12"/>
         <source>Games: %1</source>
         <translation>Games: %1</translation>
     </message>
     <message>
-        <location line="+87"/>
+        <location line="+4"/>
         <source>No games on this drive yet</source>
         <translation>No games on this drive yet</translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+42"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="-8"/>
         <source>Move…</source>
         <translation>Move…</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+34"/>
         <source>Move to drive</source>
         <translation>Move to drive</translation>
     </message>
@@ -5941,86 +6413,96 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <source>Remove anyway</source>
         <translation>Remove anyway</translation>
     </message>
+    <message>
+        <location line="-225"/>
+        <source>Drives</source>
+        <translation>Drives</translation>
+    </message>
+    <message>
+        <location line="+35"/>
+        <source>Make default</source>
+        <translation>Make default</translation>
+    </message>
 </context>
 <context>
     <name>SettingsUpdatesPage</name>
     <message>
-        <location filename="../qml/settings/SettingsUpdatesPage.qml" line="+28"/>
+        <location filename="../qml/settings/SettingsUpdatesPage.qml" line="+24"/>
         <source>Check for game updates and new Sprout versions.</source>
         <translation>Check for game updates and new Sprout versions.</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="-1"/>
         <source>Games</source>
         <translation>Games</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+4"/>
         <source>Check for updates on launch</source>
         <translation>Check for updates on launch</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+7"/>
         <source>Install updates automatically on launch</source>
         <translation>Install updates automatically on launch</translation>
     </message>
     <message>
-        <location line="+44"/>
+        <location line="+16"/>
         <source>Sprout</source>
         <translation>Sprout</translation>
     </message>
     <message>
-        <location line="+60"/>
+        <location line="+48"/>
         <source>Check for Sprout updates on startup</source>
         <translation>Check for Sprout updates on startup</translation>
     </message>
     <message>
-        <location line="+63"/>
+        <location line="-24"/>
         <source>Check for Sprout updates</source>
         <translation>Check for Sprout updates</translation>
     </message>
     <message>
-        <location line="-192"/>
+        <location line="-46"/>
         <source>Shows once at startup when a newer build is available in the catalog.</source>
         <translation>Shows once at startup when a newer build is available in the catalog.</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+7"/>
         <source>Downloads updates once at startup. You can turn this off per game.</source>
         <translation>Downloads updates once at startup. You can turn this off per game.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+6"/>
         <source>Check for game updates</source>
         <translation>Check for game updates</translation>
     </message>
     <message>
-        <location line="+26"/>
+        <location line="+12"/>
         <source>Current version: %1</source>
         <translation>Current version: %1</translation>
     </message>
     <message>
-        <location line="+58"/>
+        <location line="+46"/>
         <source>Checks for new versions in the background.</source>
         <translation>Checks for new versions in the background.</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+6"/>
         <source>Include pre-releases</source>
         <translation>Include pre-releases</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+1"/>
         <source>Offer beta and RC builds from GitHub.</source>
         <translation>Offer beta and RC builds from GitHub.</translation>
     </message>
     <message>
-        <location line="+35"/>
+        <location line="-25"/>
         <source>Download and install</source>
         <translation>Download and install</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+8"/>
         <source>Open release page</source>
         <translation>Open release page</translation>
     </message>
@@ -6028,22 +6510,12 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SourceHelpDialog</name>
     <message>
-        <location filename="../qml/components/SourceHelpDialog.qml" line="+12"/>
-        <source>Catalogs and plugins</source>
-        <translation>Catalogs and plugins</translation>
-    </message>
-    <message>
-        <location line="+7"/>
+        <location filename="../qml/components/SourceHelpDialog.qml" line="+19"/>
         <source>Step 1</source>
         <translation>Step 1</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Plugin</source>
-        <translation>Plugin</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Step 2</source>
         <translation>Step 2</translation>
     </message>
@@ -6062,6 +6534,16 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <source>Library</source>
         <translation>Library</translation>
     </message>
+    <message>
+        <location line="-20"/>
+        <source>How game sources work</source>
+        <translation>How game sources work</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Source</source>
+        <translation>Source</translation>
+    </message>
 </context>
 <context>
     <name>SteamidraTrustSheet</name>
@@ -6077,6 +6559,35 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
     </message>
 </context>
 <context>
+    <name>StorePluginCard</name>
+    <message>
+        <location filename="../qml/settings/StorePluginCard.qml" line="+71"/>
+        <source>Installed · v%1</source>
+        <translation>Installed · v%1</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Installed</source>
+        <translation>Installed</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <location line="+5"/>
+        <source>Source code</source>
+        <translation>Source code</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>Install</source>
+        <translation>Install</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Remove</source>
+        <translation>Remove</translation>
+    </message>
+</context>
+<context>
     <name>SuggestionOverlayCard</name>
     <message>
         <location filename="../qml/components/SuggestionOverlayCard.qml" line="+81"/>
@@ -6087,6 +6598,114 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="-12"/>
         <source>Suggested by %1</source>
         <translation>Suggested by %1</translation>
+    </message>
+</context>
+<context>
+    <name>ThemeColorPicker</name>
+    <message>
+        <location filename="../qml/settings/ThemeColorPicker.qml" line="+56"/>
+        <source>Meadow</source>
+        <translation>Meadow</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Sage, olive and rose</source>
+        <translation>Sage, olive and rose</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Calm</source>
+        <translation>Calm</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Soft, balanced tones</source>
+        <translation>Soft, balanced tones</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Vibrant</source>
+        <translation>Vibrant</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Rich, saturated colour</source>
+        <translation>Rich, saturated colour</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Expressive</source>
+        <translation>Expressive</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Playful contrasting accents</source>
+        <translation>Playful contrasting accents</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Rainbow</source>
+        <translation>Rainbow</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Bright accents, neutral surfaces</source>
+        <translation>Bright accents, neutral surfaces</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Fruit salad</source>
+        <translation>Fruit salad</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Warm shifted hues</source>
+        <translation>Warm shifted hues</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Muted</source>
+        <translation>Muted</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Barely tinted greys</source>
+        <translation>Barely tinted greys</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Monochrome</source>
+        <translation>Monochrome</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Black, white and grey</source>
+        <translation>Black, white and grey</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>True colour</source>
+        <translation>True colour</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Keeps your colour as is</source>
+        <translation>Keeps your colour as is</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Meadow brings its own sage, olive and rose. Pick another style to choose a primary color.</source>
+        <translation>Meadow brings its own sage, olive and rose. Pick another style to choose a primary color.</translation>
+    </message>
+    <message>
+        <location line="+109"/>
+        <source>Custom colour</source>
+        <translation>Custom colour</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Style</source>
+        <translation>Style</translation>
     </message>
 </context>
 <context>

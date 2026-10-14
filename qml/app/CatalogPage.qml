@@ -14,7 +14,7 @@ Item {
     readonly property int cardWidth: 160
     readonly property int cardHeight: 268
     readonly property int listRowHeight: 80
-    readonly property int pageMargin: MD.Token.spacing.large
+    readonly property int pageMargin: Appearance.pageMargin
     readonly property int cardRadius: MD.Token.shape.corner.extra_large
     /** Rail width forwarded so screenshot peeks don't render over the nav rail. */
     property real peekLeftEdge: 0
@@ -95,6 +95,9 @@ Item {
     // Defaults false so GridView can't bind 100k rows while Loader properties
     // (enabled / browseOnly) are still at Item defaults.
     property bool catalogModelReady: false
+    // Search results arrive asynchronously: go back to the top once the new rows are in,
+    // otherwise the old scroll offset points into a different list.
+    property bool resetScrollOnResults: false
 
     readonly property bool discoveryMode: !root.browseOnly
                                          && !root.browseAllMode
@@ -157,6 +160,8 @@ Item {
     }
 
     function resetScroll() { catalogContent.resetScroll() }
+
+    function focusSearch() { catalogContent.focusSearch() }
 
     function fixViewport() { catalogContent.fixViewport() }
 
@@ -241,6 +246,7 @@ Item {
             root.browseAllMode = false
         }
         Core.applyCatalogSearch(query)
+        root.resetScrollOnResults = true
         catalogContent.resetScroll()
     }
 
@@ -250,6 +256,7 @@ Item {
         root.searchQuery = q
         catalogContent.searchText = q
         Core.applyCatalogSearch(q)
+        root.resetScrollOnResults = true
         catalogContent.resetScroll()
     }
 
@@ -284,6 +291,16 @@ Item {
             }
             if (root.searchQuery.length === 0)
                 root.browseAllMode = false
+        }
+    }
+
+    Connections {
+        target: Core.catalog
+        function onModelReset() {
+            if (!root.resetScrollOnResults)
+                return
+            root.resetScrollOnResults = false
+            Qt.callLater(catalogContent.resetScroll)
         }
     }
 

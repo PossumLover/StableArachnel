@@ -144,6 +144,19 @@ bool CoreController::catalogLoading() const
     return m_catalogController && m_catalogController->catalogLoading();
 }
 
+void CoreController::startCatalogLoadEarly()
+{
+    if (!m_catalogController)
+        return;
+    pruneDisabledCatalogSources();
+    m_catalogController->ensureActiveSourceCatalogs();
+}
+
+bool CoreController::catalogPartial() const
+{
+    return m_catalogController && m_catalogController->catalogPartial();
+}
+
 QString CoreController::catalogStatus() const
 {
     return m_catalogController ? m_catalogController->catalogStatus() : QString();
@@ -272,7 +285,8 @@ CoreController::CoreController(QObject* parent)
     // Ratings arrive in the background (first run: a few minutes for the whole
     // catalog); re-flag rows and re-apply the current view as they do.
     connect(m_contentRatings, &ContentRatingStore::ratingsChanged, this, [this]() {
-        m_catalogFilters->rebuildFilterTable();
+        // Flag rows on the filter worker, not here: a rebuild walks the whole catalog.
+        m_catalogFilters->invalidateTable();
         m_catalogFilters->scheduleRefilter();
         m_catalogDiscovery->onCatalogCacheRebuilt();
     });

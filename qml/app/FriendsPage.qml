@@ -10,7 +10,7 @@ Item {
     signal openGame(string gameId)
     signal openSettings()
 
-    readonly property int pageMargin: MD.Token.spacing.extra_large
+    readonly property int pageMargin: Appearance.pageMargin
     readonly property int cardRadius: MD.Token.shape.corner.extra_large
     readonly property bool emptyState: Core.social.friends.count === 0
 
@@ -50,10 +50,25 @@ Item {
         listAddPin.text = ""
     }
 
+    // v2: the same big title as every other page; the empty-state content stays centered below.
+    DisplayTitle {
+        x: root.pageMargin
+        y: root.pageMargin
+        z: 2
+        visible: root.emptyState
+        text: qsTr("Friends")
+    }
+
     Item {
         anchors.fill: parent
-        visible: root.emptyState
-
+        opacity: root.emptyState ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity {
+            NumberAnimation {
+                duration: AppMotion.short
+                easing: AppMotion.standard
+            }
+        }
         ColumnLayout {
             anchors.centerIn: parent
             width: Math.min(parent.width - root.pageMargin * 2, 880)
@@ -68,6 +83,15 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     text: qsTr("You appear as %1").arg(Core.social.displayName)
                     typescale: MD.Token.typescale.headline_small
+                }
+
+                MD.Label {
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                    text: qsTr("Friends you add can see when you are online and which game you are playing.")
+                    color: MD.Token.color.on_surface_variant
+                    typescale: MD.Token.typescale.body_medium
+                    wrapMode: Text.WordWrap
                 }
 
                 MD.Button {
@@ -96,23 +120,19 @@ Item {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: MD.Token.spacing.extra_large
-                        anchors.rightMargin: MD.Token.spacing.extra_large
+                        anchors.leftMargin: root.width < 1000 ? MD.Token.spacing.large : MD.Token.spacing.extra_large
+                        anchors.rightMargin: root.width < 1000 ? MD.Token.spacing.large : MD.Token.spacing.extra_large
                         spacing: MD.Token.spacing.medium
 
-                        Rectangle {
+                        ShapeIcon {
                             Layout.alignment: Qt.AlignHCenter
-                            implicitWidth: 56
-                            implicitHeight: 56
-                            radius: MD.Token.shape.corner.large
+                            Layout.preferredWidth: 80
+                            Layout.preferredHeight: 80
+                            iconName: MD.Token.icon.key
+                            kind: "cookie9"
                             color: MD.Token.color.primary_container
-
-                            MD.Icon {
-                                anchors.centerIn: parent
-                                name: MD.Token.icon.key
-                                size: 28
-                                color: MD.Token.color.on_primary_container
-                            }
+                            iconColor: MD.Token.color.on_primary_container
+                            iconSize: 34
                         }
 
                         MD.Label {
@@ -123,6 +143,7 @@ Item {
                         }
 
                         FriendCodePin {
+                            maxWidth: parent.width
                             Layout.alignment: Qt.AlignHCenter
                             visible: (Core.social.pendingInviteCode || "").length > 0
                             text: Core.social.pendingInviteCode
@@ -165,23 +186,19 @@ Item {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: MD.Token.spacing.extra_large
-                        anchors.rightMargin: MD.Token.spacing.extra_large
+                        anchors.leftMargin: root.width < 1000 ? MD.Token.spacing.large : MD.Token.spacing.extra_large
+                        anchors.rightMargin: root.width < 1000 ? MD.Token.spacing.large : MD.Token.spacing.extra_large
                         spacing: MD.Token.spacing.medium
 
-                        Rectangle {
+                        ShapeIcon {
                             Layout.alignment: Qt.AlignHCenter
-                            implicitWidth: 56
-                            implicitHeight: 56
-                            radius: MD.Token.shape.corner.large
+                            Layout.preferredWidth: 80
+                            Layout.preferredHeight: 80
+                            iconName: MD.Token.icon.person_add
+                            kind: "clover4"
                             color: MD.Token.color.secondary_container
-
-                            MD.Icon {
-                                anchors.centerIn: parent
-                                name: MD.Token.icon.person_add
-                                size: 28
-                                color: MD.Token.color.on_secondary_container
-                            }
+                            iconColor: MD.Token.color.on_secondary_container
+                            iconSize: 34
                         }
 
                         MD.Label {
@@ -193,6 +210,7 @@ Item {
 
                         FriendCodePin {
                             id: emptyAddPin
+                            maxWidth: parent.width
                             Layout.alignment: Qt.AlignHCenter
                             onAccepted: root.submitInvite(emptyAddPin.text)
                         }
@@ -213,7 +231,14 @@ Item {
 
     Flickable {
         anchors.fill: parent
-        visible: !root.emptyState
+        opacity: !root.emptyState ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity {
+            NumberAnimation {
+                duration: AppMotion.short
+                easing: AppMotion.standard
+            }
+        }
         contentWidth: width
         contentHeight: listCol.implicitHeight + root.pageMargin
         clip: true

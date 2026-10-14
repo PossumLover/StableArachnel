@@ -9,7 +9,7 @@ MD.Dialog {
     id: root
 
     parent: Overlay.overlay
-    title: qsTr("Catalogs and plugins")
+    title: qsTr("How game sources work")
     standardButtons: T.DialogButtonBox.Close
     modal: true
 
@@ -17,7 +17,7 @@ MD.Dialog {
         {
             icon: MD.Token.icon.extension,
             step: qsTr("Step 1"),
-            title: qsTr("Plugin"),
+            title: qsTr("Source"),
             body: Messages.settingsPluginsDesc
         },
         {

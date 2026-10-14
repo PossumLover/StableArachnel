@@ -10,7 +10,14 @@ Item {
     Flickable {
         id: flick
         anchors.fill: parent
-        visible: !page.libraryEmpty
+        opacity: !page.libraryEmpty ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity {
+            NumberAnimation {
+                duration: AppMotion.short
+                easing: AppMotion.standard
+            }
+        }
         contentWidth: width
         contentHeight: contentCol.implicitHeight + page.pageMargin
         clip: true
@@ -21,13 +28,81 @@ Item {
             width: flick.width
             spacing: MD.Token.spacing.medium
 
+            // v2 page header: a big title and the library at a glance as small chips. The chips go
+            // under the title when the window is too narrow for one row.
+            GridLayout {
+                id: libraryHeader
+                Layout.fillWidth: true
+                Layout.leftMargin: page.pageMargin
+                Layout.rightMargin: page.pageMargin
+                Layout.topMargin: page.pageMargin
+                readonly property bool oneRow: contentCol.width - 2 * page.pageMargin
+                                               >= libraryTitle.implicitWidth + headerChips.rowWidth + 24
+                columns: oneRow ? 2 : 1
+                columnSpacing: MD.Token.spacing.medium
+                rowSpacing: MD.Token.spacing.small
+
+                DisplayTitle {
+                    id: libraryTitle
+                    Layout.fillWidth: true
+                    text: qsTr("Library")
+                }
+
+                Flow {
+                    id: headerChips
+                    // Width of the chips in one line, from their own sizes (not the Flow's width).
+                    readonly property real rowWidth: {
+                        let w = 0, n = 0
+                        for (let i = 0; i < children.length; ++i) {
+                            const c = children[i]
+                            if (c.visible && c.implicitWidth > 0) {
+                                w += c.implicitWidth
+                                ++n
+                            }
+                        }
+                        return w + Math.max(0, n - 1) * spacing
+                    }
+                    Layout.fillWidth: !libraryHeader.oneRow
+                    Layout.preferredWidth: libraryHeader.oneRow ? rowWidth : -1
+                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                    spacing: MD.Token.spacing.small
+
+                Repeater {
+                    model: [
+                        { icon: MD.Token.icon.sports_esports, text: qsTr("%n game(s)", "", Core.library.count), act: "" },
+                        { icon: MD.Token.icon.storefront, text: qsTr("%n source(s)", "", Core.sources.enabledCount), act: "sources" },
+                        { icon: MD.Token.icon.downloading, text: qsTr("%n task(s)", "", Core.jobs.count), act: "downloads" },
+                        { icon: MD.Token.icon.update, text: qsTr("%n update(s)", "", (void page.libraryRevision, Core.library.updateCount())), act: "" }
+                    ]
+
+                    delegate: DetailsChip {
+                        required property var modelData
+                        text: modelData.text
+                        icon.name: modelData.icon
+                        onClicked: {
+                            if (modelData.act === "downloads")
+                                page.openDownloads()
+                            else if (modelData.act === "sources")
+                                page.addSourceRequested()
+                        }
+                    }
+                }
+                }
+            }
+
             Item {
                 id: heroHost
                 Layout.fillWidth: true
                 Layout.leftMargin: page.pageMargin
                 Layout.rightMargin: page.pageMargin
-                Layout.topMargin: page.pageMargin
-                Layout.preferredHeight: 248
+                Layout.topMargin: MD.Token.spacing.small
+                // Nothing played yet: a compact invitation instead of a big empty card.
+                readonly property bool hasHero: page.heroHasRecentPlay || page.showRunningHero
+                                               || page.featuredShowJobStatus
+                Layout.preferredHeight: hasHero ? 248 : 196
+                Behavior on Layout.preferredHeight {
+                    NumberAnimation { duration: AppMotion.medium; easing: AppMotion.emphasizedDecelerate }
+                }
 
                 Item {
                     id: heroCard
@@ -83,13 +158,26 @@ Item {
                         anchors.margins: MD.Token.spacing.large
                         spacing: MD.Token.spacing.large
 
+                        ShapeIcon {
+                            visible: !heroHost.hasHero
+                            Layout.preferredWidth: 96
+                            Layout.preferredHeight: 96
+                            Layout.alignment: Qt.AlignVCenter
+                            iconName: MD.Token.icon.sports_esports
+                            kind: "burst"
+                            iconSize: 40
+                        }
+
                         ColumnLayout {
                             Layout.fillWidth: true
-                            Layout.fillHeight: true
+                            // Compact banner: the text block sits centred next to the shape.
+                            Layout.fillHeight: heroHost.hasHero
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: MD.Token.spacing.small
 
                             MD.Label {
                                 Layout.fillWidth: true
+                                visible: heroHost.hasHero
                                 text: page.heroEyebrow
                                 color: MD.Token.color.primary
                                 typescale: MD.Token.typescale.label_large
@@ -100,6 +188,7 @@ Item {
                                 Layout.fillWidth: true
                                 text: page.heroTitle
                                 typescale: MD.Token.typescale.headline_large
+                                font.weight: Font.DemiBold
                                 elide: Text.ElideRight
                                 wrapMode: Text.WordWrap
                                 maximumLineCount: 2
@@ -161,11 +250,20 @@ Item {
                                 }
                             }
 
-                            Item { Layout.fillHeight: true }
+                            Item { Layout.fillHeight: true; visible: heroHost.hasHero }
 
                             RowLayout {
                                 Layout.fillWidth: true
+                                Layout.topMargin: heroHost.hasHero ? 0 : MD.Token.spacing.small
                                 spacing: MD.Token.spacing.small
+
+                                MD.Button {
+                                    visible: !heroHost.hasHero
+                                    text: qsTr("Open catalog")
+                                    icon.name: MD.Token.icon.storefront
+                                    mdState.type: MD.Enum.BtFilledTonal
+                                    onClicked: page.openCatalog()
+                                }
 
                                 MD.Button {
                                     visible: page.heroHasRecentPlay && !page.showRunningHero
@@ -232,44 +330,6 @@ Item {
                 }
             }
 
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.leftMargin: page.pageMargin
-                Layout.rightMargin: page.pageMargin
-                spacing: MD.Token.spacing.medium
-
-                StatCard {
-                    Layout.fillWidth: true
-                    title: qsTr("In library")
-                    value: String(Core.library.count)
-                    iconName: MD.Token.icon.sports_esports
-                }
-
-                StatCard {
-                    Layout.fillWidth: true
-                    title: qsTr("Sources")
-                    value: String(Core.sources.enabledCount)
-                    iconName: MD.Token.icon.storefront
-                    tone: 1
-                }
-
-                StatCard {
-                    Layout.fillWidth: true
-                    title: qsTr("Tasks")
-                    value: String(Core.jobs.count)
-                    iconName: MD.Token.icon.downloading
-                    tone: 2
-                }
-
-                StatCard {
-                    Layout.fillWidth: true
-                    title: qsTr("Updates")
-                    value: String(Core.library.updateCount())
-                    iconName: MD.Token.icon.update
-                    tone: 3
-                }
-            }
-
             MD.Pane {
                 Layout.fillWidth: true
                 Layout.leftMargin: page.pageMargin
@@ -332,7 +392,7 @@ Item {
                     }
 
                     MD.Label {
-                        text: qsTr("%1 games").arg(Core.libraryView.count)
+                        text: qsTr("%n game(s)", "", Core.libraryView.count)
                         color: MD.Token.color.on_surface_variant
                         typescale: MD.Token.typescale.label_large
                     }
@@ -385,6 +445,8 @@ Item {
                         cellWidth: gridHost.cellW
                         cellHeight: gridHost.cellH
                         cacheBuffer: 0
+                        populate: StaggerEnterTransition {}
+                        add: StaggerEnterTransition { staggered: false }
                         delegate: LibraryGameCard {
                             width: gridHost.cardWidth
                             height: gridHost.cardHeight

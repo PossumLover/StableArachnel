@@ -10,6 +10,8 @@ ColumnLayout {
     property real collapseProgress: 0
 
     spacing: MD.Token.spacing.small
+    // v2: the title lives in the toolbar row with the search; this block is not shown.
+    visible: false
     opacity: 1 - root.collapseProgress
     scale: 1 - root.collapseProgress * 0.08
     transformOrigin: Item.TopLeft
@@ -18,10 +20,10 @@ ColumnLayout {
         y: -18 * root.collapseProgress
     }
 
-    MD.Label {
+    DisplayTitle {
         Layout.fillWidth: true
+        visible: false
         text: qsTr("Browse the catalog")
-        typescale: MD.Token.typescale.headline_medium
     }
 
     MD.Label {

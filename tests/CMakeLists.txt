@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(sprout_network_tests LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Network Test)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Concurrent Network Test)
 enable_testing()
 set(core "${CMAKE_CURRENT_SOURCE_DIR}/../src/core")
 add_executable(network_tests
@@ -46,7 +46,7 @@ target_include_directories(network_tests PRIVATE
     ${core}/library ${core}/plugins ${core}/runtime ${core}/torrent ${core}/i18n
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/app)
 target_compile_definitions(network_tests PRIVATE ARACHNEL_VERSION="test")
-target_link_libraries(network_tests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+target_link_libraries(network_tests PRIVATE Qt6::Core Qt6::Concurrent Qt6::Network Qt6::Test)
 if(WIN32)
     target_link_libraries(network_tests PRIVATE crypt32)
 endif()

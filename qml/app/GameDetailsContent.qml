@@ -1,11 +1,13 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Effects
 
 import Arachnel.Core 1.0
 import Qcm.Material as MD
 
 Item {
+    id: detailsRoot
     required property var page
 
     readonly property bool hasLaunchLog: {
@@ -13,12 +15,96 @@ Item {
         return Core.hasGameLaunchLog(page.gameId)
     }
 
+    // ---------- The page takes its accent from the poster ----------
+    property color accent: MD.Token.color.primary
+    readonly property color accentContainer: Qt.rgba(accent.r, accent.g, accent.b, 0.20)
+    readonly property color accentInk: "#121216"
+
+    Behavior on accent {
+        ColorAnimation { duration: AppMotion.scaled(600) }
+    }
+
+    readonly property string coverForAccent: String(page.info.coverUrl ?? "")
+
+    // Averages the saturated pixels of a tiny copy of the poster; lightness is clamped so the
+    // colour reads on the dark page and dark text reads on it.
+    Canvas {
+        id: accentSampler
+        x: -64
+        width: 24
+        height: 24
+        opacity: 0.01
+        renderTarget: Canvas.Image
+        property string src: detailsRoot.coverForAccent
+
+        function load() {
+            if (src.startsWith("file:"))
+                loadImage(src)
+        }
+        onSrcChanged: load()
+        Component.onCompleted: load()
+        onImageLoaded: requestPaint()
+        onPaint: {
+            if (!src.startsWith("file:") || !isImageLoaded(src))
+                return
+            const ctx = getContext("2d")
+            ctx.clearRect(0, 0, width, height)
+            ctx.drawImage(src, 0, 0, width, height)
+            const d = ctx.getImageData(0, 0, width, height).data
+            let r = 0, g = 0, b = 0, w = 0
+            for (let i = 0; i < d.length; i += 4) {
+                const mx = Math.max(d[i], d[i + 1], d[i + 2])
+                const mn = Math.min(d[i], d[i + 1], d[i + 2])
+                const sat = mx === 0 ? 0 : (mx - mn) / mx
+                const weight = sat * sat * (mx / 255) + 0.001
+                r += d[i] * weight
+                g += d[i + 1] * weight
+                b += d[i + 2] * weight
+                w += weight
+            }
+            if (w <= 0)
+                return
+            const c = Qt.rgba(r / w / 255, g / w / 255, b / w / 255, 1)
+            detailsRoot.accent = Qt.hsla(Math.max(0, c.hslHue),
+                                         Math.max(0.45, Math.min(0.9, c.hslSaturation)),
+                                         Math.max(0.64, Math.min(0.76, c.hslLightness + 0.15)), 1)
+        }
+    }
+
+    // Theme font family for the large title (a plain Text can take any pixel size).
+    MD.Label {
+        id: fontRef
+        visible: false
+        typescale: MD.Token.typescale.headline_large
+    }
+
     function openLaunchLog() {
         launchLogDialog.openForGame(page.gameId)
     }
 
-    MeadowTones {
-        id: toneKey
+    // Eases the page to an item instead of jumping.
+    function scrollToItem(item, margin) {
+        if (!item)
+            return
+        const target = Math.max(0, Math.min(flick.contentHeight - flick.height,
+                                            item.mapToItem(flick.contentItem, 0, 0).y - (margin ?? 80)))
+        scrollAnim.stop()
+        scrollAnim.to = target
+        scrollAnim.start()
+    }
+
+    function scrollToTop() {
+        scrollAnim.stop()
+        scrollAnim.to = 0
+        scrollAnim.start()
+    }
+
+    NumberAnimation {
+        id: scrollAnim
+        target: flick
+        property: "contentY"
+        duration: AppMotion.scaled(560)
+        easing: AppMotion.emphasized
     }
 
     Connections {
@@ -39,27 +125,6 @@ Item {
         anchors.fill: parent
         spacing: 0
 
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            Layout.topMargin: MD.Token.spacing.large
-            Layout.bottomMargin: MD.Token.spacing.medium
-            spacing: MD.Token.spacing.small
-
-            MD.IconButton {
-                mdState.type: MD.Enum.IBtStandard
-                icon.name: MD.Token.icon.arrow_back
-                onClicked: page.backRequested()
-            }
-
-            MD.Label {
-                Layout.fillWidth: true
-                text: qsTr("Game details")
-                typescale: MD.Token.typescale.title_large
-            }
-        }
-
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -76,7 +141,6 @@ Item {
                     Layout.preferredHeight: 187
                     width: 220
                     height: 187
-                    opacity: 1.0
                 }
 
                 MD.Label {
@@ -111,135 +175,181 @@ Item {
             Layout.fillHeight: true
             visible: page.gameFound
             contentWidth: width
-            contentHeight: contentCol.implicitHeight + MD.Token.spacing.large
+            contentHeight: contentCol.implicitHeight + MD.Token.spacing.extra_large * 2
             clip: true
             boundsBehavior: Flickable.StopAtBounds
+            pixelAligned: true
+
+            // The cover, blurred, drifts at half speed so the page has depth while it scrolls.
+            HeroBackdrop {
+                id: backdrop
+                width: flick.width
+                height: 560
+                y: flick.contentY * 0.5
+                z: -1
+                source: page.info.coverUrl ?? ""
+            }
+
+            // A wash of the poster's colour over the top of the page.
+            Rectangle {
+                width: flick.width
+                height: 560
+                y: flick.contentY * 0.5
+                z: -1
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Qt.rgba(detailsRoot.accent.r, detailsRoot.accent.g, detailsRoot.accent.b, 0.22) }
+                    GradientStop { position: 1.0; color: "transparent" }
+                }
+            }
 
             ColumnLayout {
                 id: contentCol
-                width: flick.width
+                width: Math.min(flick.width - MD.Token.spacing.large * 2, 1120)
+                x: Math.round((flick.width - width) / 2)
                 spacing: MD.Token.spacing.large
 
-                // A soft, tinted panel with a flowering spray on the right, like the
-                // library's "Recently played" card.
-                Item {
+                // ================= Hero =================
+                RowLayout {
+                    id: heroRow
                     Layout.fillWidth: true
-                    Layout.leftMargin: MD.Token.spacing.large
-                    Layout.rightMargin: MD.Token.spacing.large
-                    Layout.preferredHeight: heroRow.implicitHeight + 2 * MD.Token.spacing.large
+                    Layout.topMargin: 84 // clears the floating back button
+                    spacing: MD.Token.spacing.extra_large
 
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: MD.Token.shape.corner.extra_large
-                        color: MD.Token.color.surface_container
-                    }
+                    Item {
+                        id: posterBox
+                        Layout.preferredWidth: 248
+                        Layout.preferredHeight: 330
+                        Layout.alignment: Qt.AlignTop
+                        transformOrigin: Item.Center
 
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: MD.Token.shape.corner.extra_large
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop {
-                                position: 0.0
-                                color: MD.Util.transparent(MD.Token.color.primary, 0.10)
-                            }
-                            GradientStop {
-                                position: 1.0
-                                color: MD.Util.transparent(MD.Token.color.tertiary, 0.10)
+                        // A soft glow in the poster's own colour.
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: parent.width * 0.92
+                            height: parent.height * 0.92
+                            radius: 40
+                            color: detailsRoot.accent
+                            opacity: 0.38
+                            layer.enabled: true
+                            layer.effect: MultiEffect {
+                                blurEnabled: true
+                                blur: 1.0
+                                blurMax: 56
                             }
                         }
-                    }
-
-                    MD.Image {
-                        anchors.right: parent.right
-                        anchors.bottom: parent.bottom
-                        height: Math.min(parent.height, 300)
-                        width: Math.min(parent.width * 0.45, height * 900 / 420)
-                        radius: MD.Token.shape.corner.extra_large
-                        source: MD.Token.isDarkTheme ? "qrc:/art/hero-spray-dark.png"
-                                                     : "qrc:/art/hero-spray-light.png"
-                        fillMode: Image.PreserveAspectCrop
-                        horizontalAlignment: Image.AlignRight
-                        verticalAlignment: Image.AlignBottom
-                        sourceSize.width: 900
-                        opacity: MD.Token.isDarkTheme ? 0.7 : 0.85
-                    }
-
-                    RowLayout {
-                        id: heroRow
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.margins: MD.Token.spacing.large
-                        spacing: MD.Token.spacing.large
 
                         GamePoster {
-                            Layout.preferredWidth: 220
-                            Layout.preferredHeight: 293
-                            Layout.alignment: Qt.AlignTop
+                            anchors.fill: parent
                             source: page.info.coverUrl ?? ""
+                            awaiting: !String(page.info.coverUrl ?? "").startsWith("file:")
                             fallbackText: (page.info.title ?? "?").charAt(0)
-                            cornerRadius: MD.Token.shape.corner.extra_large
+                            cornerRadius: 28
+                            decodeWidth: 500
+                            decodeHeight: 660
                         }
 
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignTop
-                            spacing: MD.Token.spacing.medium
+                        RevealIn { delay: 0; rise: 0.88 }
+                    }
 
-                            MD.Label {
-                                Layout.fillWidth: true
-                                text: page.info.title ?? ""
-                                typescale: MD.Token.typescale.headline_medium
-                                wrapMode: Text.WordWrap
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignTop
+                        spacing: MD.Token.spacing.medium
+
+                        // Source · install kind, in the poster's colour.
+                        MD.Label {
+                            Layout.fillWidth: true
+                            text: {
+                                const parts = []
+                                if ((page.sourceLabel || "").length)
+                                    parts.push(page.sourceLabel)
+                                if ((page.info.installKindLabel ?? "").length)
+                                    parts.push(page.info.installKindLabel)
+                                return parts.join("  ·  ").toUpperCase()
                             }
+                            visible: text.length > 0
+                            typescale: MD.Token.typescale.label_large
+                            font.letterSpacing: 1.6
+                            color: detailsRoot.accent
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                            RevealIn { delay: 40 }
+                        }
 
-                        // Genres/categories as a single-row chip strip (Steam dumps dozens of tags).
-                        Flickable {
-                            id: genreStrip
+                        Text {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: genreRow.implicitHeight
-                            visible: genreTokens.length > 0
-                            clip: true
-                            contentWidth: genreRow.implicitWidth
-                            contentHeight: height
-                            flickableDirection: Flickable.HorizontalFlick
-                            boundsBehavior: Flickable.StopAtBounds
-                            interactive: contentWidth > width
+                            text: page.info.title ?? ""
+                            color: MD.Token.color.on_surface
+                            font.family: fontRef.font.family
+                            font.pixelSize: text.length > 34 ? 34 : 44
+                            font.weight: Font.DemiBold
+                            font.letterSpacing: -0.5
+                            wrapMode: Text.WordWrap
+                            maximumLineCount: 3
+                            elide: Text.ElideRight
+                            RevealIn { delay: 80 }
+                        }
 
-                            readonly property var genreTokens: {
-                                const raw = (page.info.genres ?? "").toString().split(",")
-                                const out = []
-                                for (let i = 0; i < raw.length; ++i) {
-                                    const t = raw[i].trim()
-                                    // DRM has its own status chip below.
-                                    if (t.length && t.toLowerCase() !== "drm")
-                                        out.push(t)
+                        // Facts as a single quiet line of icon + value pairs.
+                        Flow {
+                            id: factFlow
+                            Layout.fillWidth: true
+                            spacing: MD.Token.spacing.large
+
+                            Repeater {
+                                model: {
+                                    const out = []
+                                    if ((page.info.sizeLabel ?? "").length)
+                                        out.push({ icon: MD.Token.icon.hard_drive, text: page.info.sizeLabel, tip: "" })
+                                    if ((page.info.version ?? "").length)
+                                        out.push({ icon: MD.Token.icon.tag, text: "v" + page.info.version,
+                                                   tip: qsTr("Build number of the game files. A higher number means a newer build.") })
+                                    const genres = (page.info.genres ?? "").toString().split(",")
+                                        .map(t => t.trim()).filter(t => t.length && t.toLowerCase() !== "drm")
+                                    if (genres.length)
+                                        out.push({ icon: MD.Token.icon.sports_esports,
+                                                   text: genres.slice(0, 3).join(", ") + (genres.length > 3 ? "…" : ""),
+                                                   tip: genres.join(", ") })
+                                    return out
                                 }
-                                return out
-                            }
 
-                            Row {
-                                id: genreRow
-                                spacing: MD.Token.spacing.extra_small
+                                delegate: Row {
+                                    id: fact
+                                    required property var modelData
+                                    spacing: 6
 
-                                Repeater {
-                                    model: genreStrip.genreTokens
+                                    MD.Icon {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        name: fact.modelData.icon
+                                        size: 18
+                                        color: MD.Token.color.on_surface_variant
+                                    }
+                                    MD.Label {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: fact.modelData.text
+                                        typescale: MD.Token.typescale.title_small
+                                        color: MD.Token.color.on_surface_variant
 
-                                    MD.AssistChip {
-
-                                        font.capitalization: Font.MixedCase
-                                        required property var modelData
-                                        required property int index
-                                        // Olive, rose, apricot, sage, olive...
-                                        readonly property int tone: [1, 2, 3, 0][index % 4]
-                                        text: modelData
-                                        elevated: true
-                                        mdState.backgroundColor: toneKey.containerFor(tone)
-                                        mdState.outlineColor: toneKey.containerFor(tone)
-                                        mdState.textColor: toneKey.inkFor(tone)
+                                        HoverHandler { id: factHover }
+                                        MD.ToolTip {
+                                            visible: factHover.hovered && fact.modelData.tip.length > 0
+                                            text: fact.modelData.tip
+                                        }
                                     }
                                 }
+                            }
+                            RevealIn { delay: 120 }
+
+                            PlaytimeLabel {
+                                visible: page.inLibrary
+                                durationMs: page.info.playtimeMs ?? 0
+                                typescale: MD.Token.typescale.title_small
+                            }
+                            PlaytimeLabel {
+                                visible: page.inLibrary && (page.info.lastSessionMs ?? 0) > 0
+                                durationMs: page.info.lastSessionMs ?? 0
+                                caption: qsTr("Last session")
+                                typescale: MD.Token.typescale.title_small
                             }
                         }
 
@@ -248,54 +358,32 @@ Item {
                             entryId: page.gameId
                         }
 
+                        // Status badges, only the ones that apply.
                         Flow {
+                            id: badgeFlow
                             Layout.fillWidth: true
                             spacing: MD.Token.spacing.small
+                            visible: !!(page.info.hasDrm) || addonsVisible || !!(page.info.hasWorkshop)
+                                     || trustVisible || !!(page.info.hasUpdate)
 
-                            PlaytimeLabel {
-                                visible: page.inLibrary
-                                durationMs: page.info.playtimeMs ?? 0
-                            }
-                            PlaytimeLabel {
-                                visible: page.inLibrary && (page.info.lastSessionMs ?? 0) > 0
-                                durationMs: page.info.lastSessionMs ?? 0
-                                caption: qsTr("Last session")
-                            }
+                            readonly property bool addonsVisible: !!(page.info.hasAddons)
+                                || ((page.info.installedComponentCount ?? 0) > 0)
+                                || ((page.info.componentCount ?? 0) > 0)
+                            readonly property bool trustVisible: page.installSourceCount <= 1
+                                && (page.info.sourceId ?? "") === "steamidra"
 
-                            MD.AssistChip {
-
-                                font.capitalization: Font.MixedCase
-                                text: page.sourceLabel
-                                icon.name: MD.Token.icon.storefront
-                            }
-                            MD.AssistChip {
-                                font.capitalization: Font.MixedCase
-                                text: "v" + (page.info.version ?? "")
-                                icon.name: MD.Token.icon.tag
-                            }
-                            MD.AssistChip {
-                                font.capitalization: Font.MixedCase
-                                visible: !!(page.info.sizeLabel)
-                                text: page.info.sizeLabel ?? ""
-                                icon.name: MD.Token.icon.hard_drive
-                            }
-                            MD.AssistChip {
-                                font.capitalization: Font.MixedCase
+                            DetailsChip {
                                 visible: !!(page.info.hasDrm)
                                 text: qsTr("DRM")
                                 icon.name: MD.Token.icon.shield
-                                elevated: true
                                 mdState.backgroundColor: MD.Token.color.error_container
                                 mdState.textColor: MD.Token.color.on_error_container
                                 mdState.iconColor: MD.Token.color.on_error_container
                                 mdState.outlineColor: MD.Token.color.error_container
                             }
-                            MD.AssistChip {
-                                font.capitalization: Font.MixedCase
-                                visible: !!(page.info.hasAddons) || ((page.info.installedComponentCount ?? 0) > 0)
-                                         || ((page.info.componentCount ?? 0) > 0)
+                            DetailsChip {
+                                visible: badgeFlow.addonsVisible
                                 text: {
-                                    const installed = page.info.installedComponentCount ?? 0
                                     const total = page.info.componentCount ?? 0
                                     if (page.playable && total > 0)
                                         return qsTr("%n add-ons", "", total)
@@ -307,378 +395,403 @@ Item {
                                         gameSettingsSheet.openForGame(page.gameId)
                                 }
                             }
-                            MD.AssistChip {
-                                font.capitalization: Font.MixedCase
+                            DetailsChip {
                                 visible: !!(page.info.hasWorkshop)
                                 text: qsTr("Workshop")
                                 icon.name: MD.Token.icon.handyman
                             }
-                            MD.AssistChip {
-                                font.capitalization: Font.MixedCase
-                                text: page.info.installKindLabel ?? ""
-                                icon.name: MD.Token.icon.install_desktop
-                            }
-                            MD.AssistChip {
-                                font.capitalization: Font.MixedCase
-                                visible: page.installSourceCount <= 1
-                                         && (page.info.sourceId ?? "") === "steamidra"
+                            DetailsChip {
+                                visible: badgeFlow.trustVisible
                                 text: qsTr("Steam CDN · Online Fix")
                                 icon.name: MD.Token.icon.check_circle
-                                elevated: true
-                                mdState.backgroundColor: MD.Token.color.tertiary_container
-                                mdState.textColor: MD.Token.color.on_tertiary_container
-                                mdState.iconColor: MD.Token.color.on_tertiary_container
-                                mdState.outlineColor: MD.Token.color.tertiary_container
                                 onClicked: page.openSteamidraTrust()
                             }
-                            MD.AssistChip {
-                                font.capitalization: Font.MixedCase
+                            DetailsChip {
                                 visible: !!(page.info.hasUpdate)
                                 text: qsTr("Update available")
                                 icon.name: MD.Token.icon.update
-                                elevated: true
-                                mdState.backgroundColor: MD.Token.color.tertiary_container
-                                mdState.textColor: MD.Token.color.on_tertiary_container
-                                mdState.iconColor: MD.Token.color.on_tertiary_container
-                                mdState.outlineColor: MD.Token.color.tertiary_container
+                                mdState.backgroundColor: detailsRoot.accentContainer
+                                mdState.textColor: MD.Token.color.on_surface
+                                mdState.iconColor: detailsRoot.accent
+                                mdState.outlineColor: detailsRoot.accentContainer
                             }
+                            RevealIn { delay: 160 }
                         }
 
+                        // ---------- Actions: right in the hero, no extra card ----------
                         RowLayout {
+                            id: actionRow
                             Layout.fillWidth: true
+                            Layout.topMargin: MD.Token.spacing.small
                             spacing: MD.Token.spacing.small
-                            visible: (page.info.sourcePageUrl ?? "").length > 0
-                                     || (page.info.sourceWebsiteUrl ?? "").length > 0
-                                     || (page.info.steamStoreUrl ?? "").length > 0
-                                     || (Core.sources.repositoryUrlFor(page.info.sourceId ?? "") || "").length > 0
-                                     || (Core.sources.catalogUrlFor(page.info.sourceId ?? "") || "").length > 0
-                                     || (page.gameId || "").length > 0
 
                             MD.Button {
-                                visible: (page.gameId || "").length > 0
-                                text: qsTr("Share")
-                                icon.name: MD.Token.icon.share
-                                mdState.type: MD.Enum.BtText
-                                onClicked: shareDialog.open()
+                                visible: page.playable
+                                enabled: !page.runtimeSetupActive
+                                text: {
+                                    if (page.isRunning)
+                                        return qsTr("Stop")
+                                    if (page.runtimeSetupActive)
+                                        return Core.runtimeSetupStatus.length > 0
+                                               ? Core.runtimeSetupStatus
+                                               : qsTr("Preparing…")
+                                    return qsTr("Play")
+                                }
+                                icon.name: page.isRunning || page.runtimeSetupActive
+                                         ? "" : MD.Token.icon.play_arrow
+                                mdState.type: MD.Enum.BtFilled
+                                mdState.size: MD.Enum.M
+                                mdState.backgroundColor: page.isRunning ? MD.Token.color.error : detailsRoot.accent
+                                mdState.textColor: page.isRunning ? MD.Token.color.on_error : detailsRoot.accentInk
+                                onClicked: page.isRunning ? Core.stopRunningGame() : Core.launchGame(page.gameId)
+                            }
+
+                            DownloadProgressButton {
+                                id: downloadAction
+                                visible: page.canManageDownload && !installStudio.open
+                                embedDetail: false
+                                progress: page.downloadJob.progress ?? 0
+                                bytesDownloaded: Number(page.effectiveDownloaded) || 0
+                                totalBytes: Number(page.downloadTotalBytes) || 0
+                                detail: page.downloadJob.detail ?? ""
+                                downloading: page.downloadActive
+                                paused: page.downloadPaused
+                                completed: false
+                                readyToInstall: page.readyToInstall
+                                downloadFailed: page.downloadFailed
+                                installFailed: page.installFailed
+                                installing: page.isInstalling
+                                onActivated: {
+                                    // Prefer retryInstall when files are already on disk.
+                                    if (page.installFailed || page.readyToInstall)
+                                        Core.retryInstall(page.downloadJob.jobId)
+                                    else if (page.downloadFailed)
+                                        Core.retryJob(page.downloadJob.jobId)
+                                    else
+                                        installStudio.openStudio()
+                                }
+                                onPauseToggleRequested: Core.toggleJobPause(page.downloadJob.jobId)
+                                onCancelRequested: Core.cancelJob(page.downloadJob.jobId)
                             }
 
                             MD.Button {
-                                visible: (page.info.sourcePageUrl ?? "").length > 0
-                                         || (page.info.sourceWebsiteUrl ?? "").length > 0
-                                text: (page.info.sourcePageUrl ?? "").length > 0
-                                      ? qsTr("Source page")
-                                      : qsTr("Source website")
-                                icon.name: MD.Token.icon.open_in_new
-                                mdState.type: MD.Enum.BtText
-                                onClicked: Core.openExternalUrl(
-                                    (page.info.sourcePageUrl ?? "").length > 0
-                                        ? page.info.sourcePageUrl
-                                        : page.info.sourceWebsiteUrl)
+                                visible: page.installed && !!(page.info.hasUpdate) && !page.downloadJob.inProgress
+                                text: qsTr("Update")
+                                icon.name: MD.Token.icon.update
+                                mdState.type: MD.Enum.BtFilledTonal
+                                onClicked: {
+                                    if (Core.catalogUpdateHasDlcRisk(page.gameId))
+                                        dlcUpdateRiskDialog.openForGame(page.gameId)
+                                    else
+                                        Core.updateCatalogEntry(page.gameId)
+                                }
                             }
 
-                            MD.Button {
-                                visible: (page.info.steamStoreUrl ?? "").length > 0
-                                text: qsTr("Steam")
-                                icon.name: MD.Token.icon.open_in_new
-                                mdState.type: MD.Enum.BtText
-                                onClicked: Core.openExternalUrl(page.info.steamStoreUrl)
+                            MD.IconButton {
+                                visible: page.installed && !page.canManualInstall
+                                mdState.type: MD.Enum.IBtFilledTonal
+                                icon.name: MD.Token.icon.folder_open
+                                Accessible.name: qsTr("Open game folder")
+                                onClicked: Core.openGameFolder(page.gameId)
+
+                                MD.ToolTip {
+                                    visible: parent.hovered
+                                    text: qsTr("Open game folder")
+                                }
                             }
 
-                            MD.Button {
-                                visible: (Core.sources.repositoryUrlFor(page.info.sourceId ?? "") || "").length > 0
-                                text: qsTr("Plugin source")
-                                icon.name: MD.Token.icon.open_in_new
-                                mdState.type: MD.Enum.BtText
-                                onClicked: Core.openExternalUrl(
-                                    Core.sources.repositoryUrlFor(page.info.sourceId ?? ""))
+                            MD.IconButton {
+                                visible: page.canManualInstall
+                                mdState.type: MD.Enum.IBtFilledTonal
+                                icon.name: MD.Token.icon.folder_open
+                                onClicked: Core.confirmManualInstall(page.downloadJob.jobId)
+
+                                MD.ToolTip {
+                                    visible: parent.hovered
+                                    text: qsTr("Pick the folder you installed into.")
+                                }
                             }
 
-                            MD.Button {
-                                visible: (Core.sources.catalogUrlFor(page.info.sourceId ?? "") || "").length > 0
-                                text: qsTr("Catalog URL")
-                                icon.name: MD.Token.icon.open_in_new
-                                mdState.type: MD.Enum.BtText
-                                onClicked: Core.openExternalUrl(
-                                    Core.sources.catalogUrlFor(page.info.sourceId ?? ""))
+                            MD.IconButton {
+                                readonly property bool favorited: {
+                                    const ids = Core.settings.bookmarkedEntryIds
+                                    return ids.indexOf(page.gameId) >= 0
+                                }
+                                checked: favorited
+                                mdState.type: MD.Enum.IBtFilledTonal
+                                icon.name: MD.Token.icon.favorite
+                                Accessible.name: favorited ? qsTr("Remove from favorites") : qsTr("Add to favorites")
+                                onClicked: Core.toggleBookmark(page.gameId)
                             }
+
+                            MD.IconButton {
+                                visible: hasLaunchLog
+                                mdState.type: MD.Enum.IBtFilledTonal
+                                icon.name: MD.Token.icon.receipt_long
+                                Accessible.name: qsTr("Launch log")
+                                onClicked: openLaunchLog()
+                            }
+
+                            MD.IconButton {
+                                visible: page.playable || page.downloadComplete || page.inLibrary
+                                mdState.type: MD.Enum.IBtFilledTonal
+                                icon.name: MD.Token.icon.settings
+                                Accessible.name: qsTr("Game settings")
+                                onClicked: gameSettingsSheet.openForGame(page.gameId)
+                            }
+
+                            MD.IconButton {
+                                id: moreActions
+                                visible: page.playable || page.downloadComplete || page.inLibrary
+                                mdState.type: MD.Enum.IBtFilledTonal
+                                icon.name: MD.Token.icon.more_vert
+                                Accessible.name: qsTr("More actions")
+                                onClicked: moreMenu.open()
+
+                                MD.Menu {
+                                    id: moreMenu
+                                    y: parent.height
+                                    autoClose: true
+
+                                    MD.MenuItem {
+                                        text: qsTr("Delete")
+                                        icon.name: MD.Token.icon.delete
+                                        onTriggered: removeDialog.open()
+                                    }
+                                }
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            RevealIn { delay: 200 }
                         }
 
                         MD.Label {
                             Layout.fillWidth: true
-                            visible: page.readyToInstall && !page.installFailed
-                                     && (page.info.sourceId ?? "") !== "steamidra"
-                            text: Messages.gameInstallTorrentHint
-                            wrapMode: Text.WordWrap
-                            color: MD.Token.color.on_surface_variant
-                            typescale: MD.Token.typescale.body_medium
+                            visible: downloadAction.visible && downloadAction.transferDetailVisible
+                            text: downloadAction.transferLine
+                            color: detailsRoot.accent
+                            typescale: MD.Token.typescale.label_large
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
                         }
 
-                        MD.Label {
-                            Layout.fillWidth: true
-                            visible: page.readyToInstall && !page.installFailed
-                                     && (page.info.sourceId ?? "") === "steamidra"
-                            text: qsTr("Ready to download from Steam CDN. Online Fix can be included when needed.")
-                            wrapMode: Text.WordWrap
-                            color: MD.Token.color.on_surface_variant
-                            typescale: MD.Token.typescale.body_medium
-                        }
-
+                        // Notes about the state the buttons are in.
                         MD.Label {
                             Layout.fillWidth: true
                             visible: page.downloadFailed || page.installFailed
                             text: page.downloadJob.detail
-                                  || (page.downloadFailed ? qsTr("Download failed")
-                                                          : qsTr("Install failed"))
+                                  || (page.downloadFailed ? qsTr("Download failed") : qsTr("Install failed"))
                             wrapMode: Text.WordWrap
                             color: MD.Token.color.error
                             typescale: MD.Token.typescale.body_medium
                         }
-
                         MD.Label {
                             Layout.fillWidth: true
                             visible: page.canManualInstall
-                            text: qsTr("Sprout can't install this one for you. Run the installer from the download folder, then press the folder button below and pick the folder you installed it into.")
+                            text: qsTr("Couldn't install automatically. Run the installer, then pick the folder with the folder button.")
                             wrapMode: Text.WordWrap
                             color: MD.Token.color.on_surface_variant
                             typescale: MD.Token.typescale.body_medium
                         }
-
-                        ColumnLayout {
-                            spacing: MD.Token.spacing.extra_small
-
-                            RowLayout {
-                                spacing: MD.Token.spacing.small
-
-                                MD.Button {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    visible: page.playable
-                                    enabled: !page.runtimeSetupActive
-                                    text: {
-                                        if (page.isRunning)
-                                            return qsTr("Stop")
-                                        if (page.runtimeSetupActive)
-                                            return Core.runtimeSetupStatus.length > 0
-                                                   ? Core.runtimeSetupStatus
-                                                   : qsTr("Preparing…")
-                                        return qsTr("Play")
-                                    }
-                                    icon.name: page.isRunning || page.runtimeSetupActive
-                                             ? "" : MD.Token.icon.play_arrow
-                                    mdState.type: MD.Enum.BtFilled
-                                    mdState.backgroundColor: page.isRunning
-                                                         ? MD.Token.color.error
-                                                         : MD.Token.color.primary
-                                    mdState.textColor: page.isRunning
-                                                       ? MD.Token.color.on_error
-                                                       : MD.Token.color.on_primary
-                                    onClicked: page.isRunning
-                                                 ? Core.stopRunningGame()
-                                                 : Core.launchGame(page.gameId)
-                                }
-
-                                DownloadProgressButton {
-                                    id: downloadAction
-                                    Layout.alignment: Qt.AlignVCenter
-                                    visible: page.canManageDownload
-                                    embedDetail: false
-                                    progress: page.downloadJob.progress ?? 0
-                                    bytesDownloaded: Number(page.effectiveDownloaded) || 0
-                                    totalBytes: Number(page.downloadTotalBytes) || 0
-                                    detail: page.downloadJob.detail ?? ""
-                                    downloading: page.downloadActive
-                                    paused: page.downloadPaused
-                                    completed: false
-                                    readyToInstall: page.readyToInstall
-                                    downloadFailed: page.downloadFailed
-                                    installFailed: page.installFailed
-                                    installing: page.isInstalling
-                                    onActivated: {
-                                        if (page.downloadFailed)
-                                            Core.retryJob(page.downloadJob.jobId)
-                                        else if (page.installFailed || page.readyToInstall)
-                                            Core.retryInstall(page.downloadJob.jobId)
-                                        else
-                                            page.beginInstall()
-                                    }
-                                    onPauseToggleRequested: Core.toggleJobPause(page.downloadJob.jobId)
-                                    onCancelRequested: Core.cancelJob(page.downloadJob.jobId)
-                                }
-
-                                MD.IconButton {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    visible: page.canManualInstall
-                                    mdState.type: MD.Enum.IBtStandard
-                                    icon.name: MD.Token.icon.folder_open
-                                    onClicked: Core.confirmManualInstall(page.downloadJob.jobId)
-
-                                    MD.ToolTip {
-                                        visible: parent.hovered
-                                        text: qsTr("Already installed it yourself? Pick the folder.")
-                                    }
-                                }
-
-                                MD.IconButton {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    readonly property bool favorited: {
-                                        const ids = Core.settings.bookmarkedEntryIds
-                                        return ids.indexOf(page.gameId) >= 0
-                                    }
-                                    checked: favorited
-                                    mdState.type: MD.Enum.IBtOutlined
-                                    icon.name: MD.Token.icon.favorite
-                                    Accessible.name: favorited
-                                                     ? qsTr("Remove from favorites")
-                                                     : qsTr("Add to favorites")
-                                    onClicked: Core.toggleBookmark(page.gameId)
-                                }
-
-                                MD.IconButton {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    visible: hasLaunchLog
-                                    mdState.type: MD.Enum.IBtOutlined
-                                    icon.name: MD.Token.icon.receipt_long
-                                    Accessible.name: qsTr("Launch log")
-                                    onClicked: openLaunchLog()
-                                }
-
-                                MD.Button {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    visible: page.playable
-                                             || page.downloadComplete
-                                             || page.inLibrary
-                                    text: qsTr("Delete")
-                                    icon.name: MD.Token.icon.delete
-                                    mdState.type: MD.Enum.BtOutlined
-                                    onClicked: removeDialog.open()
-                                }
-
-                                MD.IconButton {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    visible: page.playable
-                                             || page.downloadComplete
-                                             || page.inLibrary
-                                    mdState.type: MD.Enum.IBtOutlined
-                                    icon.name: MD.Token.icon.settings
-                                    onClicked: gameSettingsSheet.openForGame(page.gameId)
-                                }
-
-                                MD.Button {
-                                    Layout.alignment: Qt.AlignVCenter
-                                    visible: page.installed && !!(page.info.hasUpdate) && !page.downloadJob.inProgress
-                                    text: qsTr("Update")
-                                    icon.name: MD.Token.icon.update
-                                    mdState.type: MD.Enum.BtFilledTonal
-                                    onClicked: {
-                                        if (Core.catalogUpdateHasDlcRisk(page.gameId))
-                                            dlcUpdateRiskDialog.openForGame(page.gameId)
-                                        else
-                                            Core.updateCatalogEntry(page.gameId)
-                                    }
-                                }
-                            }
-
-                            MD.Button {
-                                visible: page.installed
-                                text: qsTr("Open game folder")
-                                icon.name: MD.Token.icon.folder_open
-                                mdState.type: MD.Enum.BtOutlined
-                                onClicked: Core.openGameFolder(page.gameId)
-                            }
-
-                            MD.Label {
-                                Layout.fillWidth: true
-                                visible: downloadAction.visible && downloadAction.transferDetailVisible
-                                text: downloadAction.transferLine
-                                color: MD.Token.color.primary
-                                typescale: MD.Token.typescale.label_large
-                                elide: Text.ElideRight
-                                maximumLineCount: 1
-                            }
+                        MD.Label {
+                            Layout.fillWidth: true
+                            visible: page.readyToInstall && !page.installFailed
+                            text: (page.info.sourceId ?? "") === "steamidra"
+                                  ? qsTr("Ready to download from Steam CDN. Online Fix can be included when needed.")
+                                  : Messages.gameInstallTorrentHint
+                            wrapMode: Text.WordWrap
+                            color: MD.Token.color.on_surface_variant
+                            typescale: MD.Token.typescale.body_medium
+                        }
+                        // Only worth saying when the game actually has DRM.
+                        MD.Label {
+                            Layout.fillWidth: true
+                            visible: !page.playable && !!(page.info.hasDrm)
+                            text: Messages.gamePlayabilityNote
+                            wrapMode: Text.WordWrap
+                            color: MD.Token.color.on_surface_variant
+                            opacity: 0.8
+                            typescale: MD.Token.typescale.body_small
                         }
                     }
                 }
 
+                // ================= Install =================
+                InstallStudio {
+                    id: installStudio
+                    Layout.fillWidth: true
+                    Layout.topMargin: open ? MD.Token.spacing.medium : 0
+                    page: detailsRoot.page
+                    accent: detailsRoot.accent
+                    accentContainer: detailsRoot.accentContainer
+                    accentInk: detailsRoot.accentInk
+                    // While the card grows, keep its top just under the page header.
+                    onImplicitHeightChanged: {
+                        if (!open || reveal >= 1)
+                            return
+                        const wanted = installStudio.mapToItem(flick.contentItem, 0, 0).y - 96
+                        const limit = flick.contentHeight - flick.height
+                        if (flick.contentY < wanted && !scrollAnim.running)
+                            flick.contentY = Math.max(0, Math.min(wanted, limit))
+                    }
                 }
 
-            GameAchievementsPanel {
-                Layout.fillWidth: true
-                Layout.leftMargin: MD.Token.spacing.large
-                Layout.rightMargin: MD.Token.spacing.large
-                visible: page.inLibrary && ((page.info.steamAppId ?? "").length > 0)
-                gameId: page.gameId
-                active: visible && page.visible && page.enabled
-            }
-
-            MD.ElevationRectangle {
-                Layout.fillWidth: true
-                Layout.leftMargin: MD.Token.spacing.large
-                Layout.rightMargin: MD.Token.spacing.large
-                Layout.preferredHeight: mediaSection.showSection
-                                        ? mediaSection.implicitHeight + 2 * MD.Token.spacing.large
-                                        : 0
-                visible: mediaSection.showSection
-                radius: MD.Token.shape.corner.extra_large
-                color: MD.Token.color.surface_container
-                elevation: MD.Token.elevation.level0
-
-                GameDetailsMediaSection {
-                    id: mediaSection
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: MD.Token.spacing.large
-                    screenshotUrls: page.info.screenshotUrls ?? []
-                    trailerUrl: page.info.trailerUrl ?? ""
-                    trailerThumbnailUrl: page.info.trailerThumbnailUrl ?? ""
-                    loading: page.mediaLoading
+                // ================= Achievements =================
+                GameAchievementsPanel {
+                    Layout.fillWidth: true
+                    Layout.topMargin: MD.Token.spacing.medium
+                    visible: page.inLibrary && ((page.info.steamAppId ?? "").length > 0)
+                    gameId: page.gameId
+                    active: visible && page.visible && page.enabled
                 }
-            }
 
-            MD.ElevationRectangle {
-                Layout.fillWidth: true
-                Layout.leftMargin: MD.Token.spacing.large
-                Layout.rightMargin: MD.Token.spacing.large
-                Layout.preferredHeight: aboutCol.implicitHeight + 2 * MD.Token.spacing.large
-                radius: MD.Token.shape.corner.extra_large
-                color: MD.Token.color.surface_container
-                elevation: MD.Token.elevation.level0
+                // ================= Description =================
+                DetailsSection {
+                    id: aboutCard
+                    Layout.fillWidth: true
+                    Layout.topMargin: MD.Token.spacing.medium
+                    title: qsTr("Description")
+                    iconName: MD.Token.icon.description
+                    iconColor: detailsRoot.accent
+                    transformOrigin: Item.Top
 
-                ColumnLayout {
-                    id: aboutCol
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: MD.Token.spacing.large
-                    spacing: MD.Token.spacing.medium
+                    property bool expanded: false
+                    // Four lines until the reader asks for more; the height eases between the two.
+                    readonly property real collapsedHeight: aboutText.lineCount > 0
+                        ? aboutText.implicitHeight / aboutText.lineCount * 4 : 96
+                    readonly property bool canExpand: aboutText.lineCount > 4
+                    property real shownHeight: expanded || !canExpand ? aboutText.implicitHeight
+                                                                      : collapsedHeight
 
-                    RowLayout {
-                        spacing: MD.Token.spacing.small
+                    Behavior on shownHeight {
+                        NumberAnimation { duration: AppMotion.medium; easing: AppMotion.emphasizedDecelerate }
+                    }
 
-                        ToneBadge {
-                            implicitWidth: 32
-                            implicitHeight: 32
-                            iconSize: 18
-                            iconName: MD.Token.icon.menu_book
-                            tone: 1
-                        }
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: aboutCard.shownHeight
+                        clip: true
 
                         MD.Label {
-                            text: qsTr("Description")
-                            typescale: MD.Token.typescale.title_medium
+                            id: aboutText
+                            width: parent.width
+                            text: page.info.description || qsTr("Description is not available yet.")
+                            typescale: MD.Token.typescale.body_large
+                            wrapMode: Text.WordWrap
+                            color: MD.Token.color.on_surface_variant
                         }
                     }
 
-                    MD.Label {
-                        Layout.fillWidth: true
-                        text: page.info.description || qsTr("Description is not available yet.")
-                        typescale: MD.Token.typescale.body_large
-                        wrapMode: Text.WordWrap
-                        color: MD.Token.color.on_surface_variant
+                    MD.Button {
+                        visible: aboutCard.canExpand
+                        text: aboutCard.expanded ? qsTr("Show less") : qsTr("Show more")
+                        icon.name: aboutCard.expanded ? MD.Token.icon.expand_less : MD.Token.icon.expand_more
+                        mdState.type: MD.Enum.BtText
+                        onClicked: aboutCard.expanded = !aboutCard.expanded
                     }
+
+                    RevealIn { target: aboutCard; flickable: flick; delay: 60 }
+                }
+
+                // ================= Media =================
+                DetailsSection {
+                    id: mediaCard
+                    Layout.fillWidth: true
+                    visible: mediaSection.showSection
+                    transformOrigin: Item.Top
+
+                    GameDetailsMediaSection {
+                        id: mediaSection
+                        Layout.fillWidth: true
+                        screenshotUrls: page.info.screenshotUrls ?? []
+                        trailerUrl: page.info.trailerUrl ?? ""
+                        trailerThumbnailUrl: page.info.trailerThumbnailUrl ?? ""
+                        loading: page.mediaLoading
+                    }
+
+                    RevealIn { target: mediaCard; flickable: flick; delay: 60 }
+                }
+
+                // ================= Links =================
+                DetailsSection {
+                    id: linksCard
+                    Layout.fillWidth: true
+                    title: qsTr("Links")
+                    iconName: MD.Token.icon.link
+                    iconColor: detailsRoot.accent
+                    transformOrigin: Item.Top
+                    visible: (page.gameId || "").length > 0
+
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: MD.Token.spacing.small
+
+                        MD.Button {
+                            visible: (page.gameId || "").length > 0
+                            text: qsTr("Share")
+                            icon.name: MD.Token.icon.share
+                            mdState.type: MD.Enum.BtFilledTonal
+                            onClicked: shareDialog.open()
+                        }
+
+                        MD.Button {
+                            visible: (page.info.sourcePageUrl ?? "").length > 0
+                                     || (page.info.sourceWebsiteUrl ?? "").length > 0
+                            text: (page.info.sourcePageUrl ?? "").length > 0
+                                  ? qsTr("Source page")
+                                  : qsTr("Source website")
+                            icon.name: MD.Token.icon.open_in_new
+                            mdState.type: MD.Enum.BtOutlined
+                            onClicked: Core.openExternalUrl(
+                                (page.info.sourcePageUrl ?? "").length > 0
+                                    ? page.info.sourcePageUrl
+                                    : page.info.sourceWebsiteUrl)
+                        }
+
+                        MD.Button {
+                            visible: (page.info.steamStoreUrl ?? "").length > 0
+                            text: qsTr("Steam")
+                            icon.name: MD.Token.icon.open_in_new
+                            mdState.type: MD.Enum.BtOutlined
+                            onClicked: Core.openExternalUrl(page.info.steamStoreUrl)
+                        }
+
+                        MD.Button {
+                            visible: (Core.sources.repositoryUrlFor(page.info.sourceId ?? "") || "").length > 0
+                            text: qsTr("Plugin source")
+                            icon.name: MD.Token.icon.open_in_new
+                            mdState.type: MD.Enum.BtOutlined
+                            onClicked: Core.openExternalUrl(
+                                Core.sources.repositoryUrlFor(page.info.sourceId ?? ""))
+                        }
+
+                        MD.Button {
+                            visible: (Core.sources.catalogUrlFor(page.info.sourceId ?? "") || "").length > 0
+                            text: qsTr("Catalog URL")
+                            icon.name: MD.Token.icon.open_in_new
+                            mdState.type: MD.Enum.BtOutlined
+                            onClicked: Core.openExternalUrl(
+                                Core.sources.catalogUrlFor(page.info.sourceId ?? ""))
+                        }
+                    }
+
+                    RevealIn { target: linksCard; flickable: flick; delay: 60 }
                 }
             }
         }
     }
+
+    // Floats over the hero instead of a dedicated "Game details" title bar.
+    MD.IconButton {
+        id: backButton
+        x: MD.Token.spacing.large
+        y: MD.Token.spacing.large
+        z: 10
+        mdState.type: MD.Enum.IBtFilledTonal
+        icon.name: MD.Token.icon.arrow_back
+        Accessible.name: qsTr("Back")
+        onClicked: page.backRequested()
     }
 
     GameSettingsSheet {
@@ -702,15 +815,15 @@ Item {
             const next = selectedFriendIds.slice()
             const i = next.indexOf(friendId)
             if (i >= 0)
-                next.splice(i, 1)
+            next.splice(i, 1)
             else
-                next.push(friendId)
+            next.push(friendId)
             selectedFriendIds = next
         }
 
         function sendSuggestions() {
             if (selectedFriendIds.length === 0)
-                return
+            return
             Core.suggestGameToFriends(selectedFriendIds, page.gameId)
             close()
         }

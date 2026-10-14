@@ -9,8 +9,14 @@ Item {
     // ── Empty library ────────────────────────────────────────────────────────
     Item {
         anchors.fill: parent
-        visible: page.libraryEmpty
-
+        opacity: page.libraryEmpty ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity {
+            NumberAnimation {
+                duration: AppMotion.short
+                easing: AppMotion.standard
+            }
+        }
         ColumnLayout {
             anchors.left: parent.left
             anchors.right: parent.right
@@ -79,7 +85,7 @@ Item {
                     MD.Label {
                         Layout.fillWidth: true
                         Layout.maximumWidth: 520
-                        text: Messages.libraryEmptySubtitle
+                        text: Core.sources.enabledCount > 0 ? Messages.libraryEmptySubtitleReady : Messages.libraryEmptySubtitle
                         color: MD.Token.color.on_surface_variant
                         typescale: MD.Token.typescale.body_medium
                         wrapMode: Text.WordWrap
@@ -92,7 +98,7 @@ Item {
                         MD.Button {
                             text: Core.sources.enabledCount > 0
                                   ? qsTr("Open catalog")
-                                  : qsTr("Install plugin")
+                                  : qsTr("Add game source")
                             icon.name: Core.sources.enabledCount > 0
                                        ? MD.Token.icon.storefront
                                        : MD.Token.icon.add
@@ -115,7 +121,7 @@ Item {
 
                         MD.Button {
                             visible: Core.sources.enabledCount === 0
-                            text: qsTr("Catalogs and plugins")
+                            text: qsTr("How it works")
                             mdState.type: MD.Enum.BtText
                             onClicked: sourceHelpDialog.open()
                         }
@@ -132,8 +138,8 @@ Item {
                         {
                             icon: MD.Token.icon.extension,
                             step: qsTr("Step 1"),
-                            title: qsTr("Plugin"),
-                            body: Messages.libraryStep1Body
+                            title: qsTr("Source"),
+                            body: Core.sources.enabledCount > 0 ? Messages.libraryStep1DoneBody : Messages.libraryStep1Body
                         },
                         {
                             icon: MD.Token.icon.storefront,

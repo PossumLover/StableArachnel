@@ -7,13 +7,14 @@ import Qcm.Material as MD
 Item {
     id: root
 
-    readonly property int pageMargin: MD.Token.spacing.medium
+    readonly property int pageMargin: Appearance.pageMargin
     readonly property int gridSpacing: MD.Token.spacing.medium
     readonly property int minCardWidth: 160
     readonly property int metaHeight: 48
     readonly property bool favoritesEmpty: favoritesModel.count === 0
 
     signal openGame(string gameId)
+    signal openCatalog()
 
     ListModel {
         id: favoritesModel
@@ -21,12 +22,53 @@ Item {
 
     property bool refreshing: false
 
+    // Reconcile the model in place instead of clear() + append(): cards that stay keep their
+    // loaded cover, so nothing flashes when an unrelated signal triggers a refresh.
+    function applyRows(next) {
+        for (let i = 0; i < next.length; ++i) {
+            const row = next[i]
+            let at = -1
+            for (let j = i; j < favoritesModel.count; ++j) {
+                if (favoritesModel.get(j).gameId === row.gameId) {
+                    at = j
+                    break
+                }
+            }
+            if (at < 0) {
+                favoritesModel.insert(i, row)
+                continue
+            }
+            if (at !== i)
+                favoritesModel.move(at, i, 1)
+            const cur = favoritesModel.get(i)
+            if (cur.title !== row.title)
+                favoritesModel.setProperty(i, "title", row.title)
+            if (cur.coverUrl !== row.coverUrl)
+                favoritesModel.setProperty(i, "coverUrl", row.coverUrl)
+            if (cur.sourceName !== row.sourceName)
+                favoritesModel.setProperty(i, "sourceName", row.sourceName)
+        }
+        if (favoritesModel.count > next.length)
+            favoritesModel.remove(next.length, favoritesModel.count - next.length)
+    }
+
+    // Many signals (plugins, catalog status, library, metadata) land in bursts: coalesce.
+    function scheduleRefresh() {
+        refreshTimer.restart()
+    }
+
+    Timer {
+        id: refreshTimer
+        interval: 120
+        onTriggered: root.refreshFavorites()
+    }
+
     function refreshFavorites() {
         if (root.refreshing)
             return
         root.refreshing = true
         const rows = Core.settings.bookmarks || []
-        favoritesModel.clear()
+        const next = []
         const snapshots = []
         for (let i = 0; i < rows.length; ++i) {
             const row = rows[i] || {}
@@ -42,12 +84,12 @@ Item {
             const coverUrl = liveCover.length ? liveCover : String(row.coverUrl || "")
             const sourceName = liveSource.length ? liveSource : String(row.sourceName || "")
 
-            favoritesModel.append({
-                                      gameId: id,
-                                      title: title,
-                                      coverUrl: coverUrl,
-                                      sourceName: sourceName
-                                  })
+            next.push({
+                          gameId: id,
+                          title: title,
+                          coverUrl: coverUrl,
+                          sourceName: sourceName
+                      })
 
             if (liveTitle.length || liveCover.startsWith("file:") || liveSource.length)
                 snapshots.push({
@@ -57,6 +99,7 @@ Item {
                                    sourceName: liveSource
                                })
         }
+        root.applyRows(next)
         root.refreshing = false
         for (let s = 0; s < snapshots.length; ++s) {
             const snap = snapshots[s]
@@ -66,17 +109,17 @@ Item {
 
     Connections {
         target: Core.settings
-        function onBookmarkedEntryIdsChanged() { root.refreshFavorites() }
+        function onBookmarkedEntryIdsChanged() { root.scheduleRefresh() }
     }
 
     Connections {
         target: Core
-        function onPluginsChanged() { root.refreshFavorites() }
-        function onCatalogStatusChanged() { root.refreshFavorites() }
+        function onPluginsChanged() { root.scheduleRefresh() }
+        function onCatalogStatusChanged() { root.scheduleRefresh() }
         function onEntryMetadataChanged(entryId) {
             for (let i = 0; i < favoritesModel.count; ++i) {
                 if (favoritesModel.get(i).gameId === entryId) {
-                    root.refreshFavorites()
+                    root.scheduleRefresh()
                     return
                 }
             }
@@ -85,50 +128,31 @@ Item {
 
     Connections {
         target: Core.library
-        function onLibraryChanged() { root.refreshFavorites() }
+        function onLibraryChanged() { root.scheduleRefresh() }
     }
 
     Component.onCompleted: refreshFavorites()
 
-    Item {
-        anchors.fill: parent
-        visible: root.favoritesEmpty
-
-        ColumnLayout {
-            anchors.centerIn: parent
-            spacing: MD.Token.spacing.medium
-            width: Math.min(parent.width - pageMargin * 2, 420)
-
-            MeadowMark {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: 220
-                Layout.preferredHeight: 187
-                width: 220
-                height: 187
-                opacity: 1.0
-            }
-
-            MD.Label {
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                text: qsTr("No favorites")
-                typescale: MD.Token.typescale.title_large
-            }
-
-            MD.Label {
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                text: Messages.favoritesEmptyHint
-                color: MD.Token.color.on_surface_variant
-                typescale: MD.Token.typescale.body_medium
-                wrapMode: Text.WordWrap
-            }
-        }
+    EmptyState {
+        shown: root.favoritesEmpty
+        title: qsTr("No favorites")
+        iconName: MD.Token.icon.favorite
+        shapeKind: "clover4"
+        message: Messages.favoritesEmptyHint
+        actionText: qsTr("Open catalog")
+        onActionTriggered: root.openCatalog()
     }
 
     Flickable {
         anchors.fill: parent
-        visible: !root.favoritesEmpty
+        opacity: !root.favoritesEmpty ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity {
+            NumberAnimation {
+                duration: AppMotion.short
+                easing: AppMotion.standard
+            }
+        }
         contentWidth: width
         contentHeight: contentCol.implicitHeight + pageMargin
         clip: true
@@ -139,23 +163,9 @@ Item {
             width: parent.width
             spacing: MD.Token.spacing.medium
 
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.leftMargin: pageMargin
-                Layout.rightMargin: pageMargin
-                Layout.topMargin: pageMargin
-
-                MD.Label {
-                    Layout.fillWidth: true
-                    text: qsTr("Favorites")
-                    typescale: MD.Token.typescale.title_large
-                }
-
-                MD.Label {
-                    text: qsTr("%1 games").arg(favoritesModel.count)
-                    color: MD.Token.color.on_surface_variant
-                    typescale: MD.Token.typescale.label_large
-                }
+            PageHeader {
+                title: qsTr("Favorites")
+                subtitle: qsTr("%n game(s)", "", favoritesModel.count)
             }
 
             Item {
@@ -187,6 +197,8 @@ Item {
                     cellWidth: gridHost.cellW
                     cellHeight: gridHost.cellH
                     cacheBuffer: 0
+                    populate: StaggerEnterTransition {}
+                    add: StaggerEnterTransition { staggered: false }
 
                     delegate: FavoriteGameCard {
                         width: gridHost.cardWidth

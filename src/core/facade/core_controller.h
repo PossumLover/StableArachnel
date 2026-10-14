@@ -43,6 +43,7 @@ class CatalogController;
 class CatalogCoverCoordinator;
 class CatalogFeedLoader;
 class CoverImageCache;
+class TrailerCache;
 class FriendsModel;
 class GameMetadataService;
 class HttpDownloadSession;
@@ -76,6 +77,7 @@ class CoreController : public QObject
     Q_PROPERTY(QString userNotice READ userNotice NOTIFY userNoticeChanged)
     Q_PROPERTY(int userNoticeSerial READ userNoticeSerial NOTIFY userNoticeChanged)
     Q_PROPERTY(bool catalogLoading READ catalogLoading NOTIFY catalogLoadingChanged)
+    Q_PROPERTY(bool catalogPartial READ catalogPartial NOTIFY catalogPartialChanged)
     Q_PROPERTY(QString catalogStatus READ catalogStatus NOTIFY catalogStatusChanged)
     Q_PROPERTY(QString activeCatalogSourceId READ activeCatalogSourceId NOTIFY activeCatalogSourceIdChanged)
     Q_PROPERTY(QStringList activeCatalogSourceIds READ activeCatalogSourceIds NOTIFY activeCatalogSourceIdsChanged)
@@ -84,6 +86,7 @@ class CoreController : public QObject
     Q_PROPERTY(QString pluginsBundleDir READ pluginsBundleDir CONSTANT)
     Q_PROPERTY(QString lastPluginError READ lastPluginError NOTIFY lastPluginErrorChanged)
     Q_PROPERTY(bool pluginInstallBusy READ pluginInstallBusy NOTIFY pluginInstallBusyChanged)
+    Q_PROPERTY(bool pluginRemoveBusy READ pluginRemoveBusy NOTIFY pluginRemoveBusyChanged)
     Q_PROPERTY(bool pluginAutoUpdating READ pluginAutoUpdating NOTIFY pluginAutoUpdatingChanged)
     Q_PROPERTY(bool gameRunning READ gameRunning NOTIFY runningGameChanged)
     Q_PROPERTY(QString runningGameId READ runningGameId NOTIFY runningGameChanged)
@@ -137,6 +140,12 @@ public:
     QString userNotice() const { return m_userNotice; }
     int userNoticeSerial() const { return m_userNoticeSerial; }
     bool catalogLoading() const;
+    bool catalogPartial() const;
+    /**
+     * Starts loading the active catalogs now instead of on the first event-loop turn. main() calls
+     * it before the QML engine is created, so the download / snapshot read runs while the UI loads.
+     */
+    void startCatalogLoadEarly();
     QString catalogStatus() const;
     QString activeCatalogSourceId() const;
     QStringList activeCatalogSourceIds() const;
@@ -145,6 +154,7 @@ public:
     QString pluginsBundleDir() const;
     QString lastPluginError() const { return m_lastPluginError; }
     bool pluginInstallBusy() const { return m_pluginInstallBusy; }
+    bool pluginRemoveBusy() const { return m_pluginRemoveBusy; }
     bool pluginAutoUpdating() const { return m_autoUpdatingOfficialPlugins; }
     bool gameRunning() const;
     QString runningGameId() const;
@@ -189,6 +199,7 @@ signals:
     void deepLinkRequested(const QString& gameId);
     void activationRequested();
     void catalogLoadingChanged();
+    void catalogPartialChanged();
     void catalogStatusChanged();
     void activeCatalogSourceIdChanged();
     void activeCatalogSourceIdsChanged();
@@ -199,6 +210,7 @@ signals:
     void pluginsChanged();
     void lastPluginErrorChanged();
     void pluginInstallBusyChanged();
+    void pluginRemoveBusyChanged();
     void pluginAutoUpdatingChanged();
     void runningGameChanged();
     void launchSessionEnded(const QString& gameId, qint64 elapsedMs, bool suppressQuickExitLog);
@@ -212,6 +224,12 @@ signals:
     void availableProtonsChanged();
     void entryMetadataChanged(const QString&);
     void catalogHeroCoverChanged(const QString& entryId);
+    /** A local card cover was applied for this entry (the details page refreshes its poster). */
+    void catalogCoverChanged(const QString& entryId);
+    /** A trailer finished downloading; localUrl is what the player opens. */
+    void trailerReady(const QString& remoteUrl, const QString& localUrl);
+    void trailerProgress(const QString& remoteUrl, double fraction);
+    void trailerFailed(const QString& remoteUrl);
     void catalogFiltersChanged();
     void availableCatalogGenresChanged();
     /** Fired when ensureCatalogAddons finished (or was already complete). */

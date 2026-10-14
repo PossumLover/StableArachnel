@@ -12,7 +12,12 @@ ColumnLayout {
     spacing: 0
 
     readonly property int contentMargin: MD.Token.spacing.large
-    readonly property int pageHeight: 560
+    // The side sheet hands down its height; the stack takes what the header and footer leave.
+    property int pageHeight: 560
+    // v2: shown inside the Settings screen (two panes). No close button or footer; the section
+    // list on the left picks the root page.
+    property bool embedded: false
+    property string currentSection: ""
 
     property string pendingSection: ""
     property bool pendingCreateSource: false
@@ -78,7 +83,45 @@ ColumnLayout {
     }
 
     function rebuildHub() {
+        // Called on creation, on every open and on every close: don't rebuild a hub that
+        // is already the only page on the stack.
+        if (root.embedded)
+            return
+        if (stack.depth === 1 && stack.currentItem && stack.currentItem.isSettingsHub)
+            return
         stack.navigateReset(hubComponent)
+    }
+
+    function componentFor(sectionId) {
+        switch (sectionId) {
+        case "plugins": return pluginsComponent
+        case "sources": return sourcesComponent
+        case "friends": return friendsComponent
+        case "debrid": return debridComponent
+        case "storage": return storageComponent
+        case "updates": return updatesComponent
+        case "launch": return root.onLinux ? launchComponent : null
+        case "appearance": return appearanceComponent
+        case "about": return aboutComponent
+        }
+        return null
+    }
+
+    // Embedded mode: make a section the root of the stack.
+    function showSection(sectionId, createSource) {
+        // The Hydra Library lives under Hydra catalogs.
+        const libraryRequested = sectionId === "hydra-library"
+        if (libraryRequested)
+            sectionId = "sources"
+        const c = componentFor(sectionId)
+        if (!c)
+            return
+        root.currentSection = sectionId
+        stack.navigateReset(c)
+        if (sectionId === "sources" && createSource)
+            root.openSourceCreate()
+        else if (libraryRequested)
+            root.openHydraLibrary()
     }
 
     function openSection(sectionId) {
@@ -147,6 +190,7 @@ ColumnLayout {
         id: hubComponent
         SettingsHubPage {
             property string pageTitle: qsTr("Settings")
+            readonly property bool isSettingsHub: true
             contentMargin: root.contentMargin
             onOpenSection: function (sectionId) { root.openSection(sectionId) }
         }
@@ -264,28 +308,33 @@ ColumnLayout {
         spacing: MD.Token.spacing.extra_small
 
         MD.IconButton {
+            visible: !root.embedded || stack.depth > 1
             mdState.type: MD.Enum.IBtStandard
             icon.name: stack.depth > 1 ? MD.Token.icon.arrow_back : MD.Token.icon.close
             onClicked: root.goBack()
         }
 
-        MD.Label {
+        DisplayTitle {
             Layout.fillWidth: true
+            Layout.leftMargin: root.embedded && stack.depth <= 1 ? root.contentMargin - MD.Token.spacing.small : 0
+            Layout.topMargin: root.embedded ? MD.Token.spacing.medium : 4
+            Layout.bottomMargin: root.embedded ? MD.Token.spacing.small : 4
+            size: root.embedded ? 34 : 30
             text: root.pageTitle
-            typescale: MD.Token.typescale.headline_small
-            elide: Text.ElideRight
         }
     }
 
     PageNavigator {
         id: stack
         Layout.fillWidth: true
-        Layout.preferredHeight: root.pageHeight
+        Layout.preferredHeight: root.embedded ? -1 : root.pageHeight
+        Layout.fillHeight: root.embedded
         clip: true
         Component.onCompleted: rebuildHub()
     }
 
     MD.Divider {
+        visible: !root.embedded
         Layout.fillWidth: true
         Layout.leftMargin: contentMargin
         Layout.rightMargin: contentMargin
@@ -297,6 +346,7 @@ ColumnLayout {
         Layout.rightMargin: contentMargin
         Layout.bottomMargin: MD.Token.spacing.large
         Layout.topMargin: MD.Token.spacing.small
+        visible: !root.embedded
         // Keep footer height stable — toggling visible on «Назад» resizes the
         // BottomSheet (childrenRect) and makes page fades look jumpy.
         Layout.preferredHeight: 40
@@ -310,8 +360,8 @@ ColumnLayout {
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: MD.Token.duration.short4
-                    easing: MD.Token.easing.emphasized_decelerate
+                    duration: AppMotion.short
+                    easing: AppMotion.emphasizedDecelerate
                 }
             }
         }

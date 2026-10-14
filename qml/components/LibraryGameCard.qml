@@ -13,10 +13,18 @@ Item {
     required property string sourceName
     required property string version
     required property string installKindLabel
+    // Model role: updates through dataChanged, no Core call per card.
+    required property string installPath
     required property bool hasUpdate
     required property double playtimeMs
     property int componentCount: 0
     property int installedComponentCount: 0
+
+    // "Steam · v123" without a dangling "v" when the version is unknown.
+    readonly property string metaText: {
+        const src = root.sourceName.length ? root.sourceName.charAt(0).toUpperCase() + root.sourceName.slice(1) : ""
+        return root.version.length ? src + " · v" + root.version : src
+    }
 
     readonly property bool hasAddons: componentCount > 0
     readonly property string addonLabel: {
@@ -29,16 +37,31 @@ Item {
         return qsTr("%n add-ons", "", componentCount)
     }
 
-    property int jobRevision: 0
+    // Re-assigned only when this game's own job changed, so a progress tick of another
+    // download doesn't re-evaluate every binding below on every card.
+    property var activeJob: ({})
+    property string jobKey: ""
 
-    readonly property var activeJob: {
-        root.jobRevision
-        return Core.jobs.jobForEntry(root.gameId)
+    function refreshJob() {
+        const job = Core.jobs.jobForEntry(root.gameId)
+        const key = (job.jobId ?? "") + "|" + (job.status ?? "") + "|" + (job.progress ?? "")
+                    + "|" + (job.detail ?? "") + "|" + (job.inProgress ? 1 : 0)
+        if (key === root.jobKey)
+            return
+        root.jobKey = key
+        root.activeJob = job
     }
-    readonly property bool hasInstallFolder: {
-        const lib = Core.library.gameInfo(root.gameId)
-        return ((lib.installPath ?? "")).length > 0
+
+    Component.onCompleted: {
+        refreshJob()
+        // Games found on disk have no cover yet: ask the catalog for one (it is saved into the
+        // library once it lands).
+        if (!root.coverUrl.startsWith("file:"))
+            Core.requestCatalogCover(root.gameId)
     }
+    onGameIdChanged: refreshJob()
+
+    readonly property bool hasInstallFolder: root.installPath.length > 0
     readonly property bool showJobStatus: !root.hasInstallFolder
         && !Core.isEntryPlayable(root.gameId)
         && !!(activeJob.jobId)
@@ -54,7 +77,7 @@ Item {
     }
     readonly property string statusLine: {
         if (!showJobStatus)
-            return root.sourceName + " · v" + root.version
+            return root.metaText
         if (activeJob.status === "installing") {
             if (activeJob.detail && activeJob.detail.length)
                 return activeJob.detail
@@ -82,13 +105,8 @@ Item {
     signal requestUpdate(string gameId)
 
     Connections {
-        target: Core
-        function onRunningGameChanged() { /* refresh isRunning */ }
-    }
-
-    Connections {
         target: Core.jobs
-        function onJobsChanged() { root.jobRevision++ }
+        function onJobsChanged() { root.refreshJob() }
     }
 
     ColumnLayout {
@@ -189,7 +207,7 @@ Item {
         MD.Label {
             Layout.fillWidth: true
             visible: !root.showJobStatus && !root.isRunning
-            text: root.sourceName + " · v" + root.version
+            text: root.metaText
             color: MD.Token.color.on_surface_variant
             typescale: MD.Token.typescale.label_medium
             elide: Text.ElideRight

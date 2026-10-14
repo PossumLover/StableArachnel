@@ -24,11 +24,15 @@ QtObject {
 
     readonly property string settingsPluginsInstallHint: qsTr("Use Install plugin below and pick a .arach file.")
 
-    readonly property string settingsPluginsDesc: qsTr("Sprout has no games until you install a plugin. Each plugin is a source: it fills Catalog and handles download, install, and Play.")
+    readonly property string settingsPluginsDesc: qsTr("A plugin is a game source: it fills Catalog and handles download, install, and Play. Install at least one to see games.")
 
-    readonly property string libraryEmptySubtitle: qsTr("Your library is empty. Install a plugin, pick a game in Catalog, and it will appear here.")
+    readonly property string libraryEmptySubtitle: qsTr("Your library is empty. Add a game source, pick a game in Catalog, and it will appear here.")
 
-    readonly property string libraryStep1Body: qsTr("Install a plugin in Settings → Plugins.")
+    readonly property string libraryEmptySubtitleReady: qsTr("Your library is empty. Open Catalog, pick a game and press Download - it will appear here when it is ready.")
+
+    readonly property string libraryStep1DoneBody: qsTr("Source added. See Settings → Plugins.")
+
+    readonly property string libraryStep1Body: qsTr("Add a game source in Settings → Plugins.")
 
     readonly property string libraryStep2Body: qsTr("Pick a game in Catalog and start the download.")
 
@@ -40,7 +44,7 @@ QtObject {
 
     readonly property string catalogPipelineDesc: qsTr("Browse games from your catalogs and sources.")
 
-    readonly property string catalogConnectHint: qsTr("Install a plugin in Settings → Plugins, or add a catalog.")
+    readonly property string catalogConnectHint: qsTr("Add a game source in Settings → Plugins to see games here.")
 
     readonly property string catalogEnableChipsHint: qsTr("Turn on one or more sources above - or leave them all off.")
 
@@ -51,6 +55,14 @@ QtObject {
     readonly property string downloadsEmptyHint: qsTr("Start installing from the catalog - progress will appear here.")
 
     readonly property string favoritesEmptyHint: qsTr("Save games from the catalog - download them here later.")
+
+    readonly property string onboardingNextCatalog: qsTr("Open Catalog and pick a game.")
+
+    readonly property string onboardingNextDownload: qsTr("Press Download. Progress shows in the Downloads tab.")
+
+    readonly property string onboardingNextPlay: qsTr("When it is done, press Play in your Library.")
+
+    readonly property string gamePlayabilityNote: qsTr("You can download any game here. Ones with DRM or anti-cheat may not launch.")
 
     readonly property string gameNotFoundHint: qsTr("It may be missing from your sources, or a plugin is outdated. Check Sources in Settings.")
 

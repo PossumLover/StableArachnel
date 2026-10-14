@@ -302,11 +302,24 @@ void CatalogModel::replaceVisibleIndices(QVector<int> indices, bool alreadySorte
 
     const int oldCount = m_indices.size();
     const int newCount = indices.size();
-    // GridView/ListView + required-property delegates crash in Qt6QmlMeta on a
-    // 100k-row insert/remove. Unbind first (see CatalogScrollViews).
+    // GridView/ListView + required-property delegates crash in Qt6QmlMeta on a 100k-row
+    // insert/remove, so large swaps are a model reset: the view throws its delegates away and
+    // rebuilds only the visible ones, starting from the top. (This used to unbind the view's
+    // model around the swap instead; the view then reused pooled delegates from the old model
+    // without refreshing their roles, so after a search the cards still showed the old rows.)
     const bool bulky = std::max(oldCount, newCount) >= 4096;
-    if (bulky)
-        beginBulkUpdate();
+    if (bulky) {
+        beginResetModel();
+        m_indices = std::move(indices);
+        if (m_indices.isEmpty())
+            m_idToRow.clear();
+        else
+            rebuildIdMap();
+        endResetModel();
+        emit countChanged();
+        invalidateScrubStops();
+        return;
+    }
 
     if (newCount == 0) {
         if (oldCount > 0) {
@@ -317,8 +330,6 @@ void CatalogModel::replaceVisibleIndices(QVector<int> indices, bool alreadySorte
             emit countChanged();
             invalidateScrubStops();
         }
-        if (bulky)
-            endBulkUpdate();
         return;
     }
 
@@ -329,8 +340,6 @@ void CatalogModel::replaceVisibleIndices(QVector<int> indices, bool alreadySorte
         endInsertRows();
         emit countChanged();
         invalidateScrubStops();
-        if (bulky)
-            endBulkUpdate();
         return;
     }
 
@@ -346,8 +355,6 @@ void CatalogModel::replaceVisibleIndices(QVector<int> indices, bool alreadySorte
     endInsertRows();
     emit countChanged();
     invalidateScrubStops();
-    if (bulky)
-        endBulkUpdate();
 }
 
 bool CatalogModel::notifyEntryChanged(const QString& id, const QList<int>& roles)
@@ -693,8 +700,16 @@ void CatalogModel::clear()
         return;
     }
     const bool bulky = m_indices.size() >= 4096;
-    if (bulky)
+    if (bulky) {
         beginBulkUpdate();
+        m_indices.clear();
+        m_idToRow.clear();
+        m_source = nullptr;
+        emit countChanged();
+        invalidateScrubStops();
+        endBulkUpdate();
+        return;
+    }
     beginRemoveRows({}, 0, m_indices.size() - 1);
     m_indices.clear();
     m_idToRow.clear();
@@ -702,8 +717,6 @@ void CatalogModel::clear()
     endRemoveRows();
     emit countChanged();
     invalidateScrubStops();
-    if (bulky)
-        endBulkUpdate();
 }
 
 } // namespace arachnel::core

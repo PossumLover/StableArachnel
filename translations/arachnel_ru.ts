@@ -2,6 +2,29 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU">
 <context>
+    <name>AppNavDrawer</name>
+    <message>
+        <location filename="../qml/components/AppNavDrawer.qml" line="+80"/>
+        <source>Collapse</source>
+        <translation>Свернуть</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Expand</source>
+        <translation>Развернуть</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>Search games</source>
+        <translation>Поиск игр</translation>
+    </message>
+    <message>
+        <location line="+170"/>
+        <source>Settings</source>
+        <translation>Настройки</translation>
+    </message>
+</context>
+<context>
     <name>AppUpdateProgressOverlay</name>
     <message>
         <location filename="../qml/app/AppUpdateProgressOverlay.qml" line="+42"/>
@@ -19,7 +42,7 @@
         <translation>Подождите. Sprout перезапустится, когда всё будет готово.</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+24"/>
         <source>Starting…</source>
         <translation>Запуск…</translation>
     </message>
@@ -65,7 +88,7 @@
 <context>
     <name>AppWindow</name>
     <message>
-        <location filename="../qml/app/AppWindow.qml" line="+296"/>
+        <location filename="../qml/app/AppWindow.qml" line="+330"/>
         <source>Library</source>
         <translation>Библиотека</translation>
     </message>
@@ -98,25 +121,34 @@
 <context>
     <name>BookmarksPage</name>
     <message>
-        <location filename="../qml/app/BookmarksPage.qml" line="+114"/>
+        <location filename="../qml/app/BookmarksPage.qml" line="+138"/>
         <source>No favorites</source>
         <translation>Нет избранного</translation>
     </message>
     <message>
-        <location line="+36"/>
+        <location line="+29"/>
         <source>Favorites</source>
         <translation>Избранное</translation>
     </message>
+    <message numerus="yes">
+        <location line="+1"/>
+        <source>%n game(s)</source>
+        <translation>
+            <numerusform>%n игра</numerusform>
+            <numerusform>%n игры</numerusform>
+            <numerusform>%n игр</numerusform>
+        </translation>
+    </message>
     <message>
-        <location line="+5"/>
-        <source>%1 games</source>
-        <translation>%1 игр</translation>
+        <location line="-26"/>
+        <source>Open catalog</source>
+        <translation>Открыть каталог</translation>
     </message>
 </context>
 <context>
     <name>CatalogCompactBar</name>
     <message>
-        <location filename="../qml/components/CatalogCompactBar.qml" line="+77"/>
+        <location filename="../qml/components/CatalogCompactBar.qml" line="+79"/>
         <source>Catalog</source>
         <translation>Каталог</translation>
     </message>
@@ -130,18 +162,33 @@
         <source>Found: %1</source>
         <translation>Найдено: %1</translation>
     </message>
+    <message>
+        <location line="+54"/>
+        <source>Grid</source>
+        <translation>Сетка</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>List</source>
+        <translation>Список</translation>
+    </message>
 </context>
 <context>
     <name>CatalogDiscoveryHeader</name>
     <message>
-        <location filename="../qml/components/CatalogDiscoveryHeader.qml" line="+37"/>
+        <location filename="../qml/components/CatalogDiscoveryHeader.qml" line="+43"/>
         <source>All games</source>
         <translation>Все игры</translation>
     </message>
     <message>
-        <location line="-15"/>
+        <location line="-16"/>
         <source>Surprise me</source>
         <translation>Удиви меня</translation>
+    </message>
+    <message>
+        <location line="-6"/>
+        <source>Discover</source>
+        <translation>Подборки</translation>
     </message>
 </context>
 <context>
@@ -159,12 +206,12 @@
         <translation>Выбор на вечер</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+33"/>
         <source>Open game</source>
         <translation>Открыть игру</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+8"/>
         <source>Another pick</source>
         <translation>Другой вариант</translation>
     </message>
@@ -252,17 +299,17 @@
         <translation>За год</translation>
     </message>
     <message>
-        <location line="+182"/>
+        <location line="+184"/>
         <source>Players</source>
         <translation>Игроки</translation>
     </message>
     <message>
-        <location line="-59"/>
+        <location line="-60"/>
         <source>Filters</source>
         <translation>Фильтры</translation>
     </message>
     <message>
-        <location line="+140"/>
+        <location line="+141"/>
         <source>Less</source>
         <translation>Меньше</translation>
     </message>
@@ -326,7 +373,7 @@
 <context>
     <name>CatalogGameCard</name>
     <message>
-        <location filename="../qml/components/CatalogGameCard.qml" line="+62"/>
+        <location filename="../qml/components/CatalogGameCard.qml" line="+66"/>
         <location line="+2"/>
         <location line="+1"/>
         <source>playing</source>
@@ -344,12 +391,12 @@
 <context>
     <name>CatalogIntroHeader</name>
     <message>
-        <location filename="../qml/components/CatalogIntroHeader.qml" line="+23"/>
+        <location filename="../qml/components/CatalogIntroHeader.qml" line="+26"/>
         <source>Browse the catalog</source>
         <translation>Каталог игр</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+5"/>
         <source>Search and filter every game from your enabled sources.</source>
         <translation>Поиск и фильтры по всем играм из включённых источников.</translation>
     </message>
@@ -380,14 +427,14 @@
         <translation>Нет игр</translation>
     </message>
     <message>
-        <location line="+18"/>
-        <source>Add catalog</source>
-        <translation>Добавить каталог</translation>
-    </message>
-    <message>
-        <location line="+7"/>
+        <location line="+25"/>
         <source>Settings</source>
         <translation>Настройки</translation>
+    </message>
+    <message>
+        <location line="-7"/>
+        <source>Add game source</source>
+        <translation>Добавить источник игр</translation>
     </message>
 </context>
 <context>
@@ -519,49 +566,6 @@
     </message>
 </context>
 <context>
-    <name>CatalogPageContent</name>
-    <message>
-        <location filename="../qml/app/CatalogPageContent.qml" line="+290"/>
-        <source>With friends</source>
-        <translation>С друзьями</translation>
-    </message>
-    <message>
-        <location line="-59"/>
-        <source>Couldn&apos;t load discovery</source>
-        <translation>Не удалось загрузить discovery</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Check your connection, or open All games.</source>
-        <translation>Проверь интернет или открой «Все игры».</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>All games</source>
-        <translation>Все игры</translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>No matching games in your catalog</source>
-        <translation>В каталоге нет подходящих игр</translation>
-    </message>
-    <message>
-        <location line="+6"/>
-        <source>Discovery loaded, but none of these titles are in your enabled sources yet.</source>
-        <translation>Подборки загружены, но этих игр ещё нет во включённых источниках.</translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>Recommended for you</source>
-        <translation>Рекомендуем вам</translation>
-    </message>
-    <message>
-        <location line="+26"/>
-        <source>Popular this week</source>
-        <translation>Популярное на этой неделе</translation>
-    </message>
-</context>
-<context>
     <name>CatalogScrollHeader</name>
     <message>
         <location filename="../qml/components/CatalogScrollHeader.qml" line="+68"/>
@@ -572,6 +576,16 @@
         <location line="+1"/>
         <source>Found: %1</source>
         <translation>Найдено: %1</translation>
+    </message>
+    <message>
+        <location line="+50"/>
+        <source>Grid</source>
+        <translation>Сетка</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>List</source>
+        <translation>Список</translation>
     </message>
 </context>
 <context>
@@ -585,7 +599,7 @@
 <context>
     <name>CatalogStickyToolbar</name>
     <message>
-        <location filename="../qml/components/CatalogStickyToolbar.qml" line="+99"/>
+        <location filename="../qml/components/CatalogStickyToolbar.qml" line="+115"/>
         <source>Type</source>
         <translation>Тип</translation>
     </message>
@@ -609,15 +623,21 @@
         <source>Players</source>
         <translation>Игроки</translation>
     </message>
+    <message>
+        <location line="-110"/>
+        <source>Catalog</source>
+        <translation>Каталог</translation>
+    </message>
 </context>
 <context>
     <name>Core</name>
     <message>
+        <location filename="../src/core/library/library_facade_ops.cpp" line="+170"/>
         <source>Could not open game folder</source>
         <translation>Не удалось открыть папку игры</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_types.cpp" line="+173"/>
+        <location filename="../src/core/catalog/catalog_types.cpp" line="+213"/>
         <source>Game</source>
         <translation>Игра</translation>
     </message>
@@ -654,7 +674,7 @@
     </message>
     <message>
         <location filename="../src/core/install/install_kind.cpp" line="+11"/>
-        <location filename="../src/core/catalog/catalog_model.cpp" line="+617"/>
+        <location filename="../src/core/catalog/catalog_model.cpp" line="+624"/>
         <source>Portable</source>
         <translation>Портабл</translation>
     </message>
@@ -734,7 +754,7 @@
     </message>
     <message>
         <location line="+1"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+275"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+286"/>
         <source>Preparing…</source>
         <translation>Подготовка…</translation>
     </message>
@@ -822,10 +842,10 @@
     </message>
     <message>
         <location line="-170"/>
-        <location filename="../src/core/library/library_controller.cpp" line="+456"/>
+        <location filename="../src/core/library/library_controller.cpp" line="+501"/>
         <location line="+42"/>
         <location line="+58"/>
-        <location filename="../src/core/launch/launch_controller.cpp" line="+935"/>
+        <location filename="../src/core/launch/launch_controller.cpp" line="+939"/>
         <source>Couldn&apos;t update DLC unlocks.</source>
         <translation>Не удалось обновить разблокировку DLC.</translation>
     </message>
@@ -906,7 +926,7 @@
     <message>
         <location filename="../src/core/jobs/job_display.cpp" line="-83"/>
         <location filename="../src/core/jobs/job_status.cpp" line="+2"/>
-        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="+162"/>
+        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="+163"/>
         <source>Paused</source>
         <translation>Пауза</translation>
     </message>
@@ -931,17 +951,17 @@
         <location line="+1"/>
         <location filename="../src/core/jobs/job_status.cpp" line="+8"/>
         <location filename="../src/core/catalog/catalog_facade_install.cpp" line="+308"/>
-        <location filename="../src/core/library/library_facade_sync.cpp" line="+245"/>
+        <location filename="../src/core/library/library_facade_sync.cpp" line="+246"/>
         <source>Install failed</source>
         <translation>Ошибка установки</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_controller.cpp" line="+116"/>
+        <location filename="../src/core/catalog/catalog_controller.cpp" line="+186"/>
         <source>Catalog error: %1</source>
         <translation>Ошибка каталога: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+472"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+480"/>
         <source>Game not found for add-on</source>
         <translation>Игра не найдена для дополнения</translation>
     </message>
@@ -957,7 +977,7 @@
         <translation>Не удалось найти игру для установки: %1</translation>
     </message>
     <message>
-        <location line="-492"/>
+        <location line="-500"/>
         <location line="+33"/>
         <source>Moving %1</source>
         <translation>Перемещение %1</translation>
@@ -973,12 +993,12 @@
         <translation>Не удалось переместить</translation>
     </message>
     <message>
-        <location line="+65"/>
+        <location line="+72"/>
         <source>Achievement unlocked: %1 - %2</source>
         <translation>Достижение получено: %1 - %2</translation>
     </message>
     <message>
-        <location line="+347"/>
+        <location line="+348"/>
         <source>Download complete - install manually</source>
         <translation>Загрузка завершена - установите вручную</translation>
     </message>
@@ -1047,7 +1067,8 @@
     <message>
         <location filename="../src/core/library/library_controller.cpp" line="+83"/>
         <location filename="../src/core/jobs/job_facade_lifecycle.cpp" line="+175"/>
-        <location filename="../src/core/library/library_facade_ops.cpp" line="+224"/>
+        <location filename="../src/core/library/library_facade_ops.cpp" line="-9"/>
+        <location line="+79"/>
         <location line="+39"/>
         <location line="+37"/>
         <source>Game not found</source>
@@ -1075,7 +1096,7 @@
         <translation>Нельзя отменить перемещение</translation>
     </message>
     <message>
-        <location filename="../src/core/library/library_facade_sync.cpp" line="+203"/>
+        <location filename="../src/core/library/library_facade_sync.cpp" line="+225"/>
         <source>%1 update(s) available</source>
         <translation>Доступно обновлений: %1</translation>
     </message>
@@ -1095,7 +1116,7 @@
         <translation>Нет ссылки для загрузки: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/library/library_facade_ops.cpp" line="-172"/>
+        <location filename="../src/core/library/library_facade_ops.cpp" line="-188"/>
         <location line="+24"/>
         <source>Choose library folder</source>
         <translation>Выберите папку библиотеки</translation>
@@ -1127,12 +1148,12 @@
         <translation>Ручная установка завершена: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/plugins/plugin_facade.cpp" line="+338"/>
+        <location filename="../src/core/plugins/plugin_facade.cpp" line="+370"/>
         <source>Install plugin</source>
         <translation>Установить плагин</translation>
     </message>
     <message>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="-247"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="-248"/>
         <source>Plugin install failed</source>
         <translation>Ошибка установки плагина</translation>
     </message>
@@ -1162,7 +1183,7 @@
         <translation>Исполняемые (*.exe *.sh *.x86_64);;Все файлы (*)</translation>
     </message>
     <message>
-        <location line="+110"/>
+        <location line="+126"/>
         <location line="+39"/>
         <source>Shortcuts are not supported on this platform</source>
         <translation>Ярлыки не поддерживаются на этой платформе</translation>
@@ -1228,7 +1249,7 @@
         <translation>Steamless недоступен</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_controller.cpp" line="+440"/>
+        <location filename="../src/core/catalog/catalog_controller.cpp" line="+452"/>
         <source>%1 · %2 games</source>
         <translation>%1 · %2 игр</translation>
     </message>
@@ -1238,12 +1259,12 @@
         <translation>%1 источников · %2 игр</translation>
     </message>
     <message>
-        <location line="+303"/>
+        <location line="+389"/>
         <source>Catalog empty or unavailable: %1</source>
         <translation>Каталог пуст или недоступен: %1</translation>
     </message>
     <message>
-        <location line="+41"/>
+        <location line="+42"/>
         <source>No catalog URL configured for source %1</source>
         <translation>Для источника %1 не задан URL каталога</translation>
     </message>
@@ -1289,8 +1310,8 @@
         <translation>Процесс игры запущен (PID %1)</translation>
     </message>
     <message>
-        <location line="-191"/>
-        <location line="+193"/>
+        <location line="-195"/>
+        <location line="+197"/>
         <source>n/a</source>
         <translation>н/д</translation>
     </message>
@@ -1645,7 +1666,7 @@
         <translation>Не удалось запустить игру</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_facade_query.cpp" line="+8"/>
+        <location filename="../src/core/catalog/catalog_facade_query.cpp" line="+12"/>
         <source>Unknown source: %1</source>
         <translation>Неизвестный источник: %1</translation>
     </message>
@@ -1680,7 +1701,7 @@
         <translation>%1 обновлена, но пакеты контента (%2) остались старой версии. Игра может сообщать о повреждённых данных - надёжнее всего переустановить её.</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_facade_query.cpp" line="+76"/>
+        <location filename="../src/core/catalog/catalog_facade_query.cpp" line="+98"/>
         <source>Enter a catalog URL</source>
         <translation>Укажите URL каталога</translation>
     </message>
@@ -1692,7 +1713,7 @@
     <message>
         <location filename="../src/core/catalog/catalog_facade_install.cpp" line="-329"/>
         <location line="+20"/>
-        <location filename="../src/core/library/library_facade_sync.cpp" line="-220"/>
+        <location filename="../src/core/library/library_facade_sync.cpp" line="-242"/>
         <source>Catalog entry not found: %1</source>
         <translation>Запись каталога не найдена: %1</translation>
     </message>
@@ -1710,17 +1731,17 @@
         <translation>Плагин не загружен: %1</translation>
     </message>
     <message>
-        <location filename="../src/core/plugins/plugin_facade.cpp" line="-157"/>
+        <location filename="../src/core/plugins/plugin_facade.cpp" line="-162"/>
         <source>Plugin removed</source>
         <translation>Плагин удалён</translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location line="+4"/>
         <source>Could not remove plugin: %1</source>
         <translation>Не удалось удалить плагин: %1</translation>
     </message>
     <message>
-        <location line="+112"/>
+        <location line="+116"/>
         <source>Plugins updated</source>
         <translation>Плагины обновлены</translation>
     </message>
@@ -1752,12 +1773,12 @@
         <translation>Не удалось начать обновление %1</translation>
     </message>
     <message>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+110"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+111"/>
         <source>Update finished, but version info is incomplete. Refresh the catalog and update again if the chip stays.</source>
         <translation>Обновление завершено, но сведения о версии неполные. Обновите каталог и повторите обновление, если метка останется.</translation>
     </message>
     <message>
-        <location line="-301"/>
+        <location line="-309"/>
         <source>No catalog sources enabled</source>
         <translation>Нет включённых источников каталога</translation>
     </message>
@@ -1799,7 +1820,7 @@
         <translation>Не удалось найти игру для установки</translation>
     </message>
     <message>
-        <location filename="../src/core/plugins/plugin_facade.cpp" line="-178"/>
+        <location filename="../src/core/plugins/plugin_facade.cpp" line="-209"/>
         <source>Plugin installed</source>
         <translation>Плагин установлен</translation>
     </message>
@@ -1915,6 +1936,7 @@
         <location line="+9"/>
         <location filename="../src/core/install/steamless_service.cpp" line="+11"/>
         <location line="+79"/>
+        <location filename="../src/core/library/library_facade_ops.cpp" line="-45"/>
         <source>Game folder not found</source>
         <translation>Папка игры не найдена</translation>
     </message>
@@ -1991,7 +2013,7 @@
     <message>
         <location line="+43"/>
         <location filename="../src/core/launch/process_launcher.cpp" line="+364"/>
-        <location filename="../src/core/runtime/windows_runner.cpp" line="+117"/>
+        <location filename="../src/core/runtime/windows_runner.cpp" line="+118"/>
         <location line="+108"/>
         <source>File not found: %1</source>
         <translation>Файл не найден: %1</translation>
@@ -2060,13 +2082,13 @@
         <translation>Плагин скопирован, но библиотека не загрузилась. Обновите Sprout или пересоберите плагин под эту версию приложения.</translation>
     </message>
     <message>
-        <location filename="../src/core/plugins/plugin_host.cpp" line="+327"/>
-        <location line="+188"/>
+        <location filename="../src/core/plugins/plugin_host.cpp" line="+350"/>
+        <location line="+200"/>
         <source>%1 needs a different Sprout plugin API (plugin=%2, this app supports %3-%4). Update Sprout or install a matching plugin build.</source>
         <translation>%1 требует другой API плагинов Sprout (плагин=%2, это приложение поддерживает %3-%4). Обновите Sprout или поставьте подходящую сборку плагина.</translation>
     </message>
     <message>
-        <location line="-164"/>
+        <location line="-176"/>
         <source>%1 declares a CatalogEntry of %2 bytes; this app uses %3. Install a plugin build made for this app version.</source>
         <translation>%1 объявляет CatalogEntry размером %2 байт, а приложение использует %3. Установите сборку плагина для этой версии приложения.</translation>
     </message>
@@ -2086,7 +2108,7 @@
         <translation>Не удалось загрузить %1: %2</translation>
     </message>
     <message>
-        <location line="+48"/>
+        <location line="+60"/>
         <source>%1 is missing required plugin exports. Reinstall from the store.</source>
         <translation>У %1 нет нужных экспортов плагина. Переустановите из магазина.</translation>
     </message>
@@ -2106,7 +2128,7 @@
         <translation>%1 собран под другой SDK Sprout (CatalogEntry %2 против %3 байт). Обновите Sprout или поставьте сборку плагина для этой версии приложения.</translation>
     </message>
     <message>
-        <location line="+78"/>
+        <location line="+95"/>
         <source>%1 was built against a different Sprout SDK: %2 is %3 bytes in the plugin and %4 bytes here. Rebuild the plugin against this app version.</source>
         <translation>%1 собран под другой SDK Sprout: %2 в плагине %3 байт, здесь %4 байт. Пересоберите плагин под эту версию приложения.</translation>
     </message>
@@ -2116,12 +2138,12 @@
         <translation>%1 собран под ревизию интерфейса плагинов %2; приложение использует ревизию %3 и не умеет работать с этой. Пересоберите плагин под эту версию приложения.</translation>
     </message>
     <message>
-        <location line="-96"/>
+        <location line="-113"/>
         <source>%1 is missing the CatalogEntry size check. Reinstall a current plugin build.</source>
         <translation>У %1 нет проверки размера CatalogEntry. Установите актуальную сборку плагина.</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+33"/>
         <source>%1 failed to start.</source>
         <translation>%1 не удалось запустить.</translation>
     </message>
@@ -2146,7 +2168,7 @@
         <translation>Не удалось удалить файлы плагина</translation>
     </message>
     <message>
-        <location filename="../src/core/plugins/plugin_facade.cpp" line="+184"/>
+        <location filename="../src/core/plugins/plugin_facade.cpp" line="+215"/>
         <source>Could not open plugins folder</source>
         <translation>Не удалось открыть папку плагинов</translation>
     </message>
@@ -2177,7 +2199,7 @@
     </message>
     <message>
         <location line="+3"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="+162"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="+169"/>
         <source>Sprout %1 is available</source>
         <translation>Доступен Sprout %1</translation>
     </message>
@@ -2323,7 +2345,7 @@
         <translation>Автозапуск установщика доступен только на Windows</translation>
     </message>
     <message>
-        <location filename="../src/core/install/online_fix_overlay.cpp" line="+785"/>
+        <location filename="../src/core/install/online_fix_overlay.cpp" line="+787"/>
         <source>Install folder is missing</source>
         <translation>Папка установки отсутствует</translation>
     </message>
@@ -2452,7 +2474,7 @@
         <translation>Каталог пуст или формат не распознан</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_parser.cpp" line="+471"/>
+        <location filename="../src/core/catalog/catalog_parser.cpp" line="+483"/>
         <source>Empty server response</source>
         <translation>Пустой ответ сервера</translation>
     </message>
@@ -2580,7 +2602,7 @@
     <message>
         <location line="+161"/>
         <location line="+21"/>
-        <location filename="../src/core/facade/core_wiring_services.cpp" line="-327"/>
+        <location filename="../src/core/facade/core_wiring_services.cpp" line="-334"/>
         <source>Game removed: %1</source>
         <translation>Игра удалена: %1</translation>
     </message>
@@ -2648,7 +2670,7 @@
         <translation>Получение ссылки на загрузку из Hydra</translation>
     </message>
     <message>
-        <location filename="../src/core/catalog/catalog_genre_normalize.cpp" line="+260"/>
+        <location filename="../src/core/catalog/catalog_genre_normalize.cpp" line="+272"/>
         <source>Action</source>
         <translation>Экшен</translation>
     </message>
@@ -2849,12 +2871,12 @@
         <translation>Hydra Library прислала список, который Sprout не может прочитать.</translation>
     </message>
     <message>
-        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="-11"/>
+        <location filename="../src/core/jobs/job_orchestrator_completion.cpp" line="-12"/>
         <source>Resuming download</source>
         <translation>Возобновление загрузки</translation>
     </message>
     <message>
-        <location line="+348"/>
+        <location line="+356"/>
         <source>Download refused by the server</source>
         <translation>Сервер отказал в загрузке</translation>
     </message>
@@ -2909,7 +2931,7 @@
         <translation>В этом источнике Hydra нет доступной ссылки для загрузки</translation>
     </message>
     <message>
-        <location filename="../src/core/jobs/torbox_download_session.cpp" line="+131"/>
+        <location filename="../src/core/jobs/torbox_download_session.cpp" line="+133"/>
         <source>Waiting for a download slot</source>
         <translation>Ожидание свободного места в очереди загрузок</translation>
     </message>
@@ -2996,7 +3018,7 @@
         <translation>Сервер вернул некорректный диапазон загрузки</translation>
     </message>
     <message>
-        <location line="+34"/>
+        <location line="+39"/>
         <source>TorBox download was interrupted. Retry to resume.</source>
         <translation>Загрузка через TorBox прервана. Повторите попытку, чтобы продолжить.</translation>
     </message>
@@ -3011,14 +3033,30 @@
         <translation>Не удалось завершить загрузку файла</translation>
     </message>
     <message>
-        <location filename="../src/core/library/achievement_service.cpp" line="+152"/>
+        <location filename="../src/core/library/achievement_service.cpp" line="+159"/>
         <source>Could not load achievement details.</source>
         <translation>Не удалось загрузить сведения о достижениях.</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+24"/>
         <source>Hidden achievement</source>
         <translation>Скрытое достижение</translation>
+    </message>
+    <message>
+        <location filename="../src/core/runtime/proton_manager_download.cpp" line="+189"/>
+        <source>GitHub API rate limit reached. Try again later.</source>
+        <translation>Достигнут лимит запросов GitHub API. Повторите позже.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>No Proton-GE archive found in latest release</source>
+        <translation>В последнем релизе не найден архив Proton-GE</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <location line="+231"/>
+        <source>GitHub API request failed.</source>
+        <translation>Не удалось обратиться к GitHub API.</translation>
     </message>
 </context>
 <context>
@@ -3095,6 +3133,103 @@
         <location filename="../qml/app/CrashReportWindow.qml" line="+16"/>
         <source>Application crashed</source>
         <translation>Приложение аварийно завершилось</translation>
+    </message>
+</context>
+<context>
+    <name>DiscoverFeed</name>
+    <message>
+        <location filename="../qml/components/DiscoverFeed.qml" line="+22"/>
+        <source>For you</source>
+        <translation>Для вас</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>With friends</source>
+        <translation>С друзьями</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>New</source>
+        <translation>Новинки</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Solo</source>
+        <translation>Для одного</translation>
+    </message>
+    <message>
+        <location line="+151"/>
+        <source>Discover</source>
+        <translation>Подборки</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <location line="+8"/>
+        <source>All games</source>
+        <translation>Все игры</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Refresh</source>
+        <translation>Обновить</translation>
+    </message>
+    <message>
+        <location line="+317"/>
+        <source>Open game</source>
+        <translation>Открыть игру</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Saved</source>
+        <translation>В избранном</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Save</source>
+        <translation>В избранное</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Details</source>
+        <translation>Подробнее</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Sound</source>
+        <translation>Звук</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Mute</source>
+        <translation>Без звука</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Not for me</source>
+        <translation>Не моё</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>Up next</source>
+        <translation>Дальше</translation>
+    </message>
+</context>
+<context>
+    <name>DiscoverHeroCarousel</name>
+    <message>
+        <location filename="../qml/components/DiscoverHeroCarousel.qml" line="+130"/>
+        <source>Tonight&apos;s pick</source>
+        <translation>Выбор на вечер</translation>
+    </message>
+    <message>
+        <location line="+29"/>
+        <source>Open game</source>
+        <translation>Открыть игру</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Next</source>
+        <translation>Дальше</translation>
     </message>
 </context>
 <context>
@@ -3217,17 +3352,17 @@
 <context>
     <name>DownloadsPage</name>
     <message>
-        <location filename="../qml/app/DownloadsPage.qml" line="+123"/>
+        <location filename="../qml/app/DownloadsPage.qml" line="+104"/>
         <source>No downloads</source>
         <translation>Нет загрузок</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+21"/>
         <source>Downloads</source>
         <translation>Загрузки</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+5"/>
         <source>%1 active · %2 finished</source>
         <translation>%1 активных · %2 завершено</translation>
     </message>
@@ -3247,15 +3382,20 @@
         <translation>Пока нет загрузок</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+5"/>
         <source>Clear finished</source>
         <translation>Очистить завершённые</translation>
+    </message>
+    <message>
+        <location line="-32"/>
+        <source>Open catalog</source>
+        <translation>Открыть каталог</translation>
     </message>
 </context>
 <context>
     <name>FriendCodePin</name>
     <message>
-        <location filename="../qml/components/FriendCodePin.qml" line="+23"/>
+        <location filename="../qml/components/FriendCodePin.qml" line="+27"/>
         <source>Friend code</source>
         <translation>Код друга</translation>
     </message>
@@ -3263,7 +3403,8 @@
 <context>
     <name>FriendsPage</name>
     <message>
-        <location filename="../qml/app/FriendsPage.qml" line="+243"/>
+        <location filename="../qml/app/FriendsPage.qml" line="+59"/>
+        <location line="+209"/>
         <source>Friends</source>
         <translation>Друзья</translation>
     </message>
@@ -3278,12 +3419,12 @@
         <translation>Не в сети</translation>
     </message>
     <message>
-        <location line="-319"/>
+        <location line="-320"/>
         <source>Change in settings</source>
         <translation>Изменить в настройках</translation>
     </message>
     <message>
-        <location line="-43"/>
+        <location line="-67"/>
         <source>just now</source>
         <translation>только что</translation>
     </message>
@@ -3303,24 +3444,24 @@
         <translation>%1 дн назад</translation>
     </message>
     <message>
-        <location line="+81"/>
+        <location line="+101"/>
         <source>Create a friend code</source>
         <translation>Создать код друга</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+16"/>
         <source>Share it with someone on another device.</source>
         <translation>Отправьте его человеку на другом устройстве.</translation>
     </message>
     <message>
         <location line="+9"/>
-        <location line="+117"/>
+        <location line="+121"/>
         <source>New code</source>
         <translation>Новый код</translation>
     </message>
     <message>
-        <location line="-116"/>
-        <location line="+117"/>
+        <location line="-120"/>
+        <location line="+121"/>
         <source>Create code</source>
         <translation>Создать код</translation>
     </message>
@@ -3371,23 +3512,23 @@
         <translation>Выберите игру из библиотеки. %1 увидит её на своей странице «Друзья».</translation>
     </message>
     <message>
-        <location line="-465"/>
-        <location line="+179"/>
+        <location line="-475"/>
+        <location line="+189"/>
         <source>You appear as %1</source>
         <translation>Вас видно как %1</translation>
     </message>
     <message>
-        <location line="-58"/>
+        <location line="-66"/>
         <source>Add a friend</source>
         <translation>Добавить друга</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+13"/>
         <source>Add friend</source>
         <translation>Добавить друга</translation>
     </message>
     <message>
-        <location line="+187"/>
+        <location line="+194"/>
         <source>Playing %1</source>
         <translation>Играет в %1</translation>
     </message>
@@ -3401,6 +3542,11 @@
         <location line="-52"/>
         <source>Online</source>
         <translation>В сети</translation>
+    </message>
+    <message>
+        <location line="-325"/>
+        <source>Friends you add can see when you are online and which game you are playing.</source>
+        <translation>Друзья, которых вы добавите, видят, когда вы в сети и в какую игру играете.</translation>
     </message>
 </context>
 <context>
@@ -3486,16 +3632,13 @@
 <context>
     <name>GameDetailsContent</name>
     <message>
+        <location filename="../qml/app/GameDetailsContent.qml" line="+494"/>
+        <location line="+5"/>
         <source>Open game folder</source>
         <translation>Открыть папку игры</translation>
     </message>
     <message>
-        <location filename="../qml/app/GameDetailsContent.qml" line="+58"/>
-        <source>Game details</source>
-        <translation>Детали игры</translation>
-    </message>
-    <message>
-        <location line="+27"/>
+        <location line="-350"/>
         <source>Game not found</source>
         <translation>Игра не найдена</translation>
     </message>
@@ -3505,17 +3648,17 @@
         <translation>К источникам</translation>
     </message>
     <message>
-        <location line="+162"/>
+        <location line="+187"/>
         <source>Last session</source>
         <translation>Последний сеанс</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+26"/>
         <source>DRM</source>
         <translation>DRM</translation>
     </message>
     <message numerus="yes">
-        <location line="+16"/>
+        <location line="+12"/>
         <location line="+1"/>
         <source>%n add-ons</source>
         <translation>
@@ -3525,28 +3668,28 @@
         </translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+10"/>
         <source>Workshop</source>
         <translation>Мастерская</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+5"/>
         <source>Steam CDN · Online Fix</source>
         <translation>Steam CDN · Online Fix</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="+6"/>
         <source>Update available</source>
         <translation>Доступно обновление</translation>
     </message>
     <message>
-        <location line="+22"/>
-        <location line="+328"/>
+        <location line="+321"/>
+        <location line="+76"/>
         <source>Share</source>
         <translation>Поделиться</translation>
     </message>
     <message>
-        <location line="-318"/>
+        <location line="-66"/>
         <source>Source page</source>
         <translation>Страница на источнике</translation>
     </message>
@@ -3571,37 +3714,27 @@
         <translation>URL каталога</translation>
     </message>
     <message>
-        <location line="+42"/>
-        <source>Sprout can&apos;t install this one for you. Run the installer from the download folder, then press the folder button below and pick the folder you installed it into.</source>
-        <translation>Sprout не может установить эту игру сам. Запустите установщик из папки загрузки, затем нажмите кнопку папки ниже и выберите папку, куда установили игру.</translation>
-    </message>
-    <message>
-        <location line="+76"/>
-        <source>Already installed it yourself? Pick the folder.</source>
-        <translation>Уже установили сами? Выберите папку.</translation>
-    </message>
-    <message>
-        <location line="+24"/>
+        <location line="-240"/>
         <source>Launch log</source>
         <translation>Лог запуска</translation>
     </message>
     <message>
-        <location line="+178"/>
+        <location line="+308"/>
         <source>Copy link</source>
         <translation>Скопировать ссылку</translation>
     </message>
     <message>
-        <location line="-287"/>
+        <location line="-255"/>
         <source>Install failed</source>
         <translation>Ошибка установки</translation>
     </message>
     <message>
-        <location line="-1"/>
+        <location line="+0"/>
         <source>Download failed</source>
         <translation>Ошибка загрузки</translation>
     </message>
     <message>
-        <location line="+28"/>
+        <location line="-151"/>
         <source>Stop</source>
         <translation>Остановить</translation>
     </message>
@@ -3616,38 +3749,38 @@
         <translation>Играть</translation>
     </message>
     <message>
-        <location line="+67"/>
+        <location line="+85"/>
         <source>Remove from favorites</source>
         <translation>Убрать из избранного</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+0"/>
         <source>Add to favorites</source>
         <translation>В избранное</translation>
     </message>
     <message>
-        <location line="+18"/>
-        <location line="+390"/>
+        <location line="+34"/>
+        <location line="+503"/>
         <source>Delete</source>
         <translation>Удалить</translation>
     </message>
     <message>
-        <location line="-371"/>
+        <location line="-581"/>
         <source>Update</source>
         <translation>Обновление</translation>
     </message>
     <message>
-        <location line="+90"/>
+        <location line="+175"/>
         <source>Description</source>
         <translation>Описание</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+25"/>
         <source>Description is not available yet.</source>
         <translation>Описание пока недоступно.</translation>
     </message>
     <message>
-        <location line="+65"/>
+        <location line="+172"/>
         <source>Suggest to friends</source>
         <translation>Предложить друзьям</translation>
     </message>
@@ -3677,32 +3810,87 @@
         <translation>Закрыть</translation>
     </message>
     <message>
-        <location line="-470"/>
+        <location line="-410"/>
         <source>Ready to download from Steam CDN. Online Fix can be included when needed.</source>
         <translation>Готово к загрузке с Steam CDN. При необходимости можно включить Online Fix.</translation>
+    </message>
+    <message>
+        <location line="-90"/>
+        <source>Pick the folder you installed into.</source>
+        <translation>Укажите папку, куда установили игру.</translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <source>Game settings</source>
+        <translation>Настройки игры</translation>
+    </message>
+    <message>
+        <location line="+53"/>
+        <source>Couldn&apos;t install automatically. Run the installer, then pick the folder with the folder button.</source>
+        <translation>Не удалось установить автоматически. Запустите установщик, затем укажите папку кнопкой с папкой.</translation>
+    </message>
+    <message>
+        <location line="+96"/>
+        <source>Show less</source>
+        <translation>Свернуть</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Show more</source>
+        <translation>Показать полностью</translation>
+    </message>
+    <message>
+        <location line="+32"/>
+        <source>Links</source>
+        <translation>Ссылки</translation>
+    </message>
+    <message>
+        <location line="-414"/>
+        <source>Build number of the game files. A higher number means a newer build.</source>
+        <translation>Номер сборки файлов игры. Чем он больше, тем новее сборка.</translation>
+    </message>
+    <message>
+        <location line="+487"/>
+        <source>Back</source>
+        <translation>Назад</translation>
+    </message>
+    <message>
+        <location line="-245"/>
+        <source>More actions</source>
+        <translation>Ещё действия</translation>
     </message>
 </context>
 <context>
     <name>GameDetailsMediaPreview</name>
     <message>
-        <location filename="../qml/components/GameDetailsMediaPreview.qml" line="+75"/>
+        <location filename="../qml/components/GameDetailsMediaPreview.qml" line="+149"/>
         <source>Gameplay video</source>
         <translation>Видео геймплея</translation>
     </message>
     <message>
-        <location line="+114"/>
-        <location line="+173"/>
+        <location line="+153"/>
+        <source>Couldn&apos;t load the video</source>
+        <translation>Не удалось загрузить видео</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Try again</source>
+        <translation>Повторить</translation>
+    </message>
+    <message>
+        <location line="+70"/>
+        <location line="+207"/>
         <source>Close</source>
         <translation>Закрыть</translation>
     </message>
     <message>
-        <location line="-155"/>
-        <location line="+164"/>
+        <location line="-181"/>
+        <location line="+190"/>
         <source>Open in browser</source>
         <translation>Открыть в браузере</translation>
     </message>
     <message>
-        <location line="-118"/>
+        <location line="-129"/>
         <source>Screenshot %1 of %2</source>
         <translation>Скриншот %1 из %2</translation>
     </message>
@@ -3723,7 +3911,7 @@
 <context>
     <name>GameDetailsPage</name>
     <message numerus="yes">
-        <location filename="../qml/app/GameDetailsPage.qml" line="+276"/>
+        <location filename="../qml/app/GameDetailsPage.qml" line="+312"/>
         <source>%n source(s)</source>
         <translation>
             <numerusform>%n источник</numerusform>
@@ -3817,16 +4005,17 @@
 <context>
     <name>GameSettingsSheet</name>
     <message>
+        <location filename="../qml/app/GameSettingsSheet.qml" line="+195"/>
         <source>Open game folder</source>
         <translation>Открыть папку игры</translation>
     </message>
     <message>
-        <location filename="../qml/app/GameSettingsSheet.qml" line="+139"/>
+        <location line="-33"/>
         <source>Game settings</source>
         <translation>Настройки игры</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+40"/>
         <source>Desktop shortcut</source>
         <translation>Ярлык на рабочий стол</translation>
     </message>
@@ -3877,12 +4066,12 @@
     </message>
     <message>
         <location line="+11"/>
-        <location line="+132"/>
+        <location line="+129"/>
         <source>Default</source>
         <translation>По умолчанию</translation>
     </message>
     <message>
-        <location line="-92"/>
+        <location line="-89"/>
         <source>Launch options</source>
         <translation>Параметры запуска</translation>
     </message>
@@ -3912,7 +4101,7 @@
         <translation>Режим запуска</translation>
     </message>
     <message>
-        <location line="+70"/>
+        <location line="+68"/>
         <source>Default launch mode</source>
         <translation>Режим запуска по умолчанию</translation>
     </message>
@@ -3922,12 +4111,12 @@
         <translation>Всегда спрашивать перед запуском</translation>
     </message>
     <message>
-        <location line="+59"/>
+        <location line="+62"/>
         <source>Option %1</source>
         <translation>Вариант %1</translation>
     </message>
     <message>
-        <location line="+53"/>
+        <location line="+58"/>
         <source>Information</source>
         <translation>Информация</translation>
     </message>
@@ -3992,12 +4181,12 @@
         <translation>Готово</translation>
     </message>
     <message>
-        <location line="-544"/>
+        <location line="-550"/>
         <source>Online Fix for this game</source>
         <translation>Online Fix для этой игры</translation>
     </message>
     <message>
-        <location line="+477"/>
+        <location line="+483"/>
         <source>DLC</source>
         <translation>DLC</translation>
     </message>
@@ -4019,7 +4208,7 @@
         <translation>Не нужен</translation>
     </message>
     <message>
-        <location line="-417"/>
+        <location line="-423"/>
         <source>Game files</source>
         <translation>Файлы игры</translation>
     </message>
@@ -4044,7 +4233,7 @@
         <translation>Проверить файлы</translation>
     </message>
     <message>
-        <location line="+462"/>
+        <location line="+468"/>
         <source>Verify game files?</source>
         <translation>Проверить файлы игры?</translation>
     </message>
@@ -4212,6 +4401,75 @@
     </message>
 </context>
 <context>
+    <name>InstallStudio</name>
+    <message>
+        <location filename="../qml/components/InstallStudio.qml" line="+246"/>
+        <source>Installation</source>
+        <translation>Установка</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <location line="+211"/>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <location line="-194"/>
+        <source>Unknown source</source>
+        <translation>Неизвестный источник</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Loading DLC…</source>
+        <translation>Загружаем DLC…</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>DLC: %1 of %2</source>
+        <translation>DLC: %1 из %2</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Clear all</source>
+        <translation>Снять все</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Select all</source>
+        <translation>Выбрать все</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>This game has no DLC to choose. Everything is included.</source>
+        <translation>У этой игры нет DLC для выбора — всё уже включено.</translation>
+    </message>
+    <message>
+        <location line="+152"/>
+        <source>Space needed</source>
+        <translation>Нужно места</translation>
+    </message>
+    <message>
+        <location line="+58"/>
+        <source>Game</source>
+        <translation>Игра</translation>
+    </message>
+    <message>
+        <location line="+11"/>
+        <source>DLC</source>
+        <translation>DLC</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Install to</source>
+        <translation>Куда установить</translation>
+    </message>
+    <message>
+        <location line="+87"/>
+        <source>Install</source>
+        <translation>Установить</translation>
+    </message>
+</context>
+<context>
     <name>LaunchLogDialog</name>
     <message>
         <location filename="../qml/components/LaunchLogDialog.qml" line="+13"/>
@@ -4247,12 +4505,12 @@
 <context>
     <name>LibraryContent</name>
     <message>
-        <location filename="../qml/app/LibraryContent.qml" line="+133"/>
+        <location filename="../qml/app/LibraryContent.qml" line="+222"/>
         <source>Running</source>
         <translation>Запущена</translation>
     </message>
     <message>
-        <location line="+39"/>
+        <location line="+48"/>
         <source>Play</source>
         <translation>Играть</translation>
     </message>
@@ -4272,27 +4530,7 @@
         <translation>Обновление</translation>
     </message>
     <message>
-        <location line="+43"/>
-        <source>In library</source>
-        <translation>В библиотеке</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>Sources</source>
-        <translation>Источники</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Tasks</source>
-        <translation>Задачи</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Updates</source>
-        <translation>Обновления</translation>
-    </message>
-    <message>
-        <location line="+33"/>
+        <location line="+61"/>
         <source>%1 active downloads</source>
         <translation>%1 активных загрузок</translation>
     </message>
@@ -4312,20 +4550,62 @@
         <translation>Моя библиотека</translation>
     </message>
     <message>
-        <location line="+5"/>
-        <source>%1 games</source>
-        <translation>%1 игр</translation>
-    </message>
-    <message>
-        <location line="+11"/>
+        <location line="+16"/>
         <source>No games match your search or list.</source>
         <translation>Нет игр, соответствующих поиску или списку.</translation>
+    </message>
+    <message>
+        <location line="-358"/>
+        <source>Library</source>
+        <translation>Библиотека</translation>
+    </message>
+    <message numerus="yes">
+        <location line="+25"/>
+        <source>%n source(s)</source>
+        <translation>
+            <numerusform>%n источник</numerusform>
+            <numerusform>%n источника</numerusform>
+            <numerusform>%n источников</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location line="+1"/>
+        <source>%n task(s)</source>
+        <translation>
+            <numerusform>%n задача</numerusform>
+            <numerusform>%n задачи</numerusform>
+            <numerusform>%n задач</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <location line="+1"/>
+        <source>%n update(s)</source>
+        <translation>
+            <numerusform>%n обновление</numerusform>
+            <numerusform>%n обновления</numerusform>
+            <numerusform>%n обновлений</numerusform>
+        </translation>
+    </message>
+    <message>
+        <location line="+187"/>
+        <source>Open catalog</source>
+        <translation>Открыть каталог</translation>
+    </message>
+    <message numerus="yes">
+        <location line="-190"/>
+        <location line="+323"/>
+        <source>%n game(s)</source>
+        <translation>
+            <numerusform>%n игра</numerusform>
+            <numerusform>%n игры</numerusform>
+            <numerusform>%n игр</numerusform>
+        </translation>
     </message>
 </context>
 <context>
     <name>LibraryEmptyState</name>
     <message>
-        <location filename="../qml/app/LibraryEmptyState.qml" line="+74"/>
+        <location filename="../qml/app/LibraryEmptyState.qml" line="+80"/>
         <source>Nothing here yet</source>
         <translation>Пока тут ничего нет</translation>
     </message>
@@ -4335,32 +4615,17 @@
         <translation>Открыть каталог</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Install plugin</source>
-        <translation>Установить плагин</translation>
-    </message>
-    <message>
-        <location line="+15"/>
+        <location line="+16"/>
         <source>Settings</source>
         <translation>Настройки</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Catalogs and plugins</source>
-        <translation>Каталоги и плагины</translation>
-    </message>
-    <message>
-        <location line="+16"/>
+        <location line="+24"/>
         <source>Step 1</source>
         <translation>Шаг 1</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Plugin</source>
-        <translation>Плагин</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Step 2</source>
         <translation>Шаг 2</translation>
     </message>
@@ -4379,11 +4644,26 @@
         <source>Library</source>
         <translation>Библиотека</translation>
     </message>
+    <message>
+        <location line="-52"/>
+        <source>Add game source</source>
+        <translation>Добавить источник игр</translation>
+    </message>
+    <message>
+        <location line="+23"/>
+        <source>How it works</source>
+        <translation>Как это работает</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Source</source>
+        <translation>Источник</translation>
+    </message>
 </context>
 <context>
     <name>LibraryGameCard</name>
     <message numerus="yes">
-        <location filename="../qml/components/LibraryGameCard.qml" line="+26"/>
+        <location filename="../qml/components/LibraryGameCard.qml" line="+34"/>
         <location line="+3"/>
         <source>%n add-ons</source>
         <translation>
@@ -4398,7 +4678,7 @@
         <translation>%1/%2 доп.</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+48"/>
         <source>Installing %1%</source>
         <translation>Установка %1%</translation>
     </message>
@@ -4418,7 +4698,7 @@
         <translation>Загрузка %1%</translation>
     </message>
     <message>
-        <location line="+51"/>
+        <location line="+46"/>
         <source>Playing</source>
         <translation>Играю</translation>
     </message>
@@ -4557,7 +4837,7 @@
         <translation>Вставьте URL JSON-каталога из Hydra или другого списка.</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+34"/>
         <source>Turn on one or more sources above - or leave them all off.</source>
         <translation>Включите один или несколько источников выше - или оставьте все выключенными.</translation>
     </message>
@@ -4582,17 +4862,17 @@
         <translation>Добавьте игры из каталога - потом скачаете их отсюда.</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+10"/>
         <source>It may be missing from your sources, or a plugin is outdated. Check Sources in Settings.</source>
         <translation>Возможно, нет нужного источника или плагин устарел. Проверьте источники в настройках.</translation>
     </message>
     <message>
-        <location line="-22"/>
+        <location line="-30"/>
         <source>Pick a game in Catalog and start the download.</source>
         <translation>Выберите игру и запустите установку - торрент скачается сам.</translation>
     </message>
     <message>
-        <location line="-26"/>
+        <location line="-30"/>
         <source>Install a plugin in Settings → Plugins to browse games, or add a catalog.</source>
         <translation>Поставьте плагин в Настройки → Плагины, чтобы смотреть игры, или добавьте каталог.</translation>
     </message>
@@ -4622,22 +4902,7 @@
         <translation>Нажмите «Установить плагин» ниже и выберите файл .arach.</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Sprout has no games until you install a plugin. Each plugin is a source: it fills Catalog and handles download, install, and Play.</source>
-        <translation>Без плагина в Sprout нет игр. Плагин - это источник: он заполняет Каталог и занимается загрузкой, установкой и Play.</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Your library is empty. Install a plugin, pick a game in Catalog, and it will appear here.</source>
-        <translation>Библиотека пустая. Поставьте плагин, выберите игру в Каталоге - она появится здесь.</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Install a plugin in Settings → Plugins.</source>
-        <translation>Поставьте плагин в Настройки → Плагины.</translation>
-    </message>
-    <message>
-        <location line="+4"/>
+        <location line="+14"/>
         <source>Installed games live here: launch, updates, and details.</source>
         <translation>Установленные игры живут здесь: запуск, обновления, детали.</translation>
     </message>
@@ -4681,14 +4946,59 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Игры из ваших каталогов и источников.</translation>
     </message>
     <message>
-        <location line="+2"/>
-        <source>Install a plugin in Settings → Plugins, or add a catalog.</source>
-        <translation>Поставьте плагин в Настройки → Плагины или добавьте каталог.</translation>
-    </message>
-    <message>
-        <location line="+14"/>
+        <location line="+24"/>
         <source>Game files will be deleted from disk. This cannot be undone.</source>
         <translation>Файлы игры будут удалены с диска. Это действие нельзя отменить.</translation>
+    </message>
+    <message>
+        <location line="-42"/>
+        <source>A plugin is a game source: it fills Catalog and handles download, install, and Play. Install at least one to see games.</source>
+        <translation>Плагин - это источник игр: он наполняет каталог и отвечает за загрузку, установку и запуск. Установите хотя бы один, чтобы увидеть игры.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Your library is empty. Add a game source, pick a game in Catalog, and it will appear here.</source>
+        <translation>Библиотека пуста. Добавьте источник игр, выберите игру в Каталоге, и она появится здесь.</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Add a game source in Settings → Plugins.</source>
+        <translation>Добавьте источник игр в Настройки → Плагины.</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Add a game source in Settings → Plugins to see games here.</source>
+        <translation>Добавьте источник игр в Настройки → Плагины, чтобы увидеть игры здесь.</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>You can download any game here. Ones with DRM or anti-cheat may not launch.</source>
+        <translation>Скачать можно любую игру. Но с DRM или античитом может не запуститься.</translation>
+    </message>
+    <message>
+        <location line="-34"/>
+        <source>Your library is empty. Open Catalog, pick a game and press Download - it will appear here when it is ready.</source>
+        <translation>Библиотека пока пуста. Откройте каталог, выберите игру и нажмите «Скачать» - когда она будет готова, появится здесь.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Source added. See Settings → Plugins.</source>
+        <translation>Источник добавлен. См. Настройки → Плагины.</translation>
+    </message>
+    <message>
+        <location line="+26"/>
+        <source>Open Catalog and pick a game.</source>
+        <translation>Откройте каталог и выберите игру.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Press Download. Progress shows in the Downloads tab.</source>
+        <translation>Нажмите «Скачать». Ход загрузки виден на вкладке «Загрузки».</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>When it is done, press Play in your Library.</source>
+        <translation>Когда всё закончится, нажмите «Играть» в библиотеке.</translation>
     </message>
 </context>
 <context>
@@ -4780,7 +5090,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>OnboardingFinalSteps</name>
     <message>
-        <location filename="../qml/onboarding/OnboardingFinalSteps.qml" line="+23"/>
+        <location filename="../qml/onboarding/OnboardingFinalSteps.qml" line="+25"/>
         <source>Updates</source>
         <translation>Обновления</translation>
     </message>
@@ -4815,12 +5125,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Proton (Linux)</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Windows games need Proton on Linux. Install it now or later in Settings → Launch.</source>
-        <translation>Windows-играм на Linux нужен Proton. Установите сейчас или позже в Настройки → Запуск.</translation>
-    </message>
-    <message>
-        <location line="+8"/>
+        <location line="+11"/>
         <source>Proton ready: %1</source>
         <translation>Proton готов: %1</translation>
     </message>
@@ -4855,14 +5160,39 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Готово</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Open Catalog to browse games. Change language, storage, and plugins anytime in Settings.</source>
-        <translation>Откройте Каталог, чтобы выбрать игры. Язык, хранилище и плагины - в Настройках.</translation>
+        <location line="-46"/>
+        <source>Proton lets Windows games run on Linux. Install it now or later in Settings → Launch.</source>
+        <translation>Proton позволяет запускать Windows-игры на Linux. Установите сейчас или позже в Настройки → Запуск.</translation>
     </message>
     <message>
-        <location line="+7"/>
-        <source>Tip: with a plugin installed, Install runs automatically after download. Catalog-only setups need a manual Install step.</source>
-        <translation>Подсказка: с плагином установка идёт автоматически после загрузки. Только каталог - нужна ручная установка.</translation>
+        <location line="+125"/>
+        <source>You have no game source yet, so Catalog will be empty. Add one in Settings → Plugins to see games.</source>
+        <translation>Источника игр пока нет, поэтому Каталог будет пустым. Добавьте его в Настройки → Плагины.</translation>
+    </message>
+    <message>
+        <location line="-63"/>
+        <source>Games folder</source>
+        <translation>Папка с играми</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Game source</source>
+        <translation>Источник игр</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>None yet</source>
+        <translation>Пока нет</translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>How to get your first game</source>
+        <translation>Как получить первую игру</translation>
+    </message>
+    <message>
+        <location line="-29"/>
+        <source>Language</source>
+        <translation>Язык</translation>
     </message>
 </context>
 <context>
@@ -4883,7 +5213,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Пропустить</translation>
     </message>
     <message>
-        <location line="+55"/>
+        <location line="+57"/>
         <source>Back</source>
         <translation>Назад</translation>
     </message>
@@ -4916,12 +5246,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Выбрать папку…</translation>
     </message>
     <message>
-        <location line="+13"/>
-        <source>Or keep the default path already listed above.</source>
-        <translation>Или оставьте путь по умолчанию из списка выше.</translation>
-    </message>
-    <message>
-        <location line="+27"/>
+        <location line="+40"/>
         <source>Official plugins</source>
         <translation>Официальные плагины</translation>
     </message>
@@ -4967,12 +5292,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Или установите файл плагина, если он уже есть.</translation>
     </message>
     <message>
-        <location line="-89"/>
-        <source>Install a plugin</source>
-        <translation>Установить плагин</translation>
-    </message>
-    <message>
-        <location line="+126"/>
+        <location line="+37"/>
         <source>v%1 · %2</source>
         <translation>v%1 · %2</translation>
     </message>
@@ -4985,6 +5305,16 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+6"/>
         <source>Skip for now</source>
         <translation>Пока пропустить</translation>
+    </message>
+    <message>
+        <location line="-166"/>
+        <source>The star marks the folder new games go to. Or keep the default path listed above.</source>
+        <translation>Звёздочка отмечает папку, куда попадают новые игры. Или оставьте путь по умолчанию из списка выше.</translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Add a game source</source>
+        <translation>Добавьте источник игр</translation>
     </message>
 </context>
 <context>
@@ -5018,7 +5348,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>PluginInstallOverlay</name>
     <message>
-        <location filename="../qml/app/PluginInstallOverlay.qml" line="+45"/>
+        <location filename="../qml/app/PluginInstallOverlay.qml" line="+46"/>
         <source>Updating plugins…</source>
         <translation>Обновление плагинов…</translation>
     </message>
@@ -5026,6 +5356,11 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+1"/>
         <source>Installing plugins…</source>
         <translation>Установка плагинов…</translation>
+    </message>
+    <message>
+        <location line="-2"/>
+        <source>Removing plugin…</source>
+        <translation>Удаление плагина…</translation>
     </message>
 </context>
 <context>
@@ -5140,52 +5475,52 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>macOS</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="+49"/>
         <source>Browse catalogs, download games, and launch from your library.</source>
         <translation>Каталоги, загрузка игр и запуск из библиотеки.</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+10"/>
         <source>Application</source>
         <translation>Приложение</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+3"/>
         <source>Version</source>
         <translation>Версия</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+4"/>
         <source>Unknown</source>
         <translation>Неизвестно</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+7"/>
         <source>Platform</source>
         <translation>Платформа</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+12"/>
         <source>Danger zone</source>
         <translation>Опасная зона</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+3"/>
         <source>Delete application data</source>
         <translation>Удалить данные приложения</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+2"/>
         <source>Deletes settings, download history, caches, plugins, and Proton from the app folder. Game files on your disks stay. Sprout will quit afterward.</source>
         <translation>Удаляет настройки, историю загрузок, кэши, плагины и Proton из папки приложения. Файлы игр на дисках остаются. После этого Sprout закроется.</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+13"/>
         <source>Delete application data…</source>
         <translation>Удалить данные приложения…</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+12"/>
         <source>Delete application data?</source>
         <translation>Удалить данные приложения?</translation>
     </message>
@@ -5208,7 +5543,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsAppearancePage</name>
     <message>
-        <location filename="../qml/settings/SettingsAppearancePage.qml" line="+16"/>
+        <location filename="../qml/settings/SettingsAppearancePage.qml" line="+14"/>
         <source>English</source>
         <translation>English</translation>
     </message>
@@ -5218,12 +5553,17 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Русский</translation>
     </message>
     <message>
-        <location line="+30"/>
+        <location line="+25"/>
         <source>Theme and colors apply across the app.</source>
         <translation>Тема и цвета применяются ко всему приложению.</translation>
     </message>
     <message>
-        <location line="+15"/>
+        <location line="+4"/>
+        <source>Light or dark</source>
+        <translation>Светлая или тёмная</translation>
+    </message>
+    <message>
+        <location line="+9"/>
         <source>Daylight</source>
         <translation>День</translation>
     </message>
@@ -5233,34 +5573,49 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Сумерки</translation>
     </message>
     <message>
-        <location line="+96"/>
-        <source>Palette</source>
-        <translation>Палитра</translation>
+        <location line="+136"/>
+        <source>Missing your language? Help translate Sprout on Weblate.</source>
+        <translation>Нет вашего языка? Помогите перевести Sprout на Weblate.</translation>
     </message>
     <message>
-        <location line="+43"/>
-        <source>Primary</source>
-        <translation>Основной</translation>
-    </message>
-    <message>
-        <location line="+10"/>
-        <source>Meadow brings its own sage, olive and rose. Pick another palette to choose a primary color.</source>
-        <translation>У палитры Meadow свои цвета: шалфей, олива и роза. Чтобы выбрать основной цвет, выберите другую палитру.</translation>
-    </message>
-    <message>
-        <location line="+37"/>
+        <location line="-15"/>
         <source>Language</source>
         <translation>Язык</translation>
     </message>
     <message>
-        <location line="+35"/>
+        <location line="+14"/>
         <source>Community translations</source>
         <translation>Переводы сообщества</translation>
     </message>
     <message>
-        <location line="+16"/>
-        <source>Help translate</source>
-        <translation>Помочь с переводом</translation>
+        <location line="-150"/>
+        <source>Theme</source>
+        <translation>Тема</translation>
+    </message>
+    <message>
+        <location line="+120"/>
+        <source>Colors</source>
+        <translation>Цвета</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>App colour</source>
+        <translation>Цвет приложения</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Each circle shows the colours the app will use.</source>
+        <translation>В каждом круге — цвета, которые получит приложение.</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Interface language</source>
+        <translation>Язык интерфейса</translation>
+    </message>
+    <message>
+        <location line="-30"/>
+        <source>Reduce motion</source>
+        <translation>Уменьшить анимации</translation>
     </message>
 </context>
 <context>
@@ -5319,32 +5674,32 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsFriendsPage</name>
     <message>
-        <location filename="../qml/settings/SettingsFriendsPage.qml" line="+70"/>
+        <location filename="../qml/settings/SettingsFriendsPage.qml" line="+46"/>
         <source>Identity</source>
         <translation>Профиль</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+1"/>
         <source>This name is shown in invites and presence.</source>
         <translation>Это имя показывается в приглашениях и статусе.</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+8"/>
         <source>Display name</source>
         <translation>Имя профиля</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="+7"/>
         <source>Device ID: %1</source>
         <translation>ID устройства: %1</translation>
     </message>
     <message>
-        <location line="+33"/>
+        <location line="+6"/>
         <source>Relay</source>
         <translation>Релей</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+1"/>
         <source>Used for invites and presence.</source>
         <translation>Для приглашений и статуса в игре.</translation>
     </message>
@@ -5354,7 +5709,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>URL релея</translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+8"/>
         <source>Save</source>
         <translation>Сохранить</translation>
     </message>
@@ -5367,27 +5722,22 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsHubPage</name>
     <message>
-        <location filename="../qml/settings/SettingsHubPage.qml" line="+20"/>
+        <location filename="../qml/settings/SettingsHubPage.qml" line="+18"/>
         <source>Plugins</source>
         <translation>Плагины</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>Hydra catalogs</source>
         <translation>Каталоги Hydra</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>Friends</source>
         <translation>Друзья</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Invite codes and relay presence</source>
-        <translation>Коды приглашений и присутствие через релей</translation>
-    </message>
-    <message>
-        <location line="+6"/>
+        <location line="+5"/>
         <source>Debrid</source>
         <translation>Дебрид</translation>
     </message>
@@ -5397,7 +5747,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Загрузки через TorBox</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+4"/>
         <source>Storage</source>
         <translation>Хранилище</translation>
     </message>
@@ -5407,7 +5757,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Папки библиотеки и загрузок</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+4"/>
         <source>Updates</source>
         <translation>Обновления</translation>
     </message>
@@ -5417,49 +5767,69 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Обновления игр и лаунчера</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>Launch options and Proton on Linux</source>
         <translation>Параметры запуска и Proton на Linux</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>Theme, colors, and language</source>
         <translation>Тема, цвета и язык</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>Version and app data</source>
         <translation>Версия и данные приложения</translation>
     </message>
     <message>
-        <location line="+100"/>
+        <location line="+89"/>
         <source>Sprout v%1</source>
         <translation>Sprout v%1</translation>
     </message>
     <message>
-        <location line="-115"/>
+        <location line="-100"/>
         <source>Launch</source>
         <translation>Запуск</translation>
     </message>
     <message>
-        <location line="-41"/>
-        <source>Install plugins to browse and play games.</source>
-        <translation>Плагины, чтобы смотреть каталог и запускать игры.</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>JSON catalog URLs</source>
-        <translation>JSON-ссылки на каталоги</translation>
-    </message>
-    <message>
-        <location line="+41"/>
+        <location line="+5"/>
         <source>Appearance</source>
         <translation>Оформление</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+5"/>
         <source>About</source>
         <translation>О приложении</translation>
+    </message>
+    <message>
+        <location line="-29"/>
+        <source>Friend codes and online status</source>
+        <translation>Коды друзей и статус онлайн</translation>
+    </message>
+    <message>
+        <location line="+60"/>
+        <source>Games and storage</source>
+        <translation>Игры и хранилище</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>People</source>
+        <translation>Люди</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>App</source>
+        <translation>Приложение</translation>
+    </message>
+    <message>
+        <location line="-72"/>
+        <source>Game sources - install one to browse and play games.</source>
+        <translation>Источники игр - поставьте, чтобы смотреть каталог и играть.</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Add extra game lists from a link, e.g. a Hydra Launcher list (advanced)</source>
+        <translation>Дополнительные списки игр по ссылке, например из Hydra Launcher (для опытных)</translation>
     </message>
 </context>
 <context>
@@ -5591,14 +5961,14 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../qml/settings/SettingsPage.qml" line="+25"/>
+        <location filename="../qml/settings/SettingsPage.qml" line="+30"/>
         <location line="+3"/>
-        <location line="+121"/>
+        <location line="+159"/>
         <source>Settings</source>
         <translation>Настройки</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+10"/>
         <source>Plugins</source>
         <translation>Плагины</translation>
     </message>
@@ -5663,7 +6033,7 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>О приложении</translation>
     </message>
     <message>
-        <location line="+54"/>
+        <location line="+60"/>
         <source>Back</source>
         <translation>Назад</translation>
     </message>
@@ -5676,22 +6046,22 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SettingsPluginStorePage</name>
     <message>
-        <location filename="../qml/settings/SettingsPluginStorePage.qml" line="+82"/>
+        <location filename="../qml/settings/SettingsPluginStorePage.qml" line="+81"/>
         <source>Refresh list</source>
         <translation>Обновить список</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="-10"/>
         <source>Loading official plugins…</source>
         <translation>Загрузка официальных плагинов…</translation>
     </message>
     <message>
-        <location line="+23"/>
+        <location line="+3"/>
         <source>No official plugins available for this platform.</source>
         <translation>Для этой платформы нет официальных плагинов.</translation>
     </message>
     <message>
-        <location line="+85"/>
+        <location line="+79"/>
         <source>Delete</source>
         <translation>Удалить</translation>
     </message>
@@ -5710,41 +6080,47 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
+    <message>
+        <location line="-85"/>
+        <source>Official plugins</source>
+        <translation>Официальные плагины</translation>
+    </message>
 </context>
 <context>
     <name>SettingsPluginsPage</name>
     <message>
-        <location filename="../qml/settings/SettingsPluginsPage.qml" line="+95"/>
+        <location filename="../qml/settings/SettingsPluginsPage.qml" line="+136"/>
         <source>Plugin store</source>
         <translation>Магазин плагинов</translation>
     </message>
     <message>
-        <location line="+42"/>
+        <location line="-52"/>
         <source>No plugins installed</source>
         <translation>Нет установленных плагинов</translation>
     </message>
     <message>
-        <location line="+127"/>
+        <location line="+117"/>
         <source>Delete</source>
         <translation>Удалить</translation>
     </message>
     <message>
-        <location line="-51"/>
+        <location line="-56"/>
         <source>Install from file…</source>
         <translation>Установить из файла…</translation>
     </message>
     <message>
-        <location line="-68"/>
+        <location line="-60"/>
         <source>Open the plugin store and install a plugin to browse games.</source>
         <translation>Откройте магазин плагинов и поставьте плагин, чтобы смотреть игры.</translation>
     </message>
     <message>
-        <location line="+74"/>
+        <location line="+68"/>
         <source>Open folder</source>
         <translation>Открыть папку</translation>
     </message>
     <message>
-        <location line="+12"/>
+        <location line="-42"/>
+        <location line="+57"/>
         <source>Remove plugin?</source>
         <translation>Удалить плагин?</translation>
     </message>
@@ -5757,6 +6133,94 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+18"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
+    </message>
+    <message>
+        <location line="-115"/>
+        <source>Installed</source>
+        <translation>Установленные</translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>not loaded</source>
+        <translation>не загружен</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>Get more</source>
+        <translation>Ещё плагины</translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Official and community plugins.</source>
+        <translation>Официальные плагины и плагины сообщества.</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsScreen</name>
+    <message>
+        <location filename="../qml/settings/SettingsScreen.qml" line="+19"/>
+        <source>Plugins</source>
+        <translation>Плагины</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Hydra catalogs</source>
+        <translation>Каталоги Hydra</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Debrid</source>
+        <translation>Дебрид</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Storage</source>
+        <translation>Хранилище</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Updates</source>
+        <translation>Обновления</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Friends</source>
+        <translation>Друзья</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Launch</source>
+        <translation>Запуск</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Appearance</source>
+        <translation>Оформление</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>About</source>
+        <translation>О приложении</translation>
+    </message>
+    <message>
+        <location line="+40"/>
+        <source>Settings</source>
+        <translation>Настройки</translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Games and storage</source>
+        <translation>Игры и хранилище</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>People</source>
+        <translation>Люди</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>App</source>
+        <translation>Приложение</translation>
     </message>
 </context>
 <context>
@@ -5792,27 +6256,30 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Найдено игр: %1</translation>
     </message>
     <message>
-        <location line="+26"/>
+        <location line="+14"/>
+        <location line="+6"/>
         <source>Name</source>
         <translation>Название</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+6"/>
+        <location line="+6"/>
         <source>Catalog URL</source>
         <translation>URL каталога</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+6"/>
+        <location line="+6"/>
         <source>Short description (optional)</source>
         <translation>Краткое описание (необязательно)</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+23"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+8"/>
         <source>Validating…</source>
         <translation>Проверка…</translation>
     </message>
@@ -5825,6 +6292,11 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+0"/>
         <source>Add</source>
         <translation>Добавить</translation>
+    </message>
+    <message>
+        <location line="-66"/>
+        <source>Catalog</source>
+        <translation>Каталог</translation>
     </message>
 </context>
 <context>
@@ -5840,17 +6312,17 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Игры: %1</translation>
     </message>
     <message>
-        <location line="+66"/>
+        <location line="+120"/>
         <source>Add catalog</source>
         <translation>Добавить каталог</translation>
     </message>
     <message>
-        <location line="+52"/>
+        <location line="-65"/>
         <source>No catalogs yet</source>
         <translation>Пока нет каталогов</translation>
     </message>
     <message>
-        <location line="-103"/>
+        <location line="-37"/>
         <source>Off</source>
         <translation>Выкл.</translation>
     </message>
@@ -5860,12 +6332,12 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Нет URL - каталог не загрузится</translation>
     </message>
     <message>
-        <location line="+63"/>
+        <location line="+112"/>
         <source>Browse Hydra Library</source>
         <translation>Обзор Hydra Library</translation>
     </message>
     <message>
-        <location line="+156"/>
+        <location line="-36"/>
         <source>Edit</source>
         <translation>Изменить</translation>
     </message>
@@ -5875,20 +6347,25 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Открыть URL</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+6"/>
         <source>Delete</source>
         <translation>Удалить</translation>
+    </message>
+    <message>
+        <location line="-60"/>
+        <source>Catalogs</source>
+        <translation>Каталоги</translation>
     </message>
 </context>
 <context>
     <name>SettingsStoragePage</name>
     <message>
-        <location filename="../qml/settings/SettingsStoragePage.qml" line="+191"/>
+        <location filename="../qml/settings/SettingsStoragePage.qml" line="+122"/>
         <source>Add drive…</source>
         <translation>Добавить диск…</translation>
     </message>
     <message>
-        <location line="+203"/>
+        <location line="+132"/>
         <source>Remove drive?</source>
         <translation>Удалить диск?</translation>
     </message>
@@ -5898,32 +6375,32 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <translation>Убрать</translation>
     </message>
     <message>
-        <location line="-229"/>
+        <location line="-158"/>
         <source>Scan for installed games</source>
         <translation>Найти установленные игры</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+12"/>
         <source>Games: %1</source>
         <translation>Игры: %1</translation>
     </message>
     <message>
-        <location line="+87"/>
+        <location line="+4"/>
         <source>No games on this drive yet</source>
         <translation>На этом диске пока нет игр</translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+42"/>
         <source>Delete</source>
         <translation>Удалить</translation>
     </message>
     <message>
-        <location line="+14"/>
+        <location line="-8"/>
         <source>Move…</source>
         <translation>Переместить…</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+34"/>
         <source>Move to drive</source>
         <translation>Переместить на диск</translation>
     </message>
@@ -5947,86 +6424,96 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <source>Remove anyway</source>
         <translation>Убрать всё равно</translation>
     </message>
+    <message>
+        <location line="-225"/>
+        <source>Drives</source>
+        <translation>Диски</translation>
+    </message>
+    <message>
+        <location line="+35"/>
+        <source>Make default</source>
+        <translation>Сделать основным</translation>
+    </message>
 </context>
 <context>
     <name>SettingsUpdatesPage</name>
     <message>
-        <location filename="../qml/settings/SettingsUpdatesPage.qml" line="+28"/>
+        <location filename="../qml/settings/SettingsUpdatesPage.qml" line="+24"/>
         <source>Check for game updates and new Sprout versions.</source>
         <translation>Проверка обновлений игр и новых версий Sprout.</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="-1"/>
         <source>Games</source>
         <translation>Игры</translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+4"/>
         <source>Check for updates on launch</source>
         <translation>Проверять обновления при запуске</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+7"/>
         <source>Install updates automatically on launch</source>
         <translation>Устанавливать обновления при запуске</translation>
     </message>
     <message>
-        <location line="+44"/>
+        <location line="+16"/>
         <source>Sprout</source>
         <translation>Sprout</translation>
     </message>
     <message>
-        <location line="+60"/>
+        <location line="+48"/>
         <source>Check for Sprout updates on startup</source>
         <translation>Проверять обновления Sprout при запуске</translation>
     </message>
     <message>
-        <location line="+63"/>
+        <location line="-24"/>
         <source>Check for Sprout updates</source>
         <translation>Проверять обновления Sprout</translation>
     </message>
     <message>
-        <location line="-192"/>
+        <location line="-46"/>
         <source>Shows once at startup when a newer build is available in the catalog.</source>
         <translation>Показывает один раз при запуске, если в каталоге есть более новая сборка.</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+7"/>
         <source>Downloads updates once at startup. You can turn this off per game.</source>
         <translation>Скачивает обновления один раз при запуске. Можно отключить для отдельной игры.</translation>
     </message>
     <message>
-        <location line="+20"/>
+        <location line="+6"/>
         <source>Check for game updates</source>
         <translation>Проверять обновления игр</translation>
     </message>
     <message>
-        <location line="+26"/>
+        <location line="+12"/>
         <source>Current version: %1</source>
         <translation>Текущая версия: %1</translation>
     </message>
     <message>
-        <location line="+58"/>
+        <location line="+46"/>
         <source>Checks for new versions in the background.</source>
         <translation>Проверяет новые версии в фоне.</translation>
     </message>
     <message>
-        <location line="+25"/>
+        <location line="+6"/>
         <source>Include pre-releases</source>
         <translation>Включать пререлизы</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+1"/>
         <source>Offer beta and RC builds from GitHub.</source>
         <translation>Предлагать beta и RC сборки с GitHub.</translation>
     </message>
     <message>
-        <location line="+35"/>
+        <location line="-25"/>
         <source>Download and install</source>
         <translation>Скачать и установить</translation>
     </message>
     <message>
-        <location line="+11"/>
+        <location line="+8"/>
         <source>Open release page</source>
         <translation>Открыть страницу релиза</translation>
     </message>
@@ -6034,22 +6521,12 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>SourceHelpDialog</name>
     <message>
-        <location filename="../qml/components/SourceHelpDialog.qml" line="+12"/>
-        <source>Catalogs and plugins</source>
-        <translation>Каталоги и плагины</translation>
-    </message>
-    <message>
-        <location line="+7"/>
+        <location filename="../qml/components/SourceHelpDialog.qml" line="+19"/>
         <source>Step 1</source>
         <translation>Шаг 1</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Plugin</source>
-        <translation>Плагин</translation>
-    </message>
-    <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Step 2</source>
         <translation>Шаг 2</translation>
     </message>
@@ -6068,6 +6545,16 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <source>Library</source>
         <translation>Библиотека</translation>
     </message>
+    <message>
+        <location line="-20"/>
+        <source>How game sources work</source>
+        <translation>Как работают источники игр</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Source</source>
+        <translation>Источник</translation>
+    </message>
 </context>
 <context>
     <name>SteamidraTrustSheet</name>
@@ -6083,6 +6570,35 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
     </message>
 </context>
 <context>
+    <name>StorePluginCard</name>
+    <message>
+        <location filename="../qml/settings/StorePluginCard.qml" line="+71"/>
+        <source>Installed · v%1</source>
+        <translation>Установлен · v%1</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Installed</source>
+        <translation>Установлен</translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <location line="+5"/>
+        <source>Source code</source>
+        <translation>Исходный код</translation>
+    </message>
+    <message>
+        <location line="+33"/>
+        <source>Install</source>
+        <translation>Установить</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Remove</source>
+        <translation>Удалить</translation>
+    </message>
+</context>
+<context>
     <name>SuggestionOverlayCard</name>
     <message>
         <location filename="../qml/components/SuggestionOverlayCard.qml" line="+81"/>
@@ -6093,6 +6609,114 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="-12"/>
         <source>Suggested by %1</source>
         <translation>Предложил %1</translation>
+    </message>
+</context>
+<context>
+    <name>ThemeColorPicker</name>
+    <message>
+        <location filename="../qml/settings/ThemeColorPicker.qml" line="+56"/>
+        <source>Meadow</source>
+        <translation>Луг</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Sage, olive and rose</source>
+        <translation>Шалфей, олива и роза</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Calm</source>
+        <translation>Спокойный</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Soft, balanced tones</source>
+        <translation>Мягкие, сбалансированные тона</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Vibrant</source>
+        <translation>Яркий</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Rich, saturated colour</source>
+        <translation>Насыщенные цвета</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Expressive</source>
+        <translation>Выразительный</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Playful contrasting accents</source>
+        <translation>Игривые контрастные акценты</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Rainbow</source>
+        <translation>Радуга</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Bright accents, neutral surfaces</source>
+        <translation>Яркие акценты, нейтральный фон</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Fruit salad</source>
+        <translation>Фруктовый</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Warm shifted hues</source>
+        <translation>Тёплые смещённые оттенки</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Muted</source>
+        <translation>Приглушённый</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Barely tinted greys</source>
+        <translation>Чуть окрашенные серые</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Monochrome</source>
+        <translation>Монохром</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Black, white and grey</source>
+        <translation>Чёрный, белый и серый</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>True colour</source>
+        <translation>Точный цвет</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Keeps your colour as is</source>
+        <translation>Цвет как есть, без изменений</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Meadow brings its own sage, olive and rose. Pick another style to choose a primary color.</source>
+        <translation>У «Луга» свои цвета: шалфей, олива и роза. Выберите другой стиль, чтобы задать основной цвет.</translation>
+    </message>
+    <message>
+        <location line="+109"/>
+        <source>Custom colour</source>
+        <translation>Свой цвет</translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>Style</source>
+        <translation>Стиль</translation>
     </message>
 </context>
 <context>

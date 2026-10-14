@@ -34,6 +34,10 @@ void CoreController::initializeServices()
         }
     }
     m_coverCache = new CoverImageCache(this);
+    m_trailerCache = new TrailerCache(this);
+    connect(m_trailerCache, &TrailerCache::ready, this, &CoreController::trailerReady);
+    connect(m_trailerCache, &TrailerCache::progress, this, &CoreController::trailerProgress);
+    connect(m_trailerCache, &TrailerCache::failed, this, &CoreController::trailerFailed);
     m_catalogCovers = new CatalogCoverCoordinator(
         m_coverCache, m_metadataService, &m_settings, &m_catalog,
         [this](const QString& entryId) -> CatalogEntry* {
@@ -69,6 +73,7 @@ void CoreController::initializeServices()
                 // Persist only local cached covers into the library store.
                 if (!coverUrl.startsWith(QStringLiteral("file:")))
                     return;
+                emit catalogCoverChanged(entryId);
 
                 const LibraryGame* existing = m_libraryStore.gameById(entryId);
                 if (!existing || existing->coverUrl == coverUrl)
@@ -110,6 +115,10 @@ void CoreController::initializeServices()
             m_catalogCovers->clearFailedCoverHints();
         }
     };
+    catalogHooks.cacheReplaced = [this]() {
+        if (m_catalogFilters)
+            m_catalogFilters->invalidateTable();
+    };
     catalogHooks.applyFilter = [this](const QString& query) { applyCatalogFilter(query); };
     catalogHooks.rebuildGenres = [this]() { rebuildAvailableCatalogGenres(); };
     catalogHooks.warmCovers = [this]() {
@@ -141,6 +150,8 @@ void CoreController::initializeServices()
     }
     connect(m_catalogController, &CatalogController::catalogLoadingChanged, this,
             [this](bool) { emit catalogLoadingChanged(); });
+    connect(m_catalogController, &CatalogController::catalogPartialChanged, this,
+            &CoreController::catalogPartialChanged);
     connect(m_catalogController, &CatalogController::catalogStatusChanged, this,
             [this](const QString&) { emit catalogStatusChanged(); });
     connect(m_catalogController, &CatalogController::activeCatalogSourcesChanged, this,
@@ -431,6 +442,13 @@ void CoreController::initializeServices()
     updateHooks.catalogUpdateHasDlcRisk = [this](const QString& entryId) {
         return catalogUpdateHasDlcRisk(entryId);
     };
+    updateHooks.findCachedEntry = [this](const QString& entryId) -> const CatalogEntry* {
+        const auto it = m_catalogIdToCacheIndex.constFind(entryId);
+        if (it == m_catalogIdToCacheIndex.cend())
+            return nullptr;
+        const int idx = it.value();
+        return (idx >= 0 && idx < m_catalogCache.size()) ? &m_catalogCache.at(idx) : nullptr;
+    };
     m_gameUpdates = new GameUpdateService(&m_libraryStore, &m_settings, m_pluginHost,
                                           m_jobOrchestrator, &m_catalogCache, std::move(updateHooks));
 
@@ -660,12 +678,13 @@ void CoreController::initializeServices()
                 bool applied = false;
                 {
                     QWriteLocker locker(&m_catalogCacheLock);
-                    for (auto& entry : m_catalogCache) {
-                        if (entry.id != entryId)
-                            continue;
-                        applyMetadataToEntry(entry, metadata);
+                    // Index lookup instead of scanning ~125k rows per metadata result.
+                    const auto idxIt = m_catalogIdToCacheIndex.constFind(entryId);
+                    if (idxIt != m_catalogIdToCacheIndex.cend() && idxIt.value() >= 0
+                        && idxIt.value() < m_catalogCache.size()
+                        && m_catalogCache.at(idxIt.value()).id == entryId) {
+                        applyMetadataToEntry(m_catalogCache[idxIt.value()], metadata);
                         applied = true;
-                        break;
                     }
                 }
                 if (applied) {

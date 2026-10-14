@@ -5,7 +5,7 @@ Source plugins are **separate repositories**. Arachnel ships only the host (`Plu
 Reference implementations:
 
 - [arachnel-plugin-freetp](https://github.com/PetWork/arachnel-plugin-freetp) — torrent download (API v4 JSON catalog; still loads on host as v2+ for older builds)
-- [arachnel-plugin-steamidra](https://gitlab.com/BadKiko/arachnel-plugin-steamidra) — plugin-owned download (API v4, `owns_download`)
+- [arachnel_plugin_steamidra](https://github.com/BadKikoSecond/arachnel_plugin_steamidra) — plugin-owned download (API v4, `owns_download`)
 
 ---
 
@@ -376,6 +376,31 @@ This gate is mandatory for official source plugins.
 Plugins may bundle `games-arachnel.json` next to `plugin.json` and/or point to a remote URL in `catalogUrl`. Format: [docs/CATALOG_FORMAT.md](CATALOG_FORMAT.md).
 
 Downloaded catalogs (`games-arachnel.json`) are **gitignored** in plugin repos — fetched at CMake configure time or shipped only inside `.arach` releases.
+
+---
+
+## Catalog source extension (optional, recommended for big remote catalogs)
+
+By default (`arachnel_plugin_catalog_json`) a plugin downloads its whole catalog, parses it and hands the host a JSON string. For a 70 MB feed that means every plugin re-implements HTTP caching, streaming and memory management, and the cost lands on the user's machine.
+
+A plugin can instead let the **host** do that work. Export four extra functions (declared in `plugin_api.h`):
+
+| Export | Purpose |
+|--------|---------|
+| `arachnel_plugin_source_ext_version()` | return `1` |
+| `arachnel_plugin_catalog_source(plugin, &json, &len)` | descriptor: `url`, `rowsKeys`, `ttlSeconds`, `minRows`, `parallel`, optional `headers` / `userAgent` |
+| `arachnel_plugin_normalize_rows(plugin, rows, len, &json, &len)` | turn a JSON array of raw rows into `{"schema":"arachnel.plugin.catalog.v1","entries":[...],"supersedes":[...]}` |
+| `arachnel_plugin_source_free(ptr)` | free what the two functions above returned |
+
+The host then does the conditional GET (ETag, gzip), keeps the raw feed on disk, scans rows without a document tree, calls `normalize_rows` on batches (concurrently when `parallel` is true) and stores a binary snapshot. On the very first start (no cached copy) it also decodes the first ~1000 rows of the feed as soon as they arrive and shows them while the rest downloads, so keep the feed newest-first if the order matters. `supersedes` lists entry ids made redundant by another row (e.g. a DLC row also listed under its game); the host applies it across batches.
+
+**Compatibility rules (this is what keeps old launchers working):**
+
+1. The extension is **additive**. Do **not** bump `apiVersion`, and do **not** raise `minArachnel` because of it. Older launchers never look the symbols up.
+2. **Keep `arachnel_plugin_catalog_json` fully working.** Launchers without the extension use it, and the host falls back to it whenever the source path is missing, reports an unknown ext version, returns an error (e.g. no URL configured) or yields fewer than `minRows` entries.
+3. Declare the four exports in your own `plugin_entry.cpp` too, so the plugin still builds against an older SDK checkout.
+4. `normalize_rows` must be a pure function of its input when `parallel` is true.
+5. Host side: `ARACHNEL_DISABLE_PLUGIN_SOURCE=1` forces the `catalog_json` path (diagnostics).
 
 ---
 

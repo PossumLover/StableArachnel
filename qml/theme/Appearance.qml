@@ -19,16 +19,24 @@ Item {
 
     Settings {
         id: store
-        category: "appearance"
+        category: "appearance_v2"
         property int themeMode: root.defaultThemeMode
         property int paletteType: root.defaultPaletteType
         property string accentColor: root.defaultAccentColor
         property int lookRevision: 0
+        property bool reduceMotion: false
+        // Muting one trailer mutes the next ones too, until the user turns the sound back on.
+        property bool trailerMuted: false
     }
 
     readonly property int themeMode: store.themeMode
     readonly property int paletteType: store.paletteType
     readonly property string accentColor: store.accentColor
+    readonly property bool reduceMotion: store.reduceMotion
+    readonly property bool trailerMuted: store.trailerMuted
+
+    // One page gutter for every top-level page.
+    readonly property int pageMargin: MD.Token.spacing.large
 
     function apply() {
         if (store.accentColor === "#D4D4D4")
@@ -46,6 +54,14 @@ Item {
         MD.Token.color.paletteType = store.paletteType
         MD.Token.color.accentColor = store.accentColor
         Qt.styleHints.colorScheme = store.themeMode === MD.Enum.Dark ? Qt.Dark : Qt.Light
+    }
+
+    function setTrailerMuted(muted) {
+        store.trailerMuted = muted
+    }
+
+    function setReduceMotion(enabled) {
+        store.reduceMotion = enabled
     }
 
     function setThemeMode(mode) {

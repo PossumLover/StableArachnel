@@ -8,7 +8,8 @@ Item {
 
     property string message: ""
     property bool open: false
-    readonly property real railInset: 88
+    // The host already starts after the rail (AppWindow sets leftMargin to the rail width).
+    readonly property real railInset: 0
 
     function show(text, durationMs) {
         if (!text || text.length === 0)
@@ -50,15 +51,15 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: MD.Token.duration.short4
-                easing: MD.Token.easing.standard
+                duration: AppMotion.short
+                easing: AppMotion.standard
             }
         }
 
         Behavior on scale {
             NumberAnimation {
-                duration: MD.Token.duration.medium2
-                easing: MD.Token.easing.emphasized_decelerate
+                duration: AppMotion.medium
+                easing: AppMotion.emphasizedDecelerate
             }
         }
 

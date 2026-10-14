@@ -22,8 +22,8 @@ Rectangle {
 
     Behavior on opacity {
         NumberAnimation {
-            duration: MD.Token.duration.short4
-            easing: MD.Token.easing.emphasized_decelerate
+            duration: AppMotion.short
+            easing: AppMotion.emphasizedDecelerate
         }
     }
 
@@ -73,7 +73,9 @@ Rectangle {
         anchors.rightMargin: pageMargin + MD.Token.spacing.small
         spacing: MD.Token.spacing.small
 
+        // The toolbar above already says "Catalog"; the compact bar keeps the count and tools.
         MD.Label {
+            visible: false
             text: qsTr("Catalog")
             typescale: MD.Token.typescale.title_large
             elide: Text.ElideRight
@@ -110,7 +112,7 @@ Rectangle {
 
         MD.Label {
             Layout.fillWidth: true
-            text: Core.catalogLoading && Core.catalog.count === 0
+            text: Core.catalogPartial || (Core.catalogLoading && Core.catalog.count === 0)
                 ? qsTr("Loading…")
                 : qsTr("Found: %1").arg(Core.catalog.count)
             color: MD.Token.color.on_surface_variant
@@ -163,18 +165,12 @@ Rectangle {
             }
         }
 
-        MD.IconButton {
+        ConnectedIconToggle {
             opacity: 0.4 + 0.6 * root.barOpacity
-            mdState.type: page.listViewMode ? MD.Enum.IBtStandard : MD.Enum.IBtFilledTonal
-            icon.name: MD.Token.icon.grid_view
-            onClicked: prefs.viewMode = 0
-        }
-
-        MD.IconButton {
-            opacity: 0.4 + 0.6 * root.barOpacity
-            mdState.type: page.listViewMode ? MD.Enum.IBtFilledTonal : MD.Enum.IBtStandard
-            icon.name: MD.Token.icon.view_list
-            onClicked: prefs.viewMode = 1
+            icons: [MD.Token.icon.grid_view, MD.Token.icon.view_list]
+            tips: [qsTr("Grid"), qsTr("List")]
+            currentIndex: page.listViewMode ? 1 : 0
+            onPicked: function (index) { prefs.viewMode = index }
         }
 
         MD.IconButton {

@@ -53,6 +53,16 @@ Item {
     }
 
     Connections {
+        target: Core
+        // The poster is a local file; it arrives after the page opens when the card was never
+        // scrolled into view.
+        function onCatalogCoverChanged(entryId) {
+            if (entryId === root.gameId)
+                root.detailsRevision++
+        }
+    }
+
+    Connections {
         target: Core.library
         function onLibraryChanged() { root.detailsRevision++ }
     }
@@ -94,11 +104,16 @@ Item {
         const _rev = root.detailsRevision
         return Core.isEntryDownloadComplete(gameId)
     }
-    readonly property bool downloadFailed: downloadJob.status === "failed"
-        || downloadJob.status === "cancelled"
-    // Install-phase failure only (completed download with bad install, not a network drop).
-    readonly property bool installFailed: !root.downloadFailed
-        && !!(downloadJob.installFailed)
+    // Install-phase failures keep status "failed" with an install detail; treat those
+    // as installFailed so retry uses retryInstall instead of re-downloading (#77).
+    readonly property bool installFailed: {
+        const detail = String(downloadJob.detail ?? "")
+        if (detail.indexOf("Install failed") >= 0 || detail.indexOf("Ошибка установки") >= 0)
+            return true
+        return downloadJob.status === "completed" && !!(downloadJob.installFailed)
+    }
+    readonly property bool downloadFailed: (downloadJob.status === "failed"
+        || downloadJob.status === "cancelled") && !root.installFailed
     readonly property bool isInstalling: downloadJob.status === "installing"
     readonly property bool readyToInstall: !root.playable
         && !root.installed
@@ -132,20 +147,40 @@ Item {
     readonly property bool downloadCompleted: downloadJob.status === "completed"
     readonly property bool showDownloadProgress: !!(downloadJob.inProgress) || downloadCompleted
 
+    // Offers only change with plugins / catalog / library (detailsRevision), not with a download
+    // tick, so look them up once per revision instead of on every progress update.
+    readonly property var installOffers: {
+        const _rev = root.detailsRevision
+        return root.gameId.length ? Core.installOffersForEntry(root.gameId) : []
+    }
+
+    // Assign only when something visible changed: the job map is a fresh object on every call
+    // and every assignment re-evaluates all bindings that read it.
+    property string downloadJobKey: "{}"
+
+    function assignDownloadJob(job) {
+        const next = job || ({})
+        const key = JSON.stringify(next)
+        if (key === root.downloadJobKey)
+            return
+        root.downloadJobKey = key
+        root.downloadJob = next
+    }
+
     function refreshDownloadJob() {
         let job = Core.jobs.jobForEntry(root.gameId)
         if (job && job.jobId) {
-            downloadJob = job
+            assignDownloadJob(job)
             return
         }
         if (root.pendingInstallEntryId.length) {
             job = Core.jobs.jobForEntry(root.pendingInstallEntryId)
             if (job && job.jobId) {
-                downloadJob = job
+                assignDownloadJob(job)
                 return
             }
         }
-        const offers = Core.installOffersForEntry(root.gameId)
+        const offers = root.installOffers
         if (offers && offers.length) {
             for (let i = 0; i < offers.length; ++i) {
                 const oid = offers[i].entryId || ""
@@ -153,12 +188,12 @@ Item {
                     continue
                 job = Core.jobs.jobForEntry(oid)
                 if (job && job.jobId) {
-                    downloadJob = job
+                    assignDownloadJob(job)
                     return
                 }
             }
         }
-        downloadJob = job || ({})
+        assignDownloadJob(job)
     }
 
     function parseSizeLabelBytes(label) {
@@ -227,6 +262,7 @@ Item {
             if (!root.hasCachedMedia)
                 root.mediaLoading = true
             Core.enrichCatalogEntry(gameId)
+            Core.requestCatalogCover(gameId)
         }
     }
 
@@ -254,7 +290,7 @@ Item {
         const _rev = root.detailsRevision
         if (!root.gameId.length)
             return 0
-        const offers = Core.installOffersForEntry(root.gameId)
+        const offers = root.installOffers
         if (!offers || !offers.length)
             return 0
         const seen = ({})

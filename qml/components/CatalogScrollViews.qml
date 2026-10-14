@@ -39,8 +39,8 @@ Item {
 
     Behavior on scrubberTopMargin {
         NumberAnimation {
-            duration: MD.Token.duration.medium2
-            easing.type: Easing.OutCubic
+            duration: AppMotion.medium
+            easing: AppMotion.standardDecelerate
         }
     }
 
@@ -146,6 +146,15 @@ Item {
         return true
     }
 
+    // The true top of a view with a header is a negative contentY (minus the header height), so
+    // "contentY = 0" leaves the header scrolled away.
+    function scrollToTop() {
+        indexScrollAnim.stop()
+        scrubLerp.running = false
+        grid.positionViewAtBeginning()
+        list.positionViewAtBeginning()
+    }
+
     function restoreContentY(y) {
         const view = activeView()
         if (!view || view.height < 8)
@@ -205,7 +214,7 @@ Item {
     NumberAnimation {
         id: indexScrollAnim
         property: "contentY"
-        easing.type: Easing.OutCubic
+        easing: AppMotion.standardDecelerate
         onStopped: root.updateScrubberMode()
     }
 

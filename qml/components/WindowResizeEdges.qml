@@ -4,7 +4,10 @@ Item {
     id: root
 
     required property var window
-    property int margin: 5
+    property int margin: 6
+    // Corners are a bit larger than the edges so a diagonal resize is easy to hit.
+    property int corner: 12
+    // Only a normal window can be resized; maximized and fullscreen edges shouldn't promise it.
     enabled: root.window.visibility === Window.Windowed
 
     function resize(edge) {
@@ -17,6 +20,7 @@ Item {
         anchors.right: parent.right
         anchors.top: parent.top
         height: margin
+        hoverEnabled: true
         cursorShape: Qt.SizeVerCursor
         onPressed: resize(Qt.TopEdge)
     }
@@ -26,6 +30,7 @@ Item {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         height: margin
+        hoverEnabled: true
         cursorShape: Qt.SizeVerCursor
         onPressed: resize(Qt.BottomEdge)
     }
@@ -35,6 +40,7 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: margin
+        hoverEnabled: true
         cursorShape: Qt.SizeHorCursor
         onPressed: resize(Qt.LeftEdge)
     }
@@ -44,6 +50,7 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: margin
+        hoverEnabled: true
         cursorShape: Qt.SizeHorCursor
         onPressed: resize(Qt.RightEdge)
     }
@@ -51,8 +58,9 @@ Item {
     MouseArea {
         anchors.left: parent.left
         anchors.top: parent.top
-        width: margin
-        height: margin
+        width: corner
+        height: corner
+        hoverEnabled: true
         cursorShape: Qt.SizeFDiagCursor
         onPressed: resize(Qt.LeftEdge | Qt.TopEdge)
     }
@@ -60,8 +68,9 @@ Item {
     MouseArea {
         anchors.right: parent.right
         anchors.top: parent.top
-        width: margin
-        height: margin
+        width: corner
+        height: corner
+        hoverEnabled: true
         cursorShape: Qt.SizeBDiagCursor
         onPressed: resize(Qt.RightEdge | Qt.TopEdge)
     }
@@ -69,8 +78,9 @@ Item {
     MouseArea {
         anchors.left: parent.left
         anchors.bottom: parent.bottom
-        width: margin
-        height: margin
+        width: corner
+        height: corner
+        hoverEnabled: true
         cursorShape: Qt.SizeBDiagCursor
         onPressed: resize(Qt.LeftEdge | Qt.BottomEdge)
     }
@@ -78,8 +88,9 @@ Item {
     MouseArea {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        width: margin
-        height: margin
+        width: corner
+        height: corner
+        hoverEnabled: true
         cursorShape: Qt.SizeFDiagCursor
         onPressed: resize(Qt.RightEdge | Qt.BottomEdge)
     }

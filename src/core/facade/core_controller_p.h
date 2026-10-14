@@ -13,6 +13,7 @@
     void onCatalogReady();
     void runAutoInstallUpdates();
     void syncLibraryFromStore();
+    void repairLibraryTitles();
     void syncProtonCatalog();
     void applyCatalogFilter(const QString&);
     void rebuildCatalogIdIndex();
@@ -102,6 +103,7 @@
     HydraLibraryDirectory* m_hydraLibrary = nullptr;
     GameMetadataService* m_metadataService = nullptr;
     CoverImageCache* m_coverCache = nullptr;
+    TrailerCache* m_trailerCache = nullptr;
     CatalogCoverCoordinator* m_catalogCovers = nullptr;
     CatalogController* m_catalogController = nullptr;
     TorrentSession* m_torrentSession = nullptr;
@@ -125,6 +127,7 @@
     bool m_autoUpdatingOfficialPlugins = false;
     int m_autoUpdatePluginSuccessCount = 0;
     bool m_pluginInstallBusy = false;
+    bool m_pluginRemoveBusy = false;
     QVector<CatalogEntry> m_catalogCache;
     QReadWriteLock m_catalogCacheLock;
     QHash<QString, int> m_catalogIdToCacheIndex;

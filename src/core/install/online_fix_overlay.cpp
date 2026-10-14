@@ -459,6 +459,8 @@ QStringList findOverlayDirs(const QString& installPath)
                     QDir::Dirs | QDir::Files | QDir::NoSymLinks | QDir::NoDotAndDotDot,
                     QDirIterator::Subdirectories);
     int seen = 0;
+    // Built once per walk, not once per visited entry (up to 4000 regex constructions).
+    static const QRegularExpression pathSeparator(QStringLiteral("[/\\\\]"));
     while (it.hasNext() && seen < 4000) {
         it.next();
         ++seen;

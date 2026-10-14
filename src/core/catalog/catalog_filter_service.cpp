@@ -13,8 +13,11 @@
 #include <QThreadPool>
 #include <QTimer>
 #include <QWriteLocker>
+#include <QtConcurrent>
+#include <QThread>
 
 #include <algorithm>
+#include <limits>
 #include <numeric>
 
 namespace arachnel::core {
@@ -149,6 +152,11 @@ CatalogFilterRow CatalogFilterService::rowForEntry(const CatalogEntry& entry, qu
     return row;
 }
 
+QSet<quint32> CatalogFilterService::adultSnapshot() const
+{
+    return m_ratings ? m_ratings->adultAppIds() : QSet<quint32>();
+}
+
 void CatalogFilterService::setHideAdult(bool hide)
 {
     if (m_hideAdult == hide)
@@ -157,50 +165,133 @@ void CatalogFilterService::setHideAdult(bool hide)
     scheduleRefilter();
 }
 
-void CatalogFilterService::rebuildFilterTable()
+namespace {
+
+bool isAdultAppId(const QSet<quint32>& adult, const QString& steamAppId)
 {
-    auto fill = [this](QVector<CatalogEntry>* cachePtr) {
-        m_sourceIdsBySlot.clear();
-        m_presentGenreBits = 0;
-        if (!cachePtr) {
-            m_rows.clear();
-            m_searchEntries.clear();
-            m_titleLowers.clear();
-            return;
+    if (steamAppId.isEmpty())
+        return false;
+    bool ok = false;
+    const quint32 appId = steamAppId.toUInt(&ok);
+    return ok && adult.contains(appId);
+}
+
+// No row cap: the catalog GridView is virtualized, so only the delegates on screen exist.
+// The old caps (8192 browse / 4096 search) hid ~94% of a 125k catalog behind "Found: 8192".
+// Huge replacements still go through CatalogModel's bulk path (view unbound while swapping).
+constexpr int kMaxVisibleBrowse = std::numeric_limits<int>::max();
+constexpr int kMaxVisibleSearch = std::numeric_limits<int>::max();
+
+struct FilterSoA {
+    QVector<CatalogFilterRow> rows;
+    QVector<CatalogSearchEntry> searchEntries;
+    QStringList sourceIdsBySlot;
+    quint32 presentGenreBits = 0;
+};
+
+// `adult` is a copy of ContentRatingStore's set taken on the GUI thread: the store mutates it
+// there while this runs on a worker.
+FilterSoA buildFilterSoA(const QVector<CatalogEntry>* cachePtr, const QSet<quint32>& adult)
+{
+    FilterSoA out;
+    if (!cachePtr)
+        return out;
+    const int n = cachePtr->size();
+    out.rows.resize(n);
+    out.searchEntries.resize(n);
+    out.sourceIdsBySlot.reserve(8);
+
+    // Cheap sequential pass: source slots depend on first-seen order.
+    QVector<quint8> sourceSlotByRow(n);
+    QHash<QString, quint8> intern;
+    intern.reserve(8);
+    for (int i = 0; i < n; ++i) {
+        const CatalogEntry& entry = cachePtr->at(i);
+        quint8 slot = 0;
+        const auto it = intern.constFind(entry.sourceId);
+        if (it != intern.cend()) {
+            slot = it.value();
+        } else if (out.sourceIdsBySlot.size() < 32) {
+            slot = static_cast<quint8>(out.sourceIdsBySlot.size());
+            intern.insert(entry.sourceId, slot);
+            out.sourceIdsBySlot.append(entry.sourceId);
+        } else {
+            slot = 31;
         }
-        const int n = cachePtr->size();
-        m_rows.resize(n);
-        m_searchEntries.resize(n);
-        m_titleLowers.resize(n);
-        m_sourceIdsBySlot.reserve(8);
-        QHash<QString, quint8> intern;
-        intern.reserve(8);
-        for (int i = 0; i < n; ++i) {
-            const CatalogEntry& entry = cachePtr->at(i);
-            quint8 slot = 0;
-            const auto it = intern.constFind(entry.sourceId);
-            if (it != intern.cend()) {
-                slot = it.value();
-            } else if (m_sourceIdsBySlot.size() < 32) {
-                slot = static_cast<quint8>(m_sourceIdsBySlot.size());
-                intern.insert(entry.sourceId, slot);
-                m_sourceIdsBySlot.append(entry.sourceId);
-            } else {
-                slot = 31;
-            }
-            m_rows[i] = rowForEntry(entry, slot);
-            m_searchEntries[i] = CatalogSearchEntry::fromEntry(entry);
-            m_titleLowers[i] = entry.titleLower;
-            m_presentGenreBits |= entry.genreBits;
+        sourceSlotByRow[i] = slot;
+        out.presentGenreBits |= entry.genreBits;
+    }
+
+    // Row + search-entry construction (tokenizing every title) is independent per entry.
+    const CatalogEntry* entries = cachePtr->constData();
+    CatalogFilterRow* rows = out.rows.data();
+    CatalogSearchEntry* searchEntries = out.searchEntries.data();
+    const auto buildRange = [&](int from, int to) {
+        for (int i = from; i < to; ++i) {
+            rows[i] = catalogFilterRowFromEntry(entries[i], sourceSlotByRow.at(i));
+            if (!adult.isEmpty() && isAdultAppId(adult, entries[i].steamAppId))
+                rows[i].flags |= kFilterFlagAdult;
+            searchEntries[i] = CatalogSearchEntry::fromEntry(entries[i]);
         }
     };
+    constexpr int kMinParallelRows = 8192;
+    const int threads = qBound(1, QThread::idealThreadCount(), 8);
+    if (n < kMinParallelRows || threads == 1) {
+        buildRange(0, n);
+        return out;
+    }
+    QVector<QPair<int, int>> ranges;
+    const int chunk = (n + threads - 1) / threads;
+    for (int from = 0; from < n; from += chunk)
+        ranges.append({from, qMin(n, from + chunk)});
+    QtConcurrent::blockingMap(ranges, [&](QPair<int, int>& range) {
+        buildRange(range.first, range.second);
+    });
+    return out;
+}
 
+} // namespace
+
+void CatalogFilterService::rebuildFilterTable()
+{
+    FilterSoA built;
     if (m_cacheLock) {
         QWriteLocker locker(m_cacheLock);
-        fill(m_cache);
+        built = buildFilterSoA(m_cache, adultSnapshot());
     } else {
-        fill(m_cache);
+        built = buildFilterSoA(m_cache, adultSnapshot());
     }
+    m_rows = std::move(built.rows);
+    m_searchEntries = std::move(built.searchEntries);
+    m_sourceIdsBySlot = std::move(built.sourceIdsBySlot);
+    m_presentGenreBits = built.presentGenreBits;
+    m_builtEpoch = m_tableEpoch;
+    refreshAvailableGenres();
+}
+
+void CatalogFilterService::invalidateTable()
+{
+    ++m_tableEpoch;
+}
+
+void CatalogFilterService::rebuildPresentGenresOnly()
+{
+    quint32 bits = 0;
+    auto scan = [&](QVector<CatalogEntry>* cachePtr) {
+        if (!cachePtr)
+            return;
+        for (const CatalogEntry& entry : std::as_const(*cachePtr))
+            bits |= entry.genreBits;
+    };
+    if (m_cacheLock) {
+        QReadLocker locker(m_cacheLock);
+        scan(m_cache);
+    } else {
+        scan(m_cache);
+    }
+    if (bits == m_presentGenreBits)
+        return;
+    m_presentGenreBits = bits;
     refreshAvailableGenres();
 }
 
@@ -210,7 +301,6 @@ void CatalogFilterService::syncFilterRow(int cacheIndex)
         return;
     CatalogFilterRow row;
     CatalogSearchEntry searchEntry;
-    QString titleLower;
     quint32 bits = 0;
     bool inRange = false;
     if (m_cacheLock) {
@@ -219,24 +309,23 @@ void CatalogFilterService::syncFilterRow(int cacheIndex)
             return;
         if (m_rows.size() != m_cache->size() || m_searchEntries.size() != m_cache->size()) {
             locker.unlock();
-            rebuildFilterTable();
+            // Huge catalogs: never rebuild SoA on the UI thread from enrich.
+            scheduleRefilter();
             return;
         }
         const CatalogEntry& entry = m_cache->at(cacheIndex);
         const quint8 slot = internSourceSlot(entry.sourceId);
         row = rowForEntry(entry, slot);
         searchEntry = CatalogSearchEntry::fromEntry(entry);
-        titleLower = entry.titleLower;
         bits = entry.genreBits;
         m_rows[cacheIndex] = row;
         m_searchEntries[cacheIndex] = std::move(searchEntry);
-        m_titleLowers[cacheIndex] = titleLower;
         inRange = true;
     } else {
         if (cacheIndex >= m_cache->size())
             return;
         if (m_rows.size() != m_cache->size() || m_searchEntries.size() != m_cache->size()) {
-            rebuildFilterTable();
+            scheduleRefilter();
             return;
         }
         const CatalogEntry& entry = m_cache->at(cacheIndex);
@@ -245,7 +334,6 @@ void CatalogFilterService::syncFilterRow(int cacheIndex)
         searchEntry = CatalogSearchEntry::fromEntry(entry);
         m_rows[cacheIndex] = row;
         m_searchEntries[cacheIndex] = std::move(searchEntry);
-        m_titleLowers[cacheIndex] = entry.titleLower;
         bits = entry.genreBits;
         inRange = true;
     }
@@ -274,6 +362,17 @@ void CatalogFilterService::applyFilterResult(quint64 generation, QVector<int> in
     }
 }
 
+namespace {
+/** Matches that make a search level good enough that the next, looser level is not tried. */
+constexpr int kSearchEnough[] = {8, 5, 5, 0};
+/** Score of a hit that has the query's words in the title (below: acronym, typo, sound-alike). */
+constexpr int kStrongScore = 50000;
+/** This many such hits are enough to hide the weaker kinds. */
+constexpr int kStrongEnough = 3;
+/** How far below the best fuzzy hit another fuzzy hit may score and still be shown. */
+constexpr int kFuzzySpread = 4500;
+} // namespace
+
 void CatalogFilterService::applyFilter(const QString& query)
 {
     if (!m_model || !m_cache)
@@ -286,8 +385,8 @@ void CatalogFilterService::applyFilter(const QString& query)
     } else {
         needRebuild = m_rows.size() != m_cache->size() || m_searchEntries.size() != m_cache->size();
     }
-    if (needRebuild)
-        rebuildFilterTable();
+    needRebuild = needRebuild || m_builtEpoch != m_tableEpoch;
+    const quint64 tableEpoch = m_tableEpoch;
 
     m_activeQuery = query;
     m_filterCutoffDay = 0;
@@ -302,24 +401,6 @@ void CatalogFilterService::applyFilter(const QString& query)
     const quint64 generation = ++m_filterGeneration;
     m_model->bindSource(m_cache);
 
-    quint32 sourceMask = 0;
-    bool checkSource = !m_hiddenSourceIds.isEmpty() && !m_sourceIdsBySlot.isEmpty();
-    if (checkSource) {
-        for (int i = 0; i < m_sourceIdsBySlot.size(); ++i) {
-            if (!m_hiddenSourceIds.contains(m_sourceIdsBySlot.at(i)))
-                sourceMask |= (quint32(1) << i);
-        }
-        if (sourceMask == 0) {
-            // All interned sources hidden.
-        } else {
-            quint32 all = 0;
-            for (int i = 0; i < m_sourceIdsBySlot.size(); ++i)
-                all |= (quint32(1) << i);
-            if (sourceMask == all)
-                checkSource = false;
-        }
-    }
-
     FilterSnapshot snap;
     snap.query = ParsedSearchQuery::parse(query);
     snap.cutoffDay = m_filterCutoffDay;
@@ -329,22 +410,83 @@ void CatalogFilterService::applyFilter(const QString& query)
     snap.hasAddonsFilter = m_hasAddonsFilter;
     snap.genreBit = genreBitForFilter(m_genreFilter);
     snap.playModeFilter = m_playModeFilter;
-    snap.sourceMask = sourceMask;
-    snap.checkSource = checkSource;
     snap.hideAdult = m_hideAdult;
     snap.sortMode = m_model->sortMode();
+    // Source mask is resolved on the worker after SoA slots are known.
+    snap.sourceMask = 0;
+    snap.checkSource = !m_hiddenSourceIds.isEmpty();
     snap.anySideFilter = m_typeFilter >= 0 || m_sizeFilter > 0 || m_recencyFilter > 0
-        || m_hasAddonsFilter || snap.genreBit != 0 || m_playModeFilter > 0 || checkSource || snap.hideAdult;
+        || m_hasAddonsFilter || snap.genreBit != 0 || m_playModeFilter > 0 || snap.checkSource
+        || snap.hideAdult;
 
     QVector<CatalogEntry>* cachePtr = m_cache;
     QReadWriteLock* lock = m_cacheLock;
-    const QVector<CatalogFilterRow>* rowsPtr = &m_rows;
-    const QVector<CatalogSearchEntry>* searchPtr = &m_searchEntries;
+    const QStringList hiddenIds = m_hiddenSourceIds;
+    const QSet<quint32> adult = adultSnapshot();
 
     QThreadPool::globalInstance()->start(
-        [this, generation, snap, cachePtr, lock, rowsPtr, searchPtr]() {
+        [this, generation, snap, cachePtr, lock, needRebuild, hiddenIds, adult, tableEpoch]() {
             QElapsedTimer timer;
             timer.start();
+
+            FilterSoA rebuilt;
+            bool builtFresh = false;
+            const QVector<CatalogFilterRow>* rowsPtr = nullptr;
+            const QVector<CatalogSearchEntry>* searchPtr = nullptr;
+            QStringList sourceIds;
+
+            auto loadSoA = [&]() -> bool {
+                if (!cachePtr)
+                    return false;
+                if (needRebuild || m_rows.size() != cachePtr->size()
+                    || m_searchEntries.size() != cachePtr->size()) {
+                    rebuilt = buildFilterSoA(cachePtr, adult);
+                    rowsPtr = &rebuilt.rows;
+                    searchPtr = &rebuilt.searchEntries;
+                    sourceIds = rebuilt.sourceIdsBySlot;
+                    builtFresh = true;
+                } else {
+                    rowsPtr = &m_rows;
+                    searchPtr = &m_searchEntries;
+                    sourceIds = m_sourceIdsBySlot;
+                }
+                return rowsPtr && searchPtr;
+            };
+
+            if (lock) {
+                QReadLocker locker(lock);
+                if (!loadSoA())
+                    return;
+            } else {
+                if (!loadSoA())
+                    return;
+            }
+
+            if (generation != m_filterGeneration.load(std::memory_order_relaxed))
+                return;
+
+            FilterSnapshot localSnap = snap;
+            if (localSnap.checkSource) {
+                quint32 sourceMask = 0;
+                for (int i = 0; i < sourceIds.size(); ++i) {
+                    if (!hiddenIds.contains(sourceIds.at(i)))
+                        sourceMask |= (quint32(1) << i);
+                }
+                localSnap.sourceMask = sourceMask;
+                if (sourceMask == 0) {
+                    // all hidden
+                } else {
+                    quint32 all = 0;
+                    for (int i = 0; i < sourceIds.size(); ++i)
+                        all |= (quint32(1) << i);
+                    if (sourceMask == all)
+                        localSnap.checkSource = false;
+                }
+                localSnap.anySideFilter = localSnap.typeFilter >= 0 || localSnap.sizeFilter > 0
+                    || localSnap.recencyFilter > 0 || localSnap.hasAddonsFilter
+                    || localSnap.genreBit != 0 || localSnap.playModeFilter > 0
+                    || localSnap.checkSource || localSnap.hideAdult;
+            }
 
             struct ScoredIndex {
                 int index = 0;
@@ -354,7 +496,7 @@ void CatalogFilterService::applyFilter(const QString& query)
             QVector<int> indices;
             int cacheSize = 0;
             CatalogModel::SortMode mode = CatalogModel::SortNewest;
-            const bool hasSearch = !snap.query.isEmpty;
+            const bool hasSearch = !localSnap.query.isEmpty;
 
             auto scanCache = [&]() -> bool {
                 if (!cachePtr || !rowsPtr || !searchPtr)
@@ -363,39 +505,81 @@ void CatalogFilterService::applyFilter(const QString& query)
                 if (rowsPtr->size() != cacheSize || searchPtr->size() != cacheSize)
                     return false;
 
-                if (!hasSearch && !snap.anySideFilter) {
+                if (!hasSearch && !localSnap.anySideFilter) {
                     indices.resize(cacheSize);
                     std::iota(indices.begin(), indices.end(), 0);
                 } else if (!hasSearch) {
-                    indices.reserve(cacheSize);
+                    indices.reserve(qMin(cacheSize, kMaxVisibleBrowse));
                     for (int i = 0; i < cacheSize; ++i) {
                         if ((i & 0x3FF) == 0
                             && generation != m_filterGeneration.load(std::memory_order_relaxed)) {
                             return false;
                         }
-                        if (!rowMatches(rowsPtr->at(i), snap))
+                        if (!rowMatches(rowsPtr->at(i), localSnap))
                             continue;
                         indices.append(i);
                     }
                 } else {
+                    // Whole words first. Only when that finds too little is the query widened to an
+                    // unfinished last word, then typos, then sound-alikes across scripts, so a
+                    // precise query never gets noise from the looser levels.
                     scoredMatches.reserve(qMin(cacheSize, 1024));
-                    for (int i = 0; i < cacheSize; ++i) {
-                        if ((i & 0x3FF) == 0
-                            && generation != m_filterGeneration.load(std::memory_order_relaxed)) {
-                            return false;
+                    const ParsedSearchQuery baseQuery = localSnap.query;
+                    for (int level = 0; level < 4; ++level) {
+                        scoredMatches.clear();
+                        const ParsedSearchQuery levelQuery = baseQuery.withLevel(level);
+                        for (int i = 0; i < cacheSize; ++i) {
+                            if ((i & 0x3FF) == 0
+                                && generation
+                                       != m_filterGeneration.load(std::memory_order_relaxed)) {
+                                return false;
+                            }
+                            if (!rowMatches(rowsPtr->at(i), localSnap))
+                                continue;
+
+                            const int score = scoreCatalogMatch(searchPtr->at(i), cachePtr->at(i),
+                                                                levelQuery);
+                            if (score <= 0)
+                                continue;
+
+                            scoredMatches.append({i, score});
                         }
-                        if (!rowMatches(rowsPtr->at(i), snap))
-                            continue;
+                        if (scoredMatches.size() >= kSearchEnough[level])
+                            break;
+                    }
 
-                        const int score =
-                            scoreCatalogMatch(searchPtr->at(i), cachePtr->at(i), snap.query);
-                        if (score <= 0)
-                            continue;
+                    // Fuzzy hits are only worth showing when they are close to the best fuzzy hit:
+                    // a typo in a whole word beats "sort of looks like the start of another word".
+                    // With real word matches on screen, acronym / typo / sound-alike hits are noise.
+                    int strong = 0;
+                    for (const ScoredIndex& sm : scoredMatches)
+                        strong += sm.score >= kStrongScore ? 1 : 0;
+                    if (strong >= kStrongEnough) {
+                        scoredMatches.erase(
+                            std::remove_if(scoredMatches.begin(), scoredMatches.end(),
+                                           [](const ScoredIndex& sm) {
+                                               return sm.score < kStrongScore;
+                                           }),
+                            scoredMatches.end());
+                    }
 
-                        scoredMatches.append({i, score});
+                    constexpr int kFuzzyCeiling = 40000;
+                    int bestFuzzy = 0;
+                    for (const ScoredIndex& sm : scoredMatches) {
+                        if (sm.score < kFuzzyCeiling)
+                            bestFuzzy = qMax(bestFuzzy, sm.score);
+                    }
+                    if (bestFuzzy > 0) {
+                        scoredMatches.erase(
+                            std::remove_if(scoredMatches.begin(), scoredMatches.end(),
+                                           [&](const ScoredIndex& sm) {
+                                               return sm.score < kFuzzyCeiling
+                                                      && sm.score < bestFuzzy - kFuzzySpread;
+                                           }),
+                            scoredMatches.end());
                     }
                 }
-                mode = static_cast<CatalogModel::SortMode>(snap.sortMode);
+                mode = static_cast<CatalogModel::SortMode>(localSnap.sortMode);
                 return true;
             };
 
@@ -433,35 +617,57 @@ void CatalogFilterService::applyFilter(const QString& query)
                 for (const ScoredIndex& sm : scoredMatches)
                     indices.append(sm.index);
             } else {
+                const int cap = kMaxVisibleBrowse;
+                auto cmp = [cachePtr, mode](int ai, int bi) {
+                    return catalogEntryLess(cachePtr->at(ai), cachePtr->at(bi), mode);
+                };
+                auto sortIndices = [&]() {
+                    if (!cachePtr)
+                        return;
+                    if (indices.size() > cap) {
+                        std::partial_sort(indices.begin(), indices.begin() + cap, indices.end(), cmp);
+                        indices.resize(cap);
+                    } else {
+                        std::stable_sort(indices.begin(), indices.end(), cmp);
+                    }
+                };
                 if (lock && cachePtr) {
                     QReadLocker locker(lock);
                     if (cacheSize != cachePtr->size())
                         return;
-                    std::stable_sort(indices.begin(), indices.end(),
-                                     [cachePtr, mode](int ai, int bi) {
-                                         return catalogEntryLess(cachePtr->at(ai), cachePtr->at(bi),
-                                                                 mode);
-                                     });
-                } else if (cachePtr) {
-                    std::stable_sort(indices.begin(), indices.end(),
-                                     [cachePtr, mode](int ai, int bi) {
-                                         return catalogEntryLess(cachePtr->at(ai), cachePtr->at(bi),
-                                                                 mode);
-                                     });
+                    sortIndices();
+                } else {
+                    sortIndices();
                 }
             }
 
             if (generation != m_filterGeneration.load(std::memory_order_relaxed))
                 return;
 
+            // GridView + required-property delegates Abort around ~100k inserts.
+            const int cap = hasSearch ? kMaxVisibleSearch : kMaxVisibleBrowse;
+            if (indices.size() > cap)
+                indices.resize(cap);
+
             const qint64 ms = timer.elapsed();
-            const QString queryStr = snap.query.rawQuery;
-            QTimer::singleShot(0, this,
-                               [this, generation, indices = std::move(indices), ms, cacheSize,
-                                queryStr]() mutable {
-                                   applyFilterResult(generation, std::move(indices), ms, cacheSize,
-                                                     queryStr);
-                               });
+            const QString queryStr = localSnap.query.rawQuery;
+            const bool commitSoA = builtFresh;
+            QTimer::singleShot(
+                0, this,
+                [this, generation, indices = std::move(indices), ms, cacheSize, queryStr, commitSoA,
+                 rebuilt = std::move(rebuilt), tableEpoch]() mutable {
+                    if (generation != m_filterGeneration.load(std::memory_order_relaxed))
+                        return;
+                    if (commitSoA) {
+                        m_rows = std::move(rebuilt.rows);
+                        m_searchEntries = std::move(rebuilt.searchEntries);
+                        m_sourceIdsBySlot = std::move(rebuilt.sourceIdsBySlot);
+                        m_presentGenreBits = rebuilt.presentGenreBits;
+                        m_builtEpoch = tableEpoch;
+                        refreshAvailableGenres();
+                    }
+                    applyFilterResult(generation, std::move(indices), ms, cacheSize, queryStr);
+                });
         });
 }
 

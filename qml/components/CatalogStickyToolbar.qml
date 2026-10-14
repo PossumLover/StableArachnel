@@ -13,6 +13,10 @@ Item {
     property alias searchText: catalogSearch.searchText
     property bool syncingSearch: false
 
+    function focusSearch() {
+        catalogSearch.forceActiveFocus()
+    }
+
     implicitHeight: catalogStickyCol.implicitHeight + MD.Token.spacing.small
 
     Rectangle {
@@ -30,11 +34,22 @@ Item {
         anchors.top: parent.top
         spacing: MD.Token.spacing.small
 
+        // v2: the page title and the search share one row.
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: MD.Token.spacing.large
+
+            DisplayTitle {
+                text: qsTr("Catalog")
+            }
+
+            Item { Layout.fillWidth: true }
+
         MD.SearchBar {
             id: catalogSearch
             Layout.fillWidth: true
             Layout.maximumWidth: 560
-            Layout.alignment: Qt.AlignLeft
+            Layout.alignment: Qt.AlignVCenter
 
             // Keep results in sync with the field. Enter used to be required, so
             // typing a new query over a failed search left "Found: 0" on screen.
@@ -79,6 +94,7 @@ Item {
                 }
             }
         }
+        }
 
         Flow {
             Layout.fillWidth: true
@@ -89,8 +105,8 @@ Item {
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: MD.Token.duration.short4
-                    easing: MD.Token.easing.emphasized_decelerate
+                    duration: AppMotion.short
+                    easing: AppMotion.emphasizedDecelerate
                 }
             }
 

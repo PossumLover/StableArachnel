@@ -64,7 +64,7 @@ Item {
 
             MD.Label {
                 Layout.fillWidth: true
-                text: Core.catalogLoading && Core.catalog.count === 0
+                text: Core.catalogPartial || (Core.catalogLoading && Core.catalog.count === 0)
                     ? qsTr("Loading catalog…")
                     : qsTr("Found: %1").arg(Core.catalog.count)
                 color: MD.Token.color.on_surface_variant
@@ -114,16 +114,11 @@ Item {
                 }
             }
 
-            MD.IconButton {
-                mdState.type: root.listViewMode ? MD.Enum.IBtStandard : MD.Enum.IBtFilledTonal
-                icon.name: MD.Token.icon.grid_view
-                onClicked: root.viewModeChangeRequested(0)
-            }
-
-            MD.IconButton {
-                mdState.type: root.listViewMode ? MD.Enum.IBtFilledTonal : MD.Enum.IBtStandard
-                icon.name: MD.Token.icon.view_list
-                onClicked: root.viewModeChangeRequested(1)
+            ConnectedIconToggle {
+                icons: [MD.Token.icon.grid_view, MD.Token.icon.view_list]
+                tips: [qsTr("Grid"), qsTr("List")]
+                currentIndex: root.listViewMode ? 1 : 0
+                onPicked: function (index) { root.viewModeChangeRequested(index) }
             }
 
             MD.IconButton {

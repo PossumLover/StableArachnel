@@ -22,7 +22,7 @@ Item {
 
     // Step ids in display order (Proton only on Linux).
     readonly property var steps: {
-        const list = ["welcome", "language", "theme", "storage", "plugins", "updates"]
+        const list = ["language", "storage", "plugins"]
         if (root.onLinux)
             list.push("proton")
         list.push("done")
@@ -192,6 +192,8 @@ Item {
                     }
                     OnboardingFinalSteps {
                         stepId: root.stepId
+                        hasSource: root.pluginRows.length > 0
+                        sourceNames: root.pluginRows.map(function(r) { return r.name }).join(", ")
                         onNextRequested: root.goNext()
                     }
                 }

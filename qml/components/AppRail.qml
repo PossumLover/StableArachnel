@@ -9,14 +9,22 @@ MD.Pane {
     property int currentIndex: 0
     property var model: []
     property int downloadBadge: 0
+    // Icons only: set by the window below ~1000 px so the content keeps its room.
+    property bool compact: false
 
     signal activated(int index)
     signal settingsRequested()
 
     padding: 0
     backgroundColor: MD.Token.color.surface_container
-    // Wide enough for "Библиотека" under icon
-    implicitWidth: 108
+    // Wide enough for "Библиотека" under the icon; icons-only when compact.
+    implicitWidth: compact ? 84 : 108
+    Behavior on implicitWidth {
+        NumberAnimation {
+            duration: AppMotion.medium
+            easing: AppMotion.emphasizedDecelerate
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -52,11 +60,26 @@ MD.Pane {
                 required property var modelData
 
                 Layout.fillWidth: true
-                Layout.preferredHeight: 72
+                Layout.preferredHeight: root.compact ? 56 : 76
                 Layout.leftMargin: MD.Token.spacing.small
                 Layout.rightMargin: MD.Token.spacing.small
 
                 readonly property bool selected: index === root.currentIndex
+                readonly property bool hovered: entryArea.containsMouse
+
+                activeFocusOnTab: true
+                Accessible.role: Accessible.Button
+                Accessible.name: modelData.name
+                Keys.onReturnPressed: root.activated(railEntry.index)
+                Keys.onEnterPressed: root.activated(railEntry.index)
+                Keys.onSpacePressed: root.activated(railEntry.index)
+
+                Behavior on Layout.preferredHeight {
+                    NumberAnimation {
+                        duration: AppMotion.medium
+                        easing: AppMotion.emphasizedDecelerate
+                    }
+                }
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -69,23 +92,37 @@ MD.Pane {
 
                         MD.ElevationRectangle {
                             anchors.centerIn: parent
-                            width: 64
+                            // Expressive rail: the pill grows out from the icon with a springy overshoot.
+                            width: railEntry.selected ? 64 : (railEntry.hovered ? 52 : 36)
                             height: 36
                             radius: MD.Token.shape.corner.full
+
+                            Behavior on width {
+                                NumberAnimation {
+                                    duration: AppMotion.scaled(420)
+                                    easing.type: Easing.OutBack
+                                    easing.overshoot: 2.0
+                                }
+                            }
                             color: railEntry.selected
                                    ? MD.Token.color.secondary_container
-                                   : "transparent"
+                                   : railEntry.hovered
+                                     ? MD.Util.transparent(MD.Token.color.on_surface, 0.08)
+                                     : "transparent"
                             elevation: MD.Token.elevation.level0
-                            scale: railEntry.selected ? 1 : 0.92
+                            scale: entryArea.pressed ? 0.88 : 1
                             transformOrigin: Item.Center
 
                             Behavior on color {
-                                ColorAnimation { duration: MD.Token.duration.short4 }
+                                ColorAnimation {
+                                    duration: AppMotion.short
+                                    easing.type: Easing.Linear
+                                }
                             }
                             Behavior on scale {
                                 NumberAnimation {
-                                    duration: MD.Token.duration.short4
-                                    easing: MD.Token.easing.emphasized_decelerate
+                                    duration: AppMotion.short
+                                    easing: AppMotion.emphasizedDecelerate
                                 }
                             }
 
@@ -96,6 +133,10 @@ MD.Pane {
                                 color: railEntry.selected
                                        ? MD.Token.color.on_secondary_container
                                        : MD.Token.color.on_surface_variant
+
+                                Behavior on color {
+                                    ColorAnimation { duration: AppMotion.short }
+                                }
                             }
 
                             MD.Badge {
@@ -109,6 +150,18 @@ MD.Pane {
                                 textColor: MD.Token.color.on_primary
                             }
                         }
+
+                        // Keyboard focus ring (Tab traversal).
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 64
+                            height: 36
+                            radius: height / 2
+                            color: "transparent"
+                            border.width: 2
+                            border.color: MD.Token.color.primary
+                            visible: railEntry.activeFocus
+                        }
                     }
 
                     MD.Label {
@@ -117,22 +170,38 @@ MD.Pane {
                         Layout.rightMargin: 2
                         horizontalAlignment: Text.AlignHCenter
                         text: railEntry.modelData.name
-                        typescale: MD.Token.typescale.label_small
+                        typescale: MD.Token.typescale.label_medium
                         elide: Text.ElideRight
                         maximumLineCount: 1
+                        opacity: root.compact ? 0 : 1
+                        visible: opacity > 0
                         color: railEntry.selected
                                ? MD.Token.color.on_surface
                                : MD.Token.color.on_surface_variant
+
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: AppMotion.short
+                                easing: AppMotion.standard
+                            }
+                        }
                     }
                 }
 
                 MouseArea {
+                    id: entryArea
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     // Don't assign currentIndex here - that breaks the parent's
                     // `currentIndex: pageIndex` binding and leaves the rail stuck
                     // (e.g. Discover stays highlighted after "All games" → Catalog).
                     onClicked: root.activated(railEntry.index)
+
+                    MD.ToolTip {
+                        visible: root.compact && entryArea.containsMouse
+                        text: railEntry.modelData.name
+                    }
                 }
             }
         }

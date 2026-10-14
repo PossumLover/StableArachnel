@@ -101,7 +101,7 @@ ColumnLayout {
         }
         MD.Label {
             Layout.fillWidth: true
-            text: qsTr("Or keep the default path already listed above.")
+            text: qsTr("The star marks the folder new games go to. Or keep the default path listed above.")
             wrapMode: Text.WordWrap
             color: MD.Token.color.on_surface_variant
             typescale: MD.Token.typescale.body_small
@@ -114,7 +114,7 @@ ColumnLayout {
         spacing: MD.Token.spacing.small
         MD.Label {
             Layout.fillWidth: true
-            text: qsTr("Install a plugin")
+            text: qsTr("Add a game source")
             typescale: MD.Token.typescale.headline_small
         }
         MD.Label {

@@ -1,6 +1,8 @@
 import QtQuick
+import QtQml
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Shapes
 import QtQuick.Window
 
 import Arachnel.Core 1.0
@@ -12,8 +14,9 @@ MD.ApplicationWindow {
     visible: true
     width: 1450
     height: 900
-    minimumWidth: 1100
-    minimumHeight: 720
+    // Small enough for half-screen Win+Arrow snapping on a 1920 px display (960 px wide).
+    minimumWidth: 900
+    minimumHeight: 680
     title: Qt.application.displayName
     color: MD.Token.color.surface_container
     flags: windowChrome.flags
@@ -129,6 +132,37 @@ MD.ApplicationWindow {
         Qt.callLater(function () { tryShow(0) })
     }
 
+    function openSettingsSection(sectionId, createSource) {
+        root.goToPage(6)
+        function tryOpen(attempt) {
+            const pages = pageStack.currentItem
+            const screen = pages && pages.settingsScreen
+            if (screen) {
+                screen.open(sectionId, createSource)
+                return
+            }
+            if (attempt < 30)
+                Qt.callLater(function () { tryOpen(attempt + 1) })
+        }
+        Qt.callLater(function () { tryOpen(0) })
+    }
+
+    // The rail's search pill and Ctrl+K: open the catalog with the search field focused.
+    function openCatalogSearch() {
+        root.goToPage(2)
+        function tryFocus(attempt) {
+            const pages = pageStack.currentItem
+            const page = pages && pages.catalogBrowsePage
+            if (page && page.focusSearch) {
+                page.focusSearch()
+                return
+            }
+            if (attempt < 30)
+                Qt.callLater(function () { tryFocus(attempt + 1) })
+        }
+        Qt.callLater(function () { tryFocus(0) })
+    }
+
     function openGameDetails(gameId, fromCatalog) {
         // Capture before push - StackView hide can zero catalog contentY.
         if (fromCatalog && pageStack.currentItem
@@ -239,14 +273,14 @@ MD.ApplicationWindow {
     // Hang watchdog writes a pending report while the app is still alive.
     Timer {
         interval: 4000
-        running: true
+        running: root.active
         repeat: true
         onTriggered: {
             if (!Core.hasPendingCrashReport())
                 return
             if (crashReportDialog.opened || crashReportDialog.visible)
                 return
-            if (onboardingSheet.visible)
+            if (onboardingSheet.item && onboardingSheet.item.visible)
                 return
             crashReportDialog.open()
         }
@@ -320,7 +354,7 @@ MD.ApplicationWindow {
     ]
 
     // Main rail tabs stay mounted after first open; keep the crossfade snappy.
-    readonly property int mainTabDuration: MD.Token.duration.short2
+    readonly property int mainTabDuration: AppMotion.fast
 
     Component {
         id: mainPagesComponent
@@ -332,6 +366,7 @@ MD.ApplicationWindow {
             readonly property int pageIndex: root.pageIndex
             // Loader.item — null until Catalog tab is opened once.
             readonly property var catalogBrowsePage: catalogBrowseLoader.item
+            readonly property var settingsScreen: settingsLoader.item
             readonly property var discoverPage: discoverLoader.item
 
             transformOrigin: Item.Center
@@ -393,6 +428,8 @@ MD.ApplicationWindow {
             LibraryPage {
                 anchors.fill: parent
                 opacity: mainPages.pageIndex === 0 ? 1 : 0
+                // Fully faded-out tabs stop painting (they stay mounted for instant switches).
+                visible: opacity > 0
                 enabled: mainPages.pageIndex === 0 && opacity > 0.99
                 onOpenGame: function (id) { root.openGameDetails(id, false) }
                 onOpenCatalog: root.goToPage(2)
@@ -403,7 +440,7 @@ MD.ApplicationWindow {
                 Behavior on opacity {
                     NumberAnimation {
                         duration: root.mainTabDuration
-                        easing: MD.Token.easing.emphasized_decelerate
+                        easing: AppMotion.emphasizedDecelerate
                     }
                 }
             }
@@ -415,7 +452,9 @@ MD.ApplicationWindow {
                 property bool keepAlive: false
                 active: mainPages.pageIndex === 1 || keepAlive
                 asynchronous: true
-                visible: status === Loader.Ready
+                // A faded-out page must not stay visible: its shimmer animations would keep the
+                // scene graph rendering ~140 frames/s while the app is idle.
+                visible: status === Loader.Ready && opacity > 0
                 opacity: mainPages.pageIndex === 1 ? 1 : 0
                 // Latch on Loading, not on Loaded: CatalogPage incubates asynchronously,
                 // and until it finishes `keepAlive` is still false, so a tab switch drops
@@ -443,7 +482,7 @@ MD.ApplicationWindow {
                 Behavior on opacity {
                     NumberAnimation {
                         duration: root.mainTabDuration
-                        easing: MD.Token.easing.emphasized_decelerate
+                        easing: AppMotion.emphasizedDecelerate
                     }
                 }
             }
@@ -454,7 +493,9 @@ MD.ApplicationWindow {
                 property bool keepAlive: false
                 active: mainPages.pageIndex === 2 || keepAlive
                 asynchronous: true
-                visible: status === Loader.Ready
+                // A faded-out page must not stay visible: its shimmer animations would keep the
+                // scene graph rendering ~140 frames/s while the app is idle.
+                visible: status === Loader.Ready && opacity > 0
                 opacity: mainPages.pageIndex === 2 ? 1 : 0
                 // Latch on Loading, not on Loaded - see discoverLoader above.
                 onStatusChanged: if (status === Loader.Loading || status === Loader.Ready)
@@ -474,7 +515,40 @@ MD.ApplicationWindow {
                 Behavior on opacity {
                     NumberAnimation {
                         duration: root.mainTabDuration
-                        easing: MD.Token.easing.emphasized_decelerate
+                        easing: AppMotion.emphasizedDecelerate
+                    }
+                }
+            }
+
+            // Building a CatalogPage takes over a second (async, time-sliced), so a first click on
+            // the Catalog tab used to show an empty page for that long. Build that page in the
+            // background shortly after startup instead; it only binds the model once enabled.
+            // Discover stays lazy: its shelves load covers, which costs ~25 MB nobody asked for.
+            Timer {
+                id: catalogPreloadTimer
+                interval: 1500
+                running: true
+                onTriggered: catalogBrowseLoader.keepAlive = true
+            }
+
+            Loader {
+                id: settingsLoader
+                anchors.fill: parent
+                property bool keepAlive: false
+                active: mainPages.pageIndex === 6 || keepAlive
+                visible: status === Loader.Ready && opacity > 0
+                opacity: mainPages.pageIndex === 6 ? 1 : 0
+                onLoaded: keepAlive = true
+                sourceComponent: Component {
+                    SettingsScreen {
+                        enabled: mainPages.pageIndex === 6
+                    }
+                }
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: root.mainTabDuration
+                        easing: AppMotion.emphasizedDecelerate
                     }
                 }
             }
@@ -482,13 +556,16 @@ MD.ApplicationWindow {
             BookmarksPage {
                 anchors.fill: parent
                 opacity: mainPages.pageIndex === 4 ? 1 : 0
+                // Fully faded-out tabs stop painting (they stay mounted for instant switches).
+                visible: opacity > 0
                 enabled: mainPages.pageIndex === 4 && opacity > 0.99
                 onOpenGame: function (id) { root.openGameDetails(id, true) }
+                onOpenCatalog: root.goToPage(2)
 
                 Behavior on opacity {
                     NumberAnimation {
                         duration: root.mainTabDuration
-                        easing: MD.Token.easing.emphasized_decelerate
+                        easing: AppMotion.emphasizedDecelerate
                     }
                 }
             }
@@ -496,13 +573,16 @@ MD.ApplicationWindow {
             DownloadsPage {
                 anchors.fill: parent
                 opacity: mainPages.pageIndex === 5 ? 1 : 0
+                // Fully faded-out tabs stop painting (they stay mounted for instant switches).
+                visible: opacity > 0
                 enabled: mainPages.pageIndex === 5 && opacity > 0.99
                 onOpenGame: function (id) { root.openGameDetails(id, false) }
+                onOpenCatalog: root.goToPage(2)
 
                 Behavior on opacity {
                     NumberAnimation {
                         duration: root.mainTabDuration
-                        easing: MD.Token.easing.emphasized_decelerate
+                        easing: AppMotion.emphasizedDecelerate
                     }
                 }
             }
@@ -510,6 +590,8 @@ MD.ApplicationWindow {
             FriendsPage {
                 anchors.fill: parent
                 opacity: mainPages.pageIndex === 3 ? 1 : 0
+                // Fully faded-out tabs stop painting (they stay mounted for instant switches).
+                visible: opacity > 0
                 enabled: mainPages.pageIndex === 3 && opacity > 0.99
                 onOpenGame: function (id) { root.openGameDetails(id, true) }
                 onOpenSettings: settingsSheet.openFriends()
@@ -517,7 +599,7 @@ MD.ApplicationWindow {
                 Behavior on opacity {
                     NumberAnimation {
                         duration: root.mainTabDuration
-                        easing: MD.Token.easing.emphasized_decelerate
+                        easing: AppMotion.emphasizedDecelerate
                     }
                 }
             }
@@ -548,9 +630,39 @@ MD.ApplicationWindow {
         }
     }
 
+    // Ctrl+1..6 jump between the rail tabs, Ctrl+, opens settings.
+    Instantiator {
+        model: root.navModel.length
+        delegate: Shortcut {
+            required property int index
+            sequence: "Ctrl+" + (index + 1)
+            onActivated: root.goToPage(index)
+        }
+    }
+
+    Shortcut {
+        sequence: "Ctrl+,"
+        onActivated: settingsSheet.openSettings()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+K"
+        onActivated: root.openCatalogSearch()
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
+        focus: true
+
+        // Esc closes game details. Popups take the key first, so a dialog never also
+        // navigates back.
+        Keys.onEscapePressed: function (event) {
+            if (root.detailsOpen) {
+                root.closeGameDetails()
+                event.accepted = true
+            }
+        }
 
         AppTitleBar {
             visible: root.customTitleBar
@@ -563,20 +675,23 @@ MD.ApplicationWindow {
             Layout.fillHeight: true
             spacing: 0
 
-            AppRail {
+            AppNavDrawer {
                 id: navRail
                 Layout.fillHeight: true
                 model: root.navModel
                 currentIndex: root.pageIndex
                 downloadBadge: root.downloadBadge
+                narrowWindow: root.width < 1100
                 onActivated: function (index) { root.goToPage(index) }
                 onSettingsRequested: settingsSheet.openSettings()
+                onSearchRequested: root.openCatalogSearch()
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.topMargin: MD.Token.spacing.small
+                Layout.leftMargin: MD.Token.spacing.small
                 Layout.rightMargin: MD.Token.spacing.small
                 Layout.bottomMargin: MD.Token.spacing.small
                 spacing: 0
@@ -595,10 +710,58 @@ MD.ApplicationWindow {
                         anchors.fill: parent
                         clip: true
 
-                        layer.enabled: true
-                        layer.effect: MD.RoundClip {
-                            corners: mainPane.corners
-                            size: Qt.vector2d(mainPaneClip.width, mainPaneClip.height)
+                        // Rounded corners without an offscreen layer. A layer + RoundClip over the
+                        // whole pane re-rendered every page into a texture on every frame (each
+                        // scrolled pixel). Instead the four corner gaps are covered with the window
+                        // colour: a frame-shaped path (outer rect minus rounded rect, odd-even fill).
+                        Shape {
+                            id: cornerMask
+                            anchors.fill: parent
+                            z: 1000
+                            preferredRendererType: Shape.CurveRenderer
+                            readonly property real r: Math.min(mainPane.radius, width / 2, height / 2)
+
+                            ShapePath {
+                                fillRule: ShapePath.OddEvenFill
+                                fillColor: root.color
+                                strokeColor: "transparent"
+                                strokeWidth: 0
+
+                                // outer rectangle
+                                startX: 0
+                                startY: 0
+                                PathLine { x: cornerMask.width; y: 0 }
+                                PathLine { x: cornerMask.width; y: cornerMask.height }
+                                PathLine { x: 0; y: cornerMask.height }
+                                PathLine { x: 0; y: 0 }
+
+                                // inner rounded rectangle
+                                PathMove { x: cornerMask.r; y: 0 }
+                                PathLine { x: cornerMask.width - cornerMask.r; y: 0 }
+                                PathArc {
+                                    x: cornerMask.width; y: cornerMask.r
+                                    radiusX: cornerMask.r; radiusY: cornerMask.r
+                                    direction: PathArc.Clockwise
+                                }
+                                PathLine { x: cornerMask.width; y: cornerMask.height - cornerMask.r }
+                                PathArc {
+                                    x: cornerMask.width - cornerMask.r; y: cornerMask.height
+                                    radiusX: cornerMask.r; radiusY: cornerMask.r
+                                    direction: PathArc.Clockwise
+                                }
+                                PathLine { x: cornerMask.r; y: cornerMask.height }
+                                PathArc {
+                                    x: 0; y: cornerMask.height - cornerMask.r
+                                    radiusX: cornerMask.r; radiusY: cornerMask.r
+                                    direction: PathArc.Clockwise
+                                }
+                                PathLine { x: 0; y: cornerMask.r }
+                                PathArc {
+                                    x: cornerMask.r; y: 0
+                                    radiusX: cornerMask.r; radiusY: cornerMask.r
+                                    direction: PathArc.Clockwise
+                                }
+                            }
                         }
 
                         // Painted rolling hills along the bottom of every page, behind
@@ -668,28 +831,55 @@ MD.ApplicationWindow {
         z: 1000
     }
 
-    SettingsSheet {
+    // Heavy, rarely used sheets are created on first use. Each Loader exposes the same open*()
+    // functions as the sheet it wraps, so call sites stay unchanged.
+    // v2: settings are a page of the shell (index 6). Same open*() API as the old sheet.
+    QtObject {
         id: settingsSheet
-        anchors.fill: parent
+        function openSettings() { root.openSettingsSection("", false) }
+        function openPlugins() { root.openSettingsSection("plugins", false) }
+        function openSources(createSource) { root.openSettingsSection("sources", !!createSource) }
+        function openFriends() { root.openSettingsSection("friends", false) }
+        function openLaunch() {
+            if (Qt.platform.os === "linux")
+                root.openSettingsSection("launch", false)
+        }
     }
 
-    OnboardingSheet {
+    Loader {
         id: onboardingSheet
         anchors.fill: parent
-        onFinished: {
-            if (Core.hasPendingCrashReport())
-                Qt.callLater(function () { crashReportDialog.open() })
+        active: false
+        sourceComponent: Component {
+            OnboardingSheet {
+                anchors.fill: parent
+                onFinished: {
+                    if (Core.hasPendingCrashReport())
+                        Qt.callLater(function () { crashReportDialog.open() })
+                }
+            }
         }
+        function openWizard() { active = true; item.openWizard() }
     }
 
-    InstallLocationSheet {
+    Loader {
         id: installLocationSheet
         anchors.fill: parent
-        installEntry: function (entryId, libraryId, addonIds, sourceId) {
-            root.beginCatalogInstall(entryId, libraryId, addonIds, sourceId)
+        active: false
+        sourceComponent: Component {
+            InstallLocationSheet {
+                anchors.fill: parent
+                installEntry: function (entryId, libraryId, addonIds, sourceId) {
+                    root.beginCatalogInstall(entryId, libraryId, addonIds, sourceId)
+                }
+                onBackToAddons: function (entryId, title, selectedAddonIds) {
+                    installAddonSheet.openForEntry(entryId, title)
+                }
+            }
         }
-        onBackToAddons: function (entryId, title, selectedAddonIds) {
-            installAddonSheet.openForEntry(entryId, title)
+        function openForEntry(entryId, title, selectedAddonIds, fromPicker, sourceId) {
+            active = true
+            item.openForEntry(entryId, title, selectedAddonIds, fromPicker, sourceId)
         }
     }
 
@@ -711,22 +901,32 @@ MD.ApplicationWindow {
         }
     }
 
-    InstallAddonSelectionSheet {
+    Loader {
         id: installAddonSheet
         anchors.fill: parent
-        onConfirmed: function (entryId, title, selectedAddonIds) {
-            const page = pageStack.currentItem
-            if (page && typeof page.afterAddonsSelected === "function")
-                page.afterAddonsSelected(selectedAddonIds)
-            else if (Core.needsInstallLocationChoice()) {
-                const catalogAddons = Core.catalog.addonsFor(entryId)
-                const fromPicker = (selectedAddonIds && selectedAddonIds.length > 0)
-                                   || (catalogAddons && catalogAddons.length > 0)
-                const details = Core.entryDetails(entryId)
-                installLocationSheet.openForEntry(entryId, title, selectedAddonIds, fromPicker,
-                                                  details.sourceId || "")
-            } else
-                root.beginCatalogInstall(entryId, "", selectedAddonIds)
+        active: false
+        sourceComponent: Component {
+            InstallAddonSelectionSheet {
+                anchors.fill: parent
+                onConfirmed: function (entryId, title, selectedAddonIds) {
+                    const page = pageStack.currentItem
+                    if (page && typeof page.afterAddonsSelected === "function")
+                        page.afterAddonsSelected(selectedAddonIds)
+                    else if (Core.needsInstallLocationChoice()) {
+                        const catalogAddons = Core.catalog.addonsFor(entryId)
+                        const fromPicker = (selectedAddonIds && selectedAddonIds.length > 0)
+                                           || (catalogAddons && catalogAddons.length > 0)
+                        const details = Core.entryDetails(entryId)
+                        installLocationSheet.openForEntry(entryId, title, selectedAddonIds, fromPicker,
+                                                          details.sourceId || "")
+                    } else
+                        root.beginCatalogInstall(entryId, "", selectedAddonIds)
+                }
+            }
+        }
+        function openForEntry(entryId, title) {
+            active = true
+            item.openForEntry(entryId, title)
         }
     }
 
@@ -765,7 +965,7 @@ MD.ApplicationWindow {
     AppSnackbar {
         id: snackbar
         anchors.fill: parent
-        anchors.leftMargin: 88
+        anchors.leftMargin: navRail.width
         z: 3200
     }
 

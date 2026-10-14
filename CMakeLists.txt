@@ -223,6 +223,7 @@ file(GLOB_RECURSE ARACHNEL_QML_FILES CONFIGURE_DEPENDS
 
 set_source_files_properties(
     qml/theme/Appearance.qml
+    qml/theme/AppMotion.qml
     qml/theme/AccentColors.qml
     qml/i18n/Messages.qml
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
@@ -285,7 +286,7 @@ if(TARGET Qt6::Test)
 endif()
 
 if(WIN32)
-    target_link_libraries(arachnel_app PRIVATE ole32 shell32 dbghelp crypt32)
+    target_link_libraries(arachnel_app PRIVATE ole32 shell32 dbghelp crypt32 user32)
 else()
     target_link_libraries(arachnel_app PRIVATE Qt6::Widgets)
     target_link_options(arachnel_app PRIVATE -rdynamic)

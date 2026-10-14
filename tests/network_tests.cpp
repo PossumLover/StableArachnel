@@ -538,6 +538,7 @@ private slots:
         store.setPlayStatus(a.id, QStringLiteral("backlog"));
         store.setPlayStatus(b.id, QStringLiteral("completed"));
         store.setPlayStatus(a.id, QStringLiteral("invalid"));
+        store.flush(); // library.json writes are coalesced
         LibraryStore restored; restored.load();
         QCOMPARE(restored.gameById(a.id)->playStatus, QStringLiteral("backlog"));
         QCOMPARE(restored.gameById(b.id)->playStatus, QStringLiteral("completed"));

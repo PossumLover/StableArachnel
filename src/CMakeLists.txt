@@ -9,6 +9,7 @@ set(ARACHNEL_APP_SOURCES
     src/app/crash_log_report.cpp
     src/app/deep_link.cpp
     src/app/window_frame.cpp
+    src/app/snap_layouts_filter.cpp
 
     src/core/install/install_kind.cpp
     src/core/jobs/job_display.cpp
@@ -40,6 +41,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/catalog/hydra_catalog_client.cpp
     src/core/catalog/hydra_library_directory.cpp
     src/core/catalog/catalog_disk_cache.cpp
+    src/core/catalog/catalog_snapshot.cpp
     src/core/catalog/catalog_parser.cpp
     src/core/catalog/catalog_controller.cpp
     src/core/catalog/catalog_identity.cpp
@@ -55,6 +57,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/catalog/game_metadata_service_network.cpp
     src/core/social/presence_service.cpp
     src/core/catalog/cover_image_cache.cpp
+    src/core/catalog/trailer_cache.cpp
     src/core/torrent/torrent_session.cpp
     src/core/torrent/torrent_session_poll.cpp
     src/core/torrent/torrent_settings.cpp
@@ -78,6 +81,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/plugins/plugin_api.cpp
     src/core/plugins/plugin_boundary.cpp
     src/core/plugins/plugin_catalog_json.cpp
+    src/core/plugins/plugin_source_sync.cpp
     src/core/plugins/plugin_version.cpp
     src/core/plugins/plugin_host.cpp
     src/core/plugins/plugin_host_async.cpp

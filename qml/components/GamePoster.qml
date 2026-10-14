@@ -11,6 +11,12 @@ Item {
     property string fallbackText: ""
     property bool awaiting: false
     property int cornerRadius: MD.Token.shape.corner.extra_large
+    // Expressive hover: the corners soften a little under the pointer and spring back.
+    property bool morphOnHover: true
+    property real shownRadius: (morphOnHover && hovered) ? cornerRadius + 14 : cornerRadius
+    Behavior on shownRadius {
+        NumberAnimation { duration: AppMotion.scaled(360); easing.type: Easing.OutBack; easing.overshoot: 1.6 }
+    }
     property real fillProgress: -1
     property bool enableShimmer: true
     property bool hoverScaleEnabled: false
@@ -106,8 +112,8 @@ Item {
     Behavior on scale {
         enabled: root.hoverScaleEnabled
         NumberAnimation {
-            duration: MD.Token.duration.short4
-            easing: MD.Token.easing.emphasized_decelerate
+            duration: AppMotion.short
+            easing: AppMotion.emphasizedDecelerate
         }
     }
 
@@ -135,7 +141,7 @@ Item {
 
         layer.enabled: true
         layer.effect: MD.RoundClip {
-            corners: MD.Util.corners(root.cornerRadius)
+            corners: MD.Util.corners(root.shownRadius)
             size: Qt.vector2d(placeholder.width, placeholder.height)
         }
 
@@ -180,7 +186,7 @@ Item {
                         from: -shimmerBand.width
                         to: placeholder.width + shimmerBand.width
                         duration: 1400
-                        easing.type: Easing.OutCubic
+                        easing: AppMotion.standardDecelerate
                     }
                     PauseAnimation { duration: 280 }
                 }
@@ -212,7 +218,7 @@ Item {
     MD.Image {
         anchors.fill: parent
         source: root.coverReady ? root.resolvedSource : ""
-        radius: root.cornerRadius
+        radius: root.shownRadius
         elevation: MD.Token.elevation.level0
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
@@ -225,65 +231,72 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: MD.Token.duration.short4
-                easing.type: Easing.OutCubic
+                duration: AppMotion.short
+                easing: AppMotion.standardDecelerate
             }
         }
     }
 
-    Item {
-        id: fillHost
+    // Download-progress fill (grey cover + coloured part). Only exists while a download is
+    // running; before it was built for every poster in every grid (2 images, an effect and a
+    // clip layer each).
+    Loader {
         anchors.fill: parent
-        visible: root.showFillProgress
-        clip: true
+        active: root.showFillProgress
+        sourceComponent: Component {
+            Item {
+                id: fillHost
+                clip: true
 
-        layer.enabled: true
-        layer.effect: MD.RoundClip {
-            corners: MD.Util.corners(root.cornerRadius)
-            size: Qt.vector2d(fillHost.width, fillHost.height)
-        }
+                layer.enabled: true
+                layer.effect: MD.RoundClip {
+                    corners: MD.Util.corners(root.shownRadius)
+                    size: Qt.vector2d(fillHost.width, fillHost.height)
+                }
 
-        Image {
-            id: grayImage
-            anchors.fill: parent
-            source: root.coverReady ? root.resolvedSource : ""
-            fillMode: Image.PreserveAspectCrop
-            asynchronous: true
-            cache: true
-            smooth: true
-            sourceSize.width: root.decodeWidth
-            sourceSize.height: root.decodeHeight
-            visible: false
-        }
+                Image {
+                    id: grayImage
+                    anchors.fill: parent
+                    source: root.coverReady ? root.resolvedSource : ""
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    cache: true
+                    smooth: true
+                    sourceSize.width: root.decodeWidth
+                    sourceSize.height: root.decodeHeight
+                    visible: false
+                }
 
-        MultiEffect {
-            anchors.fill: parent
-            source: grayImage
-            saturation: -1.0
-        }
+                MultiEffect {
+                    anchors.fill: parent
+                    source: grayImage
+                    saturation: -1.0
+                }
 
-        Item {
-            width: parent.width * root.fillRatio
-            height: parent.height
-            clip: true
+                Item {
+                    width: parent.width * root.fillRatio
+                    height: parent.height
+                    clip: true
 
-            Image {
-                width: fillHost.width
-                height: fillHost.height
-                source: root.coverReady ? root.resolvedSource : ""
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-                cache: true
-                smooth: true
-                sourceSize.width: root.decodeWidth
-                sourceSize.height: root.decodeHeight
+                    Image {
+                        width: fillHost.width
+                        height: fillHost.height
+                        source: root.coverReady ? root.resolvedSource : ""
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        cache: true
+                        smooth: true
+                        sourceSize.width: root.decodeWidth
+                        sourceSize.height: root.decodeHeight
+                    }
+                }
             }
         }
     }
 
     Rectangle {
         anchors.fill: parent
-        radius: root.cornerRadius
+        radius: root.shownRadius
         z: 2
         color: MD.Util.transparent(MD.Token.color.scrim, 0.2)
         opacity: root.hovered ? 1 : 0
@@ -292,8 +305,8 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: MD.Token.duration.short3
-                easing: MD.Token.easing.emphasized_decelerate
+                duration: AppMotion.quick
+                easing: AppMotion.emphasizedDecelerate
             }
         }
     }

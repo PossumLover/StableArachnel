@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include <QReadWriteLock>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QTimer>
@@ -62,8 +63,17 @@ public:
                            int playModeFilter = 0);
 
     void applyFilter(const QString& query);
-    /** Rebuild SoA + present-genre bits from the merged cache (once per merge). */
+    /** Rebuild SoA + present-genre bits from the merged cache (sync; prefer applyFilter). */
     void rebuildFilterTable();
+    /**
+     * The cache was replaced (new merge result). The filter table is only rebuilt when its size
+     * differs from the cache, so a replacement with the same row count but another order or
+     * content - e.g. the background revalidation of an unchanged-size feed - made searches
+     * score the old titles and then show whatever sits at those indices in the new cache.
+     */
+    void invalidateTable();
+    /** Cheap genre chips only - no search SoA (merge path). */
+    void rebuildPresentGenresOnly();
     /** Patch one SoA row after metadata enrich (no 100k rescan). */
     void syncFilterRow(int cacheIndex);
     void scheduleRefilter();
@@ -101,9 +111,10 @@ private:
     CatalogModel* m_model = nullptr;
     QVector<CatalogEntry>* m_cache = nullptr;
     QReadWriteLock* m_cacheLock = nullptr;
+    quint64 m_tableEpoch = 0; ///< bumped when the cache is replaced
+    quint64 m_builtEpoch = 0; ///< epoch the filter table was built for
     QVector<CatalogFilterRow> m_rows;
     QVector<CatalogSearchEntry> m_searchEntries;
-    QVector<QString> m_titleLowers;
     QStringList m_sourceIdsBySlot;
     quint32 m_presentGenreBits = 0;
     QString m_activeQuery;
@@ -122,6 +133,7 @@ private:
     bool m_hideAdult = true;
 
     CatalogFilterRow rowForEntry(const CatalogEntry& entry, quint8 sourceSlot) const;
+    QSet<quint32> adultSnapshot() const;
 };
 
 } // namespace arachnel::core

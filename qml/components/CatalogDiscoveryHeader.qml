@@ -17,9 +17,15 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: MD.Token.spacing.small
 
+        DisplayTitle {
+            text: qsTr("Discover")
+        }
+
         MD.Button {
+            Layout.leftMargin: MD.Token.spacing.medium
             mdState.type: MD.Enum.BtFilledTonal
             text: qsTr("Surprise me")
+            icon.name: MD.Token.icon.casino
             onClicked: root.surpriseRequested()
         }
 
@@ -33,8 +39,9 @@ ColumnLayout {
         }
 
         MD.Button {
-            mdState.type: MD.Enum.BtText
+            mdState.type: MD.Enum.BtOutlined
             text: qsTr("All games")
+            icon.name: MD.Token.icon.arrow_forward
             onClicked: root.browseAllRequested()
         }
     }

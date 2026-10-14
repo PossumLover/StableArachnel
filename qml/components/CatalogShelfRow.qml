@@ -32,11 +32,10 @@ Column {
         width: parent.width
         spacing: MD.Token.spacing.small
 
-        MD.Label {
+        DisplayTitle {
             Layout.fillWidth: true
+            size: 24
             text: root.title
-            typescale: MD.Token.typescale.title_medium
-            elide: Text.ElideRight
         }
 
         MD.IconButton {
@@ -72,10 +71,13 @@ Column {
             policy: ScrollBar.AlwaysOff
         }
 
+        // Only the arrow buttons animate contentX; while the user drags or flicks, the
+        // behavior would fight every frame of the gesture.
         Behavior on contentX {
+            enabled: !shelfList.dragging && !shelfList.flicking
             NumberAnimation {
-                duration: MD.Token.duration.medium2
-                easing: MD.Token.easing.emphasized_decelerate
+                duration: AppMotion.medium
+                easing: AppMotion.emphasizedDecelerate
             }
         }
 

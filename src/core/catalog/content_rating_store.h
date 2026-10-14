@@ -32,6 +32,8 @@ public:
     /** Queue every numeric steamAppId in the catalog that hasn't been checked yet. */
     void requestMissing(const QVector<CatalogEntry>& entries);
     int adultCount() const { return m_adult.size(); }
+    /** Copy for worker threads; the store only changes it on the GUI thread. */
+    QSet<quint32> adultAppIds() const { return m_adult; }
 
 signals:
     /** New descriptors arrived; filters should be rebuilt. */
