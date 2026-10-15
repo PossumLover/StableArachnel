@@ -259,8 +259,8 @@ MD.ApplicationWindow {
         interval: 600
         repeat: false
         onTriggered: {
-            // Don't instantiate Catalog/GridView while a huge merge is about to land.
-            if (Core.catalogLoading) {
+            // Defer page creation until catalog loading and app updates have finished.
+            if (Core.catalogLoading || Core.appUpdater.downloading) {
                 catalogWarmTimer.interval = 800
                 catalogWarmTimer.start()
                 return
@@ -404,10 +404,7 @@ MD.ApplicationWindow {
             }
 
             function warmCatalogLoaders() {
-                // Create Discover/Catalog off-tab (enabled=false → catalog model stays null).
-                // Setting keepAlive is enough: `active` is bound to
-                // `pageIndex === 1 || keepAlive`. Assigning active directly also
-                // destroyed that binding, so the loader could never follow the rail again.
+                // Warm disabled pages without replacing the loader's activation binding.
                 discoverLoader.keepAlive = true
                 catalogBrowseLoader.keepAlive = true
             }
@@ -445,24 +442,14 @@ MD.ApplicationWindow {
                 }
             }
 
-            Loader {
+            ResidentPageLoader {
                 id: discoverLoader
                 anchors.fill: parent
-                // Keep alive after first open so tab switches aren't a cold CatalogPage create.
-                property bool keepAlive: false
-                active: mainPages.pageIndex === 1 || keepAlive
-                asynchronous: true
+                requested: mainPages.pageIndex === 1
                 // A faded-out page must not stay visible: its shimmer animations would keep the
                 // scene graph rendering ~140 frames/s while the app is idle.
                 visible: status === Loader.Ready && opacity > 0
                 opacity: mainPages.pageIndex === 1 ? 1 : 0
-                // Latch on Loading, not on Loaded: CatalogPage incubates asynchronously,
-                // and until it finishes `keepAlive` is still false, so a tab switch drops
-                // `active` and tears the half-built tree down from under the incubator.
-                // QQmlObjectCreator::finalize() then runs with a dead outerContext and
-                // QQmlConnections::connectSignalsToMethods() dereferences it.
-                onStatusChanged: if (status === Loader.Loading || status === Loader.Ready)
-                                     keepAlive = true
                 sourceComponent: Component {
                     CatalogPage {
                         anchors.fill: parent
@@ -487,19 +474,14 @@ MD.ApplicationWindow {
                 }
             }
 
-            Loader {
+            ResidentPageLoader {
                 id: catalogBrowseLoader
                 anchors.fill: parent
-                property bool keepAlive: false
-                active: mainPages.pageIndex === 2 || keepAlive
-                asynchronous: true
+                requested: mainPages.pageIndex === 2
                 // A faded-out page must not stay visible: its shimmer animations would keep the
                 // scene graph rendering ~140 frames/s while the app is idle.
                 visible: status === Loader.Ready && opacity > 0
                 opacity: mainPages.pageIndex === 2 ? 1 : 0
-                // Latch on Loading, not on Loaded - see discoverLoader above.
-                onStatusChanged: if (status === Loader.Loading || status === Loader.Ready)
-                                     keepAlive = true
                 sourceComponent: Component {
                     CatalogPage {
                         anchors.fill: parent
