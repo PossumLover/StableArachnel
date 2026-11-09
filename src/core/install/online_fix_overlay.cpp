@@ -635,6 +635,16 @@ bool isSteamClientRunning()
 
 bool tryStartSteamClient()
 {
+    // A launch reaches this from both applyOnlineFixLaunchInfo() and the launch
+    // controller within the same second. A just-started client is still `bash
+    // steam.sh` bootstrapping, invisible to isSteamClientRunning()'s comm == "steam"
+    // match, so the second call used to start another client; the two fought over
+    // the single-instance lock and one's steamwebhelper crash-looped every 10s.
+    static qint64 lastStartMs = 0;
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    if (lastStartMs != 0 && nowMs - lastStartMs < 120 * 1000)
+        return true;
+
 #if defined(Q_OS_WIN)
     QStringList candidates;
     const QString install = findSteamInstallPath();
@@ -648,8 +658,10 @@ bool tryStartSteamClient()
         if (!QFileInfo::exists(path))
             continue;
         qint64 pid = 0;
-        if (QProcess::startDetached(path, {}, QFileInfo(path).absolutePath(), &pid))
+        if (QProcess::startDetached(path, {}, QFileInfo(path).absolutePath(), &pid)) {
+            lastStartMs = nowMs;
             return true;
+        }
     }
     return false;
 #else
@@ -674,8 +686,10 @@ bool tryStartSteamClient()
         process.setProgram(cmd);
         process.setArguments({});
         qint64 pid = 0;
-        if (process.startDetached(&pid))
+        if (process.startDetached(&pid)) {
+            lastStartMs = nowMs;
             return true;
+        }
     }
     return false;
 #endif
