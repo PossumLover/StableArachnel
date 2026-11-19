@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="2400" height="360" viewBox="0 0 1200 180">
+  <defs>
+    $glasshouse
+    <g id="tree">
+      <path d="M0 2v-9" stroke="$pine" stroke-width="1.8"/>
+      <path d="M0-37Q-3-30-4-23Q-10-6-1-5Q8-5 4-19Q3-30 0-37Z" fill="$leaf"/>
+    </g>
+    <g id="orchard">
+      <use xlink:href="#tree" transform="translate(0 2) scale(.79 .91)"/>
+      <use xlink:href="#tree" transform="translate(8 1) scale(.6 .7)"/>
+      <use xlink:href="#tree" transform="translate(18)"/>
+    </g>
+    <g id="cut" fill="none" stroke="$etch" stroke-width="1.3" stroke-linecap="round">
+      <path d="m-8 0 4-3m1 3 5-4m1 3 3-2"/>
+    </g>
+  </defs>
+  <!-- Each ridge crosses the next at a different angle. Sky is transparent. -->
+  <path d="M0 97Q67 93 145 64Q211 38 260 55Q300 64 335 60Q395 40 437 52Q520 80 582 70Q635 65 714 36Q767 18 808 33Q862 55 903 49Q954 40 1007 57Q1090 78 1200 39V180H0Z" fill="$mist" opacity=".77"/>
+  <path d="M0 89Q76 54 135 71Q241 110 321 89Q380 77 443 85Q563 115 657 78Q717 53 789 62Q879 84 944 73Q1059 43 1124 63L1200 86V180H0Z" fill="$ridge" opacity=".84"/>
+  <path d="M0 118C105 110 160 76 255 80S416 125 521 113Q640 106 722 83Q800 61 881 85Q948 104 1040 87Q1114 73 1200 84V180H0Z" fill="$field"/>
+  <g fill="none" stroke="$etch" stroke-linecap="round" opacity=".76">
+    <path d="M60 113Q171 77 246 85m-141 26q74-23 132-22m-88 20q44-12 84-14M658 107q88-29 145-27m-107 26q65-19 113-19m-67 17q43-10 71-10" stroke-width="1.7"/>
+  </g>
+  <use xlink:href="#orchard" transform="translate(184 85) scale(.63)"/>
+  <use xlink:href="#orchard" transform="translate(816 82) scale(.54)"/>
+  <path d="M0 116Q75 88 145 109Q247 143 339 121Q421 99 482 107Q602 132 663 124Q736 115 792 109Q901 90 1001 113Q1101 135 1200 99V180H0Z" fill="$meadow"/>
+  <path d="M0 145Q85 119 167 131T332 149Q397 150 472 128Q550 107 627 121Q719 144 800 137Q913 125 985 129Q1070 131 1200 145V180H0Z" fill="$leaf"/>
+  <use xlink:href="#glasshouse" transform="translate(397 85) scale(.33)"/>
+  <use xlink:href="#orchard" transform="translate(371 126) scale(.77)"/>
+  <path d="M436 124Q471 128 446 134Q414 140 364 146Q294 155 310 180H352Q329 161 382 151Q425 144 456 137Q490 127 442 123Z" fill="$field"/>
+  <g fill="none" stroke="$etch" stroke-width="1.5" opacity=".6" stroke-linecap="round">
+    <path d="M15 150q62-25 125-17m-117 21q53-18 98-18M509 138q48-18 97-13m-81 15q46-13 80-10M885 150q95-29 169-11m-144 11q53-16 109-14"/>
+  </g>
+  <path d="M0 160q75 4 125-7q86-18 172 9l50 18H0Zm538 20q98-42 180-30q108 17 167 9q98-14 140-7q76 11 175-8v36Z" fill="$pine"/>
+  <g opacity=".72">
+    <use xlink:href="#cut" transform="translate(97 166)"/>
+    <use xlink:href="#cut" transform="translate(117 162) scale(.75)"/>
+    <use xlink:href="#cut" transform="translate(681 162)"/>
+    <use xlink:href="#cut" transform="translate(1004 163) scale(.8)"/>
+    <use xlink:href="#cut" transform="translate(1026 160) scale(.65)"/>
+  </g>
+</svg>

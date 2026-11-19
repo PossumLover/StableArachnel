@@ -2,9 +2,9 @@ import QtQuick
 
 import Qcm.Material as MD
 
-// Painted art for empty states and decoration (replaces the old spider web).
-//   "vignette"  a little round meadow scene - sun, hills, a flower, two birds
-//   "spray"     flowering stems, for a faint corner decoration
+// Meadow illustrations for empty states and decoration.
+//   "vignette"  a glasshouse in an arched landscape
+//   "spray"     poppies and a butterfly for the edge of a card
 //   "emblem"    the app emblem
 Item {
     id: root
@@ -17,6 +17,7 @@ Item {
     Image {
         anchors.fill: parent
         fillMode: Image.PreserveAspectFit
+        verticalAlignment: root.variant === "spray" ? Image.AlignBottom : Image.AlignVCenter
         smooth: true
         mipmap: true
         source: {

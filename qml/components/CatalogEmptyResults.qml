@@ -29,13 +29,13 @@ Item {
         }
 
         MeadowMark {
+            id: poppies
             variant: "spray"
-            width: 260
-            height: 260
-            anchors.verticalCenter: parent.verticalCenter
+            visible: parent.width >= 420
+            width: Math.min(parent.width * 0.32, 218)
+            height: parent.height
+            anchors.bottom: parent.bottom
             anchors.right: parent.right
-            anchors.rightMargin: -130
-            opacity: 0.55
         }
 
         ColumnLayout {
@@ -43,7 +43,7 @@ Item {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             anchors.leftMargin: MD.Token.spacing.extra_large
-            anchors.rightMargin: MD.Token.spacing.extra_large + 80
+            anchors.rightMargin: MD.Token.spacing.extra_large + (poppies.visible ? poppies.width : 0)
             spacing: MD.Token.spacing.small
 
             MD.Label {

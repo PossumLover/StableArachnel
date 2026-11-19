@@ -135,24 +135,6 @@ Item {
                         }
                     }
 
-                    // Flowering stems and a low sun, framing the cover art on the right.
-                    Image {
-                        anchors.right: parent.right
-                        // Sit beside the cover art (right ~130px), not underneath it.
-                        anchors.rightMargin: 120
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
-                        width: Math.min(parent.width * 0.62, height * 900 / 420)
-                        source: MD.Token.isDarkTheme ? "qrc:/art/hero-spray-dark.png"
-                                                     : "qrc:/art/hero-spray-light.png"
-                        fillMode: Image.PreserveAspectCrop
-                        horizontalAlignment: Image.AlignRight
-                        verticalAlignment: Image.AlignBottom
-                        sourceSize.width: 900
-                        opacity: MD.Token.isDarkTheme ? 0.8 : 0.95
-                        smooth: true
-                    }
-
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: MD.Token.spacing.large
@@ -309,7 +291,16 @@ Item {
                             }
                         }
 
+                        MeadowMark {
+                            variant: "spray"
+                            visible: heroCard.width >= (heroPoster.visible ? 820 : 640)
+                            Layout.preferredWidth: Math.min(heroCard.width * 0.24, heroCard.height)
+                            Layout.fillHeight: true
+                            Layout.bottomMargin: -MD.Token.spacing.large
+                        }
+
                         GamePoster {
+                            id: heroPoster
                             Layout.preferredWidth: 140
                             Layout.preferredHeight: 186
                             Layout.alignment: Qt.AlignVCenter | Qt.AlignRight

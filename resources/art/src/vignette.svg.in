@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="400" height="340" viewBox="0 0 400 340">
+  <defs>
+    <path id="arch" d="M59 295V164a141 141 0 0 1 282 0v131q0 11-11 11H70q-11 0-11-11Z"/>
+    <clipPath id="window"><use xlink:href="#arch"/></clipPath>
+    <g id="disc">$sky_disc</g>
+    $glasshouse
+    <g id="cypress">
+      <path d="M0 0v-17" stroke="$ink" stroke-width="2.5"/>
+      <path d="M0-71C-3-59-7-49-7-39C-14-18-8-12 0-12Q12-13 8-32Q6-51 0-71Z" fill="$pine"/>
+      <path d="M-2-21Q-5-32-1-49" fill="none" stroke="$leaf" stroke-width="2"/>
+    </g>
+    <g id="bloom">
+      <path d="M0 0Q-17-4-15-16Q-10-21-3-13Q-3-26 4-23Q12-23 10-11Q23-18 21-8Q17 1 0 0Z" fill="$petal"/>
+      <path d="M0 0q2-11 11-13Q9-4 0 0Z" fill="$silk"/>
+      <path d="M-5-4 3-1 9-5Q6 4-1 3Z" fill="$pine"/>
+    </g>
+  </defs>
+  <use xlink:href="#arch" fill="$sky" stroke="$frame" stroke-opacity=".45" stroke-width="2"/>
+  <g clip-path="url(#window)">
+    <use xlink:href="#disc" transform="translate(244 107) scale(.76)"/>
+    <path d="M41 167Q72 145 102 152Q129 135 160 140Q195 113 216 127Q236 116 259 125Q290 119 351 93V308H41Z" fill="$mist"/>
+    <path d="M45 154Q98 130 143 163Q169 181 206 179Q259 173 348 142V308H45Z" fill="$ridge"/>
+    <path d="M44 196Q133 188 188 170Q268 146 347 169V308H44Z" fill="$field"/>
+    <g fill="none" stroke="$etch" stroke-width="2.5" opacity=".8">
+      <path d="M235 172q62-16 103-6m-90 11q49-11 85-7"/>
+    </g>
+    <path d="M51 193Q112 161 171 186T348 197V308H51Z" fill="$meadow"/>
+    <use xlink:href="#cypress" transform="translate(94 195) scale(.81)"/>
+    <use xlink:href="#cypress" transform="translate(107 191) scale(.56)"/>
+    <use xlink:href="#cypress" transform="translate(311 178) scale(.48)"/>
+    <path d="M51 244Q119 224 172 232Q264 239 347 209V308H51Z" fill="$leaf"/>
+    <path d="M219 230Q273 243 217 257Q173 269 234 280Q265 286 266 309H157Q178 299 151 290Q111 273 173 257Q243 239 205 234Z" fill="$field"/>
+    <use xlink:href="#glasshouse" transform="translate(119 134) scale(.87)"/>
+    <path d="M47 276Q82 261 114 280Q145 295 187 304L190 312H44ZM279 301Q312 262 349 256V313H273Z" fill="$pine"/>
+    <g fill="none" stroke="$pine" stroke-width="3" stroke-linecap="round">
+      <path d="M96 294Q99 264 76 239m21 36q11-16 10-27m198 35q13-24 9-43"/>
+    </g>
+    <g fill="$pine">
+      <path d="M94 268q-15-3-19-15 14 2 19 15Zm1 3q-3-12 2-19 5 11-2 19Zm216-9q-13-6-13-18 13 7 13 18Z"/>
+    </g>
+    <use xlink:href="#bloom" transform="translate(76 240) rotate(-17) scale(.78)"/>
+    <use xlink:href="#bloom" transform="translate(107 251) rotate(16) scale(.46)"/>
+    <use xlink:href="#bloom" transform="translate(314 242) rotate(10) scale(.64)"/>
+    <path d="m114 288 9 4m3-1 8 4m164-9 6-5m-12 12 7-5" fill="none" stroke="$etch" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+  <path d="M50 293V164a150 150 0 0 1 300 0v129M74 315h252" fill="none" stroke="$frame" stroke-opacity=".62" stroke-width="1.8" stroke-linecap="round"/>
+</svg>
