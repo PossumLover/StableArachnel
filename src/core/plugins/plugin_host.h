@@ -1,4 +1,6 @@
 #pragma once
+#include <atomic>
+#include <memory>
 
 #include "plugin_interface.h"
 #include "source_plugin_model.h"
@@ -53,6 +55,7 @@ public:
 
     void scan();
     void shutdownPlugins();
+    void requestOwnedDownloadStop();
     QVector<SourcePluginInfo> pluginInfos() const;
     ISourcePlugin* plugin(const QString& id) const;
     /**
@@ -115,6 +118,8 @@ public:
     /** Empty pluginId means "every plugin". */
     void waitForInFlightPluginWorkers(const QString& pluginId = QString());
     bool hasInFlightPluginWorkers(const QString& pluginId = QString()) const;
+    // Register calls submitted by the catalog controller as well as jobs started here.
+    void trackPluginWorker(const QString& pluginId, QFuture<void> future, const QString& jobId = {});
 
     static QStringList pluginSearchRoots();
     /** Copy plugins from install-dir / legacy AppData into the writable plugins folder. */
@@ -157,9 +162,14 @@ private:
     std::function<void(const QString&)> m_beforeUnload;
     int m_scanDepth = 0;
     mutable QMutex m_pluginWorkerMutex;
-    QList<QPair<QString, QFuture<void>>> m_pluginWorkerFutures;
+    struct PluginWorker {
+        QString pluginId;
+        QFuture<void> future;
+        QString jobId;
+    };
+    QList<PluginWorker> m_pluginWorkerFutures;
+    std::shared_ptr<std::atomic_bool> m_stopping = std::make_shared<std::atomic_bool>(false);
 
-    void trackPluginWorker(const QString& pluginId, QFuture<void> future);
     QString pluginIdForInstance(const ISourcePlugin* instance) const;
 };
 

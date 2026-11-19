@@ -1,4 +1,5 @@
 #include "runtime_container_manager.h"
+#include "../util/atomic_json.h"
 
 #include <QDir>
 #include <QFile>
@@ -41,10 +42,8 @@ QJsonObject readStateObject(const QString& path)
 
 void writeStateObject(const QString& path, const QJsonObject& obj)
 {
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-        return;
-    file.write(QJsonDocument(obj).toJson(QJsonDocument::Indented));
+    QString error;
+    saveJsonAtomically(path, QJsonDocument(obj), &error);
 }
 
 } // namespace

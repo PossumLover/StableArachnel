@@ -1,6 +1,7 @@
 #include "core_controller_impl.h"
 
 #include <QDirIterator>
+#include <QDeadlineTimer>
 
 #include "file_utils.h"
 
@@ -49,6 +50,11 @@ bool CoreController::clearApplicationData()
     if (m_applicationDataCleared)
         return true;
 
+    if (m_runtimeSetupInProgress) {
+        cancelRuntimeSetup();
+        showNotice(tr("Runtime setup is stopping. Clear application data once it has stopped."));
+        return false;
+    }
     const QString dataDir = applicationDataPath();
     if (dataDir.isEmpty()
         || !dataDir.contains(QStringLiteral("Arachnel"), Qt::CaseInsensitive)) {
@@ -700,6 +706,26 @@ bool CoreController::catalogUpdateHasDlcRisk(const QString& entryId) const
     return false;
 }
 
+void CoreController::requestQuit()
+{
+    if (m_quitRequested) return;
+    m_quitRequested = true;
+    m_pluginCallsBlocked = true;
+    cancelRuntimeSetup();
+    if (m_jobOrchestrator) m_jobOrchestrator->flushPersistence();
+    if (m_pluginHost) m_pluginHost->requestOwnedDownloadStop();
+    auto* timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, [this, timer, deadline = QDeadlineTimer(5000)] {
+        if (!deadline.hasExpired()
+            && ((m_pluginHost && m_pluginHost->hasInFlightPluginWorkers()) || m_runtimeSetupInProgress))
+            return;
+        timer->stop();
+        timer->deleteLater();
+        QCoreApplication::quit();
+    });
+    timer->start(50);
+}
+
 void CoreController::prepareShutdown()
 {
     if (m_applicationDataCleared)
@@ -707,6 +733,9 @@ void CoreController::prepareShutdown()
     if (m_prepareShutdownDone)
         return;
     m_prepareShutdownDone = true;
+    m_pluginCallsBlocked = true;
+    cancelRuntimeSetup();
+    if (m_pluginHost) m_pluginHost->requestOwnedDownloadStop();
 
     if (m_socialController)
         m_socialController->goOffline();
@@ -725,7 +754,12 @@ void CoreController::prepareShutdown()
         m_httpSession->shutdown();
     if (m_torrentSession)
         m_torrentSession->shutdown();
-    if (m_pluginHost)
+    // The event loop is over. Leave a busy module mapped until main's _Exit;
+    // neither blocking forever nor unloading under a running worker is safe.
+    if (m_pluginHost && !m_pluginHost->hasInFlightPluginWorkers()
+        && !hasInFlightCatalogAddonEnrich()
+        && (!m_catalogController || (!m_catalogController->hasInFlightPluginCatalogLoads()
+                                     && !m_catalogController->hasDrainingPluginCatalogLoads())))
         m_pluginHost->shutdownPlugins();
 }
 

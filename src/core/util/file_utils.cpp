@@ -13,6 +13,9 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QThread>
+#include <QTemporaryDir>
+#include <filesystem>
+#include <unordered_map>
 
 #include <algorithm>
 
@@ -175,24 +178,96 @@ bool copyPathRecursive(const QString& src, const QString& dst, QString* errorOut
 }
 
 bool movePathRecursive(const QString& src, const QString& dst, QString* errorOut,
-                       const FileProgressCallback& onProgress)
+                       const FileProgressCallback& onProgress, QString* cleanupWarning)
 {
-    if (!QFileInfo(src).exists())
-        return true;
-
-    const qint64 total = pathByteSize(src);
-    if (QDir().rename(src, dst)) {
-        if (onProgress)
-            onProgress(total > 0 ? total : 1, total > 0 ? total : 1);
-        return true;
-    }
-
-    qint64 copied = 0;
-    if (!copyPathRecursive(src, dst, errorOut, onProgress, &copied, total))
+    namespace fs = std::filesystem;
+    auto fail = [&](const QString& error) {
+        if (errorOut) *errorOut = error;
         return false;
-    if (onProgress && total > 0)
-        onProgress(total, total);
-    return removePathRecursive(src, errorOut);
+    };
+    const QFileInfo source(src), target(dst);
+    if (src.isEmpty() || dst.isEmpty() || !source.isDir() || source.isSymLink() || source.isJunction()
+        || target.exists() || target.isSymLink())
+        return fail(QCoreApplication::translate("Core", "Missing source or destination already exists: %1").arg(dst));
+    const QString root = source.canonicalFilePath();
+    if (!QDir().mkpath(target.absolutePath()))
+        return fail(QCoreApplication::translate("Core", "Cannot create destination folder: %1").arg(dst));
+    const QString parent = QFileInfo(target.absolutePath()).canonicalFilePath();
+    const QString rel = QDir(root).relativeFilePath(parent);
+    if (root.isEmpty() || parent.isEmpty() || (!QDir::isAbsolutePath(rel)
+        && rel != QStringLiteral("..") && !rel.startsWith(QStringLiteral("../"))))
+        return fail(QCoreApplication::translate("Core", "Destination is inside the source folder"));
+    if (QDir().rename(src, dst))
+        return true;
+
+    // Only this staging directory belongs to us on failure. Never merge into or
+    // clean up another install, even if the destination appears during the copy.
+    QTemporaryDir stage(QDir(parent).filePath(QStringLiteral(".sprout-move-XXXXXX")));
+    if (!stage.isValid()) return fail(stage.errorString());
+    const QString staged = stage.filePath(QStringLiteral("install"));
+    const auto from = source.filesystemAbsoluteFilePath();
+    const auto to = QFileInfo(staged).filesystemAbsoluteFilePath();
+    try {
+        fs::create_directory(to);
+        qint64 total = pathByteSize(src), copied = 0;
+        size_t copiedEntries = 0;
+        std::unordered_map<fs::path, fs::file_time_type> copiedAt;
+        for (const auto& entry : fs::recursive_directory_iterator(from)) {
+            const auto output = to / entry.path().lexically_relative(from);
+#ifdef Q_OS_WIN
+            if (QFileInfo(entry.path()).isJunction())
+                return fail(QCoreApplication::translate("Core", "Cannot move a directory junction: %1")
+                                .arg(QFileInfo(entry.path()).absoluteFilePath()));
+#endif
+            const auto type = entry.symlink_status();
+            if (fs::is_symlink(type)) {
+                fs::copy_symlink(entry.path(), output);
+            } else if (fs::is_directory(type)) {
+                fs::create_directory(output);
+            } else if (fs::is_regular_file(type)) {
+                const auto timestamp = entry.last_write_time();
+                fs::copy_file(entry.path(), output);
+                const auto size = entry.file_size();
+                if (fs::file_size(output) != size || timestamp != entry.last_write_time())
+                    return fail(QCoreApplication::translate("Core", "Incomplete copy: %1").arg(src));
+                fs::last_write_time(output, timestamp);
+                copiedAt.emplace(entry.path(), timestamp);
+                copied += static_cast<qint64>(size);
+                if (onProgress) onProgress(copied, total);
+            } else {
+                return fail(QCoreApplication::translate("Core", "Unsupported file in %1").arg(src));
+            }
+            ++copiedEntries;
+        }
+        // Rewalk the source before committing: a save or update during a long
+        // copy must not disappear when we remove the original installation.
+        size_t verified = 0;
+        for (const auto& entry : fs::recursive_directory_iterator(from)) {
+            const auto output = to / entry.path().lexically_relative(from);
+            const auto type = entry.symlink_status();
+            const auto stamp = copiedAt.find(entry.path());
+            if (type.type() != fs::symlink_status(output).type()
+                || (fs::is_regular_file(type) && (entry.file_size() != fs::file_size(output)
+                    || stamp == copiedAt.end() || stamp->second != entry.last_write_time()))
+                || (fs::is_symlink(type) && fs::read_symlink(entry.path()) != fs::read_symlink(output)))
+                return fail(QCoreApplication::translate("Core", "Game files changed while moving: %1").arg(src));
+            ++verified;
+        }
+        if (verified != copiedEntries)
+            return fail(QCoreApplication::translate("Core", "Game files changed while moving: %1").arg(src));
+    } catch (const fs::filesystem_error& e) {
+        return fail(QString::fromLocal8Bit(e.what()));
+    }
+    if (!QDir().rename(staged, dst))
+        return fail(QCoreApplication::translate("Core", "Cannot publish moved game: %1").arg(dst));
+    std::error_code ec;
+    fs::remove_all(from, ec);
+    if (ec) {
+        const QString warning = QCoreApplication::translate("Core", "Game moved, but some files remain in %1").arg(src);
+        if (cleanupWarning) *cleanupWarning = warning;
+        qWarning().noquote() << warning;
+    }
+    return true;
 }
 
 QString relocatePathPrefix(const QString& path, const QString& oldRoot, const QString& newRoot)
@@ -201,7 +276,13 @@ QString relocatePathPrefix(const QString& path, const QString& oldRoot, const QS
     const QString normalizedOld = QDir::fromNativeSeparators(oldRoot);
     const QString normalizedNew = QDir::fromNativeSeparators(newRoot);
 
-    if (normalizedPath.startsWith(normalizedOld, Qt::CaseInsensitive))
+#ifdef Q_OS_WIN
+    constexpr auto sensitivity = Qt::CaseInsensitive;
+#else
+    constexpr auto sensitivity = Qt::CaseSensitive;
+#endif
+    if (!normalizedOld.isEmpty() && (normalizedPath.compare(normalizedOld, sensitivity) == 0
+        || normalizedPath.startsWith(normalizedOld + QLatin1Char('/'), sensitivity)))
         return normalizedNew + normalizedPath.mid(normalizedOld.size());
     return path;
 }
@@ -373,6 +454,34 @@ int healUnityScriptingAssemblies(const QString& installPath)
     return repaired;
 }
 
+#ifndef Q_OS_WIN
+namespace {
+// Both paths are on the installation filesystem. POSIX rename replaces a
+// regular file atomically; if it fails, both files are still there.
+bool mergeLayoutEntry(const QString& src, const QString& dst)
+{
+    const QFileInfo from(src), to(dst);
+    if (to.isSymLink() || from.isSymLink())
+        return false;
+    if (to.exists()) {
+        if (from.isDir() && to.isDir()) {
+            const QDir dir(src);
+            const auto entries = dir.entryList(QDir::AllEntries | QDir::Hidden | QDir::System
+                                                | QDir::NoDotAndDotDot);
+            for (const QString& name : entries)
+                mergeLayoutEntry(dir.filePath(name), QDir(dst).filePath(name));
+            return QDir().rmdir(src); // succeeds only if every child was moved
+        }
+        if (!from.isFile() || !to.isFile() || from.lastModified() <= to.lastModified())
+            return false;
+    }
+    std::error_code ec;
+    std::filesystem::rename(from.filesystemFilePath(), to.filesystemFilePath(), ec);
+    return !ec;
+}
+}
+#endif
+
 int healWindowsInstallLayout(const QString& installPath)
 {
 #if defined(Q_OS_WIN)
@@ -400,34 +509,21 @@ int healWindowsInstallLayout(const QString& installPath)
         const QFileInfo info(src);
         if (!info.exists())
             continue;
-        const QString dest = info.dir().filePath(
-            info.fileName().replace(QLatin1Char('\\'), QLatin1Char('/')));
-        if (dest == src)
+        QStringList parts = info.fileName().split(QLatin1Char('\\'));
+        if (parts.contains(QString()) || parts.contains(QStringLiteral(".."))
+            || parts.contains(QStringLiteral(".")))
             continue;
-        QDir().mkpath(QFileInfo(dest).absolutePath());
-        if (QFileInfo::exists(dest)) {
-            // A backslash-named entry is a depot path that was never split into
-            // directories, so on an update it holds the NEW content for a file that is
-            // already installed. Deleting it - which is all this did before - threw the
-            // update away and left the old file in place, so the game never changed and
-            // the next update re-downloaded everything because nothing ever matched.
-            // Replace when the stray copy is the newer one; otherwise it really is junk.
-            const QFileInfo destInfo(dest);
-            if (!info.isDir() && !destInfo.isDir()
-                && info.lastModified() > destInfo.lastModified()) {
-                if (QFile::remove(dest) && QFile::rename(src, dest)) {
-                    ++moved;
-                    continue;
-                }
+        const QString leaf = parts.takeLast();
+        QDir parent = info.dir();
+        bool valid = true;
+        for (const QString& part : parts) {
+            if (QFileInfo(parent.filePath(part)).isSymLink()
+                || (!parent.exists(part) && !parent.mkdir(part)) || !parent.cd(part)) {
+                valid = false;
+                break;
             }
-            if (info.isDir())
-                QDir(src).removeRecursively();
-            else
-                QFile::remove(src);
-            ++moved;
-            continue;
         }
-        if (info.isDir() ? QDir().rename(src, dest) : QFile::rename(src, dest))
+        if (valid && mergeLayoutEntry(src, parent.filePath(leaf)))
             ++moved;
     }
 

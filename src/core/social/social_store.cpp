@@ -282,6 +282,8 @@ void SocialStore::setRelayBaseUrl(const QString& url)
 
 void SocialStore::setFriends(QVector<FriendEntry> friends)
 {
+    if (m_friends == friends)
+        return;
     m_friends = std::move(friends);
     saveFriends();
     emit friendsChanged();

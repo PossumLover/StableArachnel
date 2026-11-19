@@ -2,6 +2,8 @@
 
 #include "catalog_types.h"
 #include "library_model.h"
+#include "storage_library.h"
+#include <QSet>
 
 #include <QHash>
 #include <QStringList>
@@ -85,7 +87,13 @@ public:
         QString libraryId;
         QString sourceId;
     };
-    QVector<ScanCandidate> discoverInstallCandidates() const;
+    struct ScanInput {
+        QVector<StorageLibrary> libraries;
+        QSet<QString> knownIds;
+        QSet<QString> knownPaths;
+    };
+    ScanInput scanInput() const;
+    static QVector<ScanCandidate> discoverInstallCandidates(const ScanInput& input);
     /** Apply discover results on the UI thread (catalog hooks / store). */
     int commitScanCandidates(const QVector<ScanCandidate>& candidates);
 

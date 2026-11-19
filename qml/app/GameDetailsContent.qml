@@ -446,6 +446,18 @@ Item {
                                 onClicked: page.isRunning ? Core.stopRunningGame() : Core.launchGame(page.gameId)
                             }
 
+                            MD.Button {
+                                visible: page.runtimeSetupActive
+                                text: qsTr("Cancel")
+                                onClicked: Core.cancelRuntimeSetup()
+                            }
+
+                            MD.Button {
+                                visible: !!page.info.installUnavailable
+                                text: qsTr("Game folder unavailable · Check again")
+                                onClicked: page.detailsRevision++
+                            }
+
                             DownloadProgressButton {
                                 id: downloadAction
                                 visible: page.canManageDownload && !installStudio.open

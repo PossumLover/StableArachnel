@@ -4,13 +4,12 @@
 
 #include <QCoreApplication>
 #include <QDir>
-#include <QSaveFile>
+#include "../util/atomic_json.h"
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QStandardPaths>
-#include <QSaveFile>
 
 #include <algorithm>
 
@@ -249,7 +248,7 @@ void LibraryStore::save()
 {
     m_dirty = true;
     if (!m_saveTimer.isActive())
-        m_saveTimer.start();
+        m_saveTimer.start(400);
 }
 
 void LibraryStore::flush()
@@ -257,7 +256,6 @@ void LibraryStore::flush()
     m_saveTimer.stop();
     if (!m_dirty)
         return;
-    m_dirty = false;
 
     QJsonArray array;
     for (const auto& game : m_games) {
@@ -297,11 +295,15 @@ void LibraryStore::flush()
 
     // QSaveFile writes a temp file and renames it: a crash mid-write can't leave a truncated
     // library.json behind.
-    QSaveFile file(libraryFilePath());
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-        return;
-    file.write(QJsonDocument(array).toJson(QJsonDocument::Indented));
-    file.commit();
+    QString error;
+    if (saveJsonAtomically(libraryFilePath(), QJsonDocument(array), &error)) {
+        m_dirty = false;
+        m_saveFailed = false;
+    } else {
+        m_saveTimer.start(5000);
+        if (!std::exchange(m_saveFailed, true))
+            emit saveFailed(error);
+    }
 }
 
 } // namespace arachnel::core

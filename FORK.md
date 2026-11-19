@@ -262,17 +262,13 @@ diagnosing a game that will not launch, how the Steam compatibility layers
 actually work, and the still-open shift+tab overlay investigation with its
 ruled-out list.
 
-## Known, not fixed
+## First-launch runtime setup
 
-- The stall itself. `LaunchController::launchGame` does its prep in a
-  `QTimer::singleShot` **on the GUI thread**, and that path calls
-  `process.waitForFinished(600000)` inside
-  `RuntimeDependencyService::installDepotIntoContainer` — up to a ten-minute
-  main-thread block on a game's first launch. That is the prime suspect, but
-  moving launch prep onto a worker thread is a real refactor of the most critical
-  path in the app, and until a hang report names it, it is inference. Fix 2 means
-  the next freeze will say so outright. Breadcrumbs (`runtime.install`) were added
-  around the step in the meantime.
+The Linux dependency installer used to wait up to ten minutes per installer on
+the GUI thread. It now runs on a worker, with progress and cancellation; only
+the launch continuation runs on the GUI thread. This addresses that blocking
+path without attributing every historical UI hang to it. See the
+[v0.3.0 review and resolutions](docs/fork/code-review-v0.3.0.md).
 
 ## Build
 

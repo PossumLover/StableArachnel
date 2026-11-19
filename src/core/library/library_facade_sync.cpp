@@ -65,31 +65,12 @@ void CoreController::migratePollutedEntryIds()
     }
 }
 
-void CoreController::pruneBrokenLibraryEntries()
-{
-    QVector<QString> brokenIds;
-    for (const LibraryGame& game : m_libraryStore.games()) {
-        if (game.installPath.isEmpty())
-            continue;
-        if (!QFileInfo::exists(game.installPath))
-            brokenIds.append(game.id);
-    }
-
-    if (brokenIds.isEmpty())
-        return;
-
-    for (const QString& id : brokenIds)
-        m_libraryStore.removeGame(id);
-    m_libraryStore.save();
-    syncLibraryFromStore();
-}
-
 void CoreController::ensureLibraryPlaceholder(const CatalogEntry& entry, const QString& libraryId,
                                               const QStringList& selectedAddonIds)
 {
     const LibraryGame* existing = m_libraryStore.gameById(entry.id);
-    if (existing && !existing->installPath.isEmpty()
-        && QFileInfo::exists(existing->installPath))
+    // An installed game on a disconnected drive is not a download placeholder.
+    if (existing && !existing->installPath.isEmpty())
         return;
 
     const QString libId = libraryId.isEmpty() ? m_settings.defaultLibraryId() : libraryId;

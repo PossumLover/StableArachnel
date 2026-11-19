@@ -27,7 +27,7 @@ class LaunchController : public QObject
 public:
     struct Hooks {
         std::function<void(const QString&)> notice;
-        std::function<bool(const LibraryGame&)> ensureRuntime;
+        std::function<void(const LibraryGame&, std::function<void(bool)>)> ensureRuntime;
         std::function<void(const QString&)> touchLastPlayed;
         std::function<void(const QString&, qint64, qint64, bool)> playtimeProgress;
         std::function<void(const QString& gameId, bool enabled)> setOnlineFixEnabled;
@@ -63,6 +63,8 @@ signals:
                                         const QVector<arachnel::core::GameLaunchOption>& options);
 
 private:
+    void launchAfterRuntime(const LibraryGame& gameCopy);
+    bool m_launchPending = false;
     void markRunning(const LibraryGame& game, qint64 processId, bool watchingOnlineFix,
                      const WineErrorWatchHints& watchHints);
     void clearRunning(bool allowOnlineFixFallback, bool suppressQuickExitLog = false,

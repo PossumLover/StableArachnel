@@ -2,6 +2,7 @@
 
 #include "proton_manager.h"
 #include "storage_library.h"
+#include "../util/atomic_json.h"
 
 #include <QDir>
 #include <QFile>
@@ -243,10 +244,14 @@ void SettingsStore::save()
     }
     obj.insert(QStringLiteral("pluginStates"), pluginStates);
 
-    QFile file(settingsFilePath());
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-        return;
-    file.write(QJsonDocument(obj).toJson(QJsonDocument::Indented));
+    QString error;
+    if (saveJsonAtomically(settingsFilePath(), QJsonDocument(obj), &error)) {
+        m_saveRetry.stop();
+        m_saveFailed = false;
+    } else {
+        if (!m_saveRetry.isActive()) m_saveRetry.start(5000);
+        if (!std::exchange(m_saveFailed, true)) emit saveFailed(error);
+    }
 }
 
 } // namespace arachnel::core

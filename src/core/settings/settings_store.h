@@ -1,4 +1,5 @@
 #pragma once
+#include <QTimer>
 
 #include "source_plugin_model.h"
 #include "storage_library.h"
@@ -132,6 +133,7 @@ public:
     void save();
 
 signals:
+    void saveFailed(const QString& error);
     void achievementNotificationsChanged();
     void debridChanged();
     void debridStatusChanged();
@@ -153,6 +155,8 @@ signals:
     void pluginStatesChanged();
 
 private:
+    QTimer m_saveRetry;
+    bool m_saveFailed = false;
     void ensureDefaultStorageLibraries();
     void loadTorboxKey();
     bool saveTorboxKey(const QString& key);

@@ -13,88 +13,46 @@ void hideProcessWindow(QProcess& process)
 // Blocking GET that must NOT run a nested event loop on the GUI/QML thread.
 // Nested QEventLoop::exec() from Button.onClicked / property bindings aborts with:
 // "Object destroyed while one of its QML signal handlers is in progress".
-QByteArray httpGetBlocking(QNetworkAccessManager* /*network*/, const QUrl& url, int timeoutMs,
-                           QString* errorOut)
+QByteArray httpGetBlocking(QNetworkAccessManager* network, const QUrl& url, int timeoutMs,
+                           QString* errorOut, const std::atomic_bool* cancelled = nullptr)
 {
-    struct Result {
-        QMutex mutex;
-        QWaitCondition done;
-        QByteArray body;
-        QString error;
-        bool finished = false;
-    };
-    const auto result = std::make_shared<Result>();
-
-    QThread* thread = QThread::create([result, url, timeoutMs]() {
-        QNetworkAccessManager nam;
-        QNetworkRequest request(url);
-        request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("Arachnel/0.1"));
-        request.setTransferTimeout(timeoutMs);
-
-        QEventLoop loop;
-        QNetworkReply* reply = nam.get(request);
-        QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-        QTimer::singleShot(timeoutMs + 2000, &loop, &QEventLoop::quit);
-        loop.exec();
-
-        QByteArray body;
-        QString error;
-        if (!reply->isFinished()) {
-            reply->abort();
-            error = QStringLiteral("Request timed out");
-        } else if (reply->error() != QNetworkReply::NoError) {
-            error = reply->errorString();
-        } else {
-            body = reply->readAll();
-        }
-        reply->deleteLater();
-
-        QMutexLocker lock(&result->mutex);
-        result->body = std::move(body);
-        result->error = std::move(error);
-        result->finished = true;
-        result->done.wakeAll();
-    });
-
-    thread->start();
-    {
-        QMutexLocker lock(&result->mutex);
-        QCoreApplication* app = QCoreApplication::instance();
-        const bool onGui = app && QThread::currentThread() == app->thread();
-        while (!result->finished) {
-            if (onGui) {
-                lock.unlock();
-                QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents, 50);
-                lock.relock();
-                if (result->finished)
-                    break;
-            }
-            result->done.wait(&result->mutex, 50);
-        }
+    if ((cancelled && cancelled->load()) || QThread::isMainThread()) {
+        if (errorOut) *errorOut = QStringLiteral("Runtime request not started");
+        return {};
     }
-    thread->wait();
-    delete thread;
-
-    if (errorOut && !result->error.isEmpty())
-        *errorOut = result->error;
-    return result->body;
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("Arachnel/0.1"));
+    request.setTransferTimeout(timeoutMs);
+    QScopedPointer<QNetworkReply> reply(network->get(request));
+    QEventLoop loop;
+    QTimer poll;
+    QObject::connect(reply.data(), &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    QObject::connect(&poll, &QTimer::timeout, &loop, [&] {
+        if (cancelled && cancelled->load()) loop.quit();
+    });
+    poll.start(100);
+    QTimer::singleShot(timeoutMs, &loop, &QEventLoop::quit);
+    if (!reply->isFinished()) loop.exec();
+    if (!reply->isFinished()) reply->abort();
+    if (reply->error() == QNetworkReply::NoError) return reply->readAll();
+    if (errorOut) *errorOut = reply->errorString();
+    return {};
 }
 
 bool downloadFileBlocking(QNetworkAccessManager* network, const QUrl& url,
-                          const QString& destination, QString* errorOut)
+                          const QString& destination, QString* errorOut, const std::atomic_bool* cancelled)
 {
-    const QByteArray body = httpGetBlocking(network, url, 120000, errorOut);
+    const QByteArray body = httpGetBlocking(network, url, 120000, errorOut, cancelled);
     if (body.isEmpty())
         return false;
 
-    QFile file(destination);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    QSaveFile file(destination);
+    if (!file.open(QIODevice::WriteOnly) || file.write(body) != body.size() || !file.commit()) {
         if (errorOut)
             *errorOut = QCoreApplication::translate("Core", "Could not write file: %1")
                             .arg(destination);
         return false;
     }
-    file.write(body);
     return true;
 }
 
@@ -110,7 +68,7 @@ bool installerExitOk(int exitCode, const QString& installerPath = {})
 
 bool runSilentInstaller(const QString& program, const QStringList& args, const QString& workDir,
                         const QProcessEnvironment& env, int* exitCodeOut, QString* errorOut,
-                        const QString& errorLabel = {})
+                        const QString& errorLabel, const std::atomic_bool* cancelled)
 {
     const QString label = errorLabel.isEmpty() ? program : errorLabel;
     QProcess process;
@@ -129,10 +87,12 @@ bool runSilentInstaller(const QString& program, const QStringList& args, const Q
                             .arg(label);
         return false;
     }
-    if (!process.waitForFinished(600000)) {
-        process.kill();
-        if (errorOut)
-            *errorOut = QCoreApplication::translate("Core", "Installer timed out: %1").arg(label);
+    if (!waitForRuntimeInstaller(process, cancelled, QDeadlineTimer(600000))) {
+        if (errorOut) {
+            *errorOut = cancelled && cancelled->load()
+                ? QCoreApplication::translate("Core", "Installer cancelled: %1").arg(label)
+                : QCoreApplication::translate("Core", "Installer timed out: %1").arg(label);
+        }
         return false;
     }
     const int code = process.exitCode();
@@ -215,7 +175,7 @@ QString steamCommonRedistRoot()
 }
 
 bool downloadCdnFallbackInstaller(QNetworkAccessManager* network, const QString& depotId,
-                                  const QString& destination, QString* errorOut)
+                                  const QString& destination, QString* errorOut, const std::atomic_bool* cancelled)
 {
     QUrl url;
     // VC only: Steam's bundled 2015-era packages are stale for modern depots; use aka.ms.
@@ -227,7 +187,7 @@ bool downloadCdnFallbackInstaller(QNetworkAccessManager* network, const QString&
     else
         return false;
 
-    return downloadFileBlocking(network, url, destination, errorOut);
+    return downloadFileBlocking(network, url, destination, errorOut, cancelled);
 }
 
 QProcessEnvironment protonEnvForGame(ProtonManager* protonManager, SettingsStore* settings,
@@ -246,7 +206,6 @@ QProcessEnvironment protonEnvForGame(ProtonManager* protonManager, SettingsStore
     const QString installDir = protonManager->installDirForId(protonId);
     if (!installDir.isEmpty())
         env.insert(QStringLiteral("PROTON_PATH"), installDir);
-    QDir().mkpath(protonManager->compatDataPathForGame(gameId) + QStringLiteral("/pfx"));
     return env;
 }
 
@@ -265,7 +224,7 @@ QStringList silentArgsForInstaller(const QString& installerPath)
     return {QStringLiteral("/install"), QStringLiteral("/quiet"), QStringLiteral("/norestart")};
 }
 
-QString resolveSteamAppIdFromTitle(QNetworkAccessManager* network, const QString& title)
+QString resolveSteamAppIdFromTitle(QNetworkAccessManager* network, const QString& title, const std::atomic_bool* cancelled)
 {
     if (title.trimmed().isEmpty())
         return {};
@@ -278,7 +237,7 @@ QString resolveSteamAppIdFromTitle(QNetworkAccessManager* network, const QString
     url.setQuery(query);
 
     QString error;
-    const QByteArray body = httpGetBlocking(network, url, 15000, &error);
+    const QByteArray body = httpGetBlocking(network, url, 15000, &error, cancelled);
     if (body.isEmpty())
         return {};
 

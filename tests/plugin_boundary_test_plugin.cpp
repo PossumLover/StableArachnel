@@ -6,6 +6,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <QSemaphore>
 
 using namespace arachnel::core;
 
@@ -94,7 +95,7 @@ public:
     }
 
     InstallResult startOwnedDownload(
-        const InstallContext&,
+        const InstallContext& ctx,
         const std::function<void(const OwnedDownloadProgress&)>& onProgress) const override
     {
         OwnedDownloadProgress progress;
@@ -102,7 +103,15 @@ public:
         progress.detail = QStringLiteral("Downloading depots");
         progress.status = QStringLiteral("downloading");
         onProgress(progress);
+        if (ctx.jobId == QStringLiteral("paused-transfer"))
+            stopped.tryAcquire(1, 15000);
         return result();
+    }
+
+    void cancelOwnedDownload(const QString& id) const override
+    {
+        if (id == QStringLiteral("paused-transfer"))
+            stopped.release();
     }
 
     QVector<GameLaunchOption> launchOptions(const LibraryGame&) const override
@@ -119,6 +128,7 @@ public:
     }
 
 private:
+    mutable QSemaphore stopped;
     static InstallResult result()
     {
         InstallResult result;
@@ -161,6 +171,8 @@ ARACHNEL_PLUGIN_EXPORT int arachnel_plugin_interface_revision()
 ARACHNEL_PLUGIN_EXPORT void arachnel_plugin_abi_sizes(ArachnelAbiSizes* out)
 {
     arachnel_fill_abi_sizes(out);
+    if (qEnvironmentVariableIsSet("SPROUT_TEST_WRONG_OPTION_SIZE"))
+        ++out->gameLaunchOption;
 }
 
 ARACHNEL_PLUGIN_EXPORT ISourcePlugin* arachnel_plugin_create(const char*)

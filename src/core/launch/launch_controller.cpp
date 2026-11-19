@@ -826,7 +826,7 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
             m_hooks.notice(QCoreApplication::translate("Core", "Game is not installed yet"));
         return;
     }
-    if (gameRunning() && m_gameId == gameId)
+    if (m_launchPending || (gameRunning() && m_gameId == gameId))
         return;
 
     // When no optionId is passed and no preferred launch option is saved, ask user if multiple options exist
@@ -856,9 +856,12 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
     LibraryGame gameCopyBase = *game;
     if (!optionId.isEmpty())
         gameCopyBase.selectedLaunchOptionId = optionId;
+    m_launchPending = true;
     QTimer::singleShot(0, this, [this, gameId, gameCopyBase]() {
-        if (m_library->gameById(gameId) == nullptr)
+        if (m_library->gameById(gameId) == nullptr) {
+            m_launchPending = false;
             return;
+        }
         LibraryGame gameCopy = gameCopyBase;
         if (!gameCopy.installPath.isEmpty()) {
             healWindowsInstallLayout(gameCopy.installPath);
@@ -897,321 +900,343 @@ void LaunchController::launchGame(const QString& gameId, const QString& optionId
         if (!gameCopy.executableOverride.isEmpty())
             logLine(QCoreApplication::translate("Core", "Executable override: %1")
                         .arg(gameCopy.executableOverride));
-        if (m_hooks.ensureRuntime && !m_hooks.ensureRuntime(gameCopy)) {
-            logLine(QCoreApplication::translate("Core", "Failed to prepare runtime (Proton/Wine)"));
-            return;
-        }
-
-        // Default Play pipeline: Steamless (SteamStub) then Online Fix env.
-        if (m_steamless) {
-            QString steamlessError;
-            const int stripped = m_steamless->ensureUnpacked(gameCopy.installPath, &steamlessError);
-            if (stripped > 0) {
-                logLine(QCoreApplication::translate(
-                            "Core", "Steamless removed SteamStub from %1 file(s)")
-                            .arg(stripped));
-            } else if (stripped < 0) {
-                logLine(QCoreApplication::translate("Core", "Steamless: %1")
-                            .arg(steamlessError.isEmpty()
-                                     ? QCoreApplication::translate("Core", "unknown error")
-                                     : steamlessError));
-                if (m_hooks.notice) {
-                    m_hooks.notice(QCoreApplication::translate(
-                                       "Core", "Steamless failed: %1")
-                                       .arg(steamlessError.isEmpty()
-                                                ? QCoreApplication::translate("Core", "unknown error")
-                                                : steamlessError));
-                }
-                // Still try to launch - games without a live stub may boot anyway.
-            }
-        }
-
-        LaunchInfo info;
-        if (ISourcePlugin* plugin = m_plugins->plugin(gameCopy.sourceId)) {
-            // Keep SteamFix.ini / stplug lua in sync with library toggles (toggle alone can race).
-            QStringList enabledDlc;
-            enabledDlc.reserve(gameCopy.components.size());
-            for (const InstalledComponent& component : gameCopy.components) {
-                if (component.installed && component.enabled)
-                    enabledDlc.append(component.id);
-            }
-            if (!plugin->applySelectedDlc(gameCopy, enabledDlc) && m_hooks.notice) {
-                m_hooks.notice(QCoreApplication::translate("Core", "Couldn't update DLC unlocks."));
-            }
-            info = plugin->launchInfo(gameCopy);
-        }
-        if (!gameCopy.selectedLaunchOptionId.isEmpty() && (info.executable.isEmpty() || !QFileInfo::exists(info.executable))) {
-            const auto opts = availableLaunchOptions(gameCopy.id);
-            for (const auto& opt : opts) {
-                if (opt.id == gameCopy.selectedLaunchOptionId && !opt.executable.isEmpty()
-                    && QFileInfo::exists(opt.executable)) {
-                    info.executable = opt.executable;
-                    info.workingDirectory = opt.workingDirectory.isEmpty()
-                                                ? QFileInfo(opt.executable).absolutePath()
-                                                : opt.workingDirectory;
-                    info.arguments = opt.arguments;
-                    break;
-                }
-            }
-        }
-        if (info.executable.isEmpty() && gameCopy.executableOverride.isEmpty())
-            info.executable = findGameExecutableInTree(gameCopy.installPath);
-
-        // Refuse steam://rungameid - that needs a Store license. Depot installs
-        // must run the local exe (Proton / Windows), never Steam as the game host.
-        const bool steamUriLaunch = std::any_of(
-            info.arguments.cbegin(), info.arguments.cend(), [](const QString& arg) {
-                return arg.startsWith(QStringLiteral("steam://rungameid/"), Qt::CaseInsensitive);
-            });
-        if (steamUriLaunch) {
-            const QString reason = QCoreApplication::translate(
-                "Core",
-                "Game files are missing or incomplete - reinstall from the catalog. "
-                "Steam Store launch is not used.");
-            logLine(reason);
-            if (m_hooks.notice)
-                m_hooks.notice(reason);
-            return;
-        }
-
-        // Apply installscript.vdf registry entries for Ubisoft, EA, and Steam titles before launch.
-        if (!gameCopy.installPath.isEmpty()) {
-            QString protonPrefix;
-#if defined(Q_OS_LINUX)
-            if (m_protons)
-                protonPrefix = m_protons->compatDataPathForGame(gameCopy.id);
-#endif
-            applyInstallScriptForGame(gameCopy.installPath, protonPrefix);
-        }
-
-        if (isUbisoftGame(gameCopy.installPath)) {
-            if (!info.arguments.contains(QStringLiteral("-uplay_steam_mode")))
-                info.arguments.append(QStringLiteral("-uplay_steam_mode"));
-            logLine(QCoreApplication::translate("Core", "Ubisoft game detected - applied launcher-less Steam mode"));
-        }
-
-        const OnlineFixOverlayState overlayBefore = detectOnlineFixOverlay(gameCopy.installPath);
-        const bool watchOnlineFix = overlayBefore.enabled && !m_onlineFixFallbackUsed;
-        WineErrorWatchHints watchHints;
-        watchHints.installPath = gameCopy.installPath;
-        {
-            const QString exePath = chooseLaunchExecutable(info, gameCopy);
-            watchHints.executablePath = exePath;
-            watchHints.executableName = QFileInfo(exePath).fileName();
-        }
-        watchHints.fakeSteamAppId = QStringLiteral("480");
-        {
-            const QString ov =
-                overlayBefore.overlayDir.isEmpty() ? gameCopy.installPath : overlayBefore.overlayDir;
-            const QString onlineFixIni = QDir(ov).filePath(QStringLiteral("OnlineFix.ini"));
-            const QString steamFixIni = QDir(ov).filePath(QStringLiteral("SteamFix.ini"));
-            auto readFake = [](const QString& path) -> QString {
-                QFile f(path);
-                if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
-                    return {};
-                const QString text = QString::fromUtf8(f.readAll());
-                for (const QString& line : text.split(QLatin1Char('\n'))) {
-                    const QString t = line.trimmed();
-                    if (t.startsWith(QLatin1String("FakeAppId="), Qt::CaseInsensitive))
-                        return t.section(QLatin1Char('='), 1).trimmed();
-                }
-                return {};
-            };
-            if (QFileInfo::exists(onlineFixIni)) {
-                const QString id = readFake(onlineFixIni);
-                if (!id.isEmpty())
-                    watchHints.fakeSteamAppId = id;
-            } else if (QFileInfo::exists(steamFixIni)) {
-                const QString id = readFake(steamFixIni);
-                if (!id.isEmpty())
-                    watchHints.fakeSteamAppId = id;
-            }
-        }
-        {
-            // Put the fix next to the executable before anything reads it, or the loader
-            // is never found and the layer does nothing while reporting itself enabled.
-            // The heal walks the whole install; skip it when there is no fix to place.
-            if (const int placed = overlayBefore.present
-                    ? healOnlineFixLayoutForExecutable(gameCopy.installPath,
-                                                       watchHints.executablePath)
-                    : 0;
-                placed > 0) {
-                logLine(QCoreApplication::translate(
-                            "Core", "Online Fix: placed %1 file(s) next to the game executable")
-                            .arg(placed));
-            }
-
-            applyOnlineFixLaunchInfo(gameCopy.installPath, &info, realSteamAppId(gameCopy));
-        }
-
-        {
-            const OnlineFixOverlayState overlay = detectOnlineFixOverlay(gameCopy.installPath);
-#if defined(Q_OS_LINUX)
-            if (overlay.enabled)
-                logLine(QCoreApplication::translate("Core", "Online Fix overlay detected"));
-#endif
-
-            // FreeTP SteamFix needs the Steam client for SpaceWar/overlay IPC.
-            // OF.me (OnlineFix.ini) does not - starting Steam next to it often trips
-            // Self-protection (error 4) under Proton.
-            const QString ov = overlay.overlayDir.isEmpty() ? gameCopy.installPath : overlay.overlayDir;
-            const bool steamFix = QDir(ov).exists(QStringLiteral("SteamFix.ini"))
-                                  || QDir(ov).exists(QStringLiteral("SteamFix64.dll"))
-                                  || QDir(ov).exists(QStringLiteral("SteamFix32.dll"));
-            if (overlay.enabled && steamFix && !isSteamClientRunning()) {
-                tryStartSteamClient();
-                if (m_hooks.notice) {
-                    m_hooks.notice(QCoreApplication::translate(
-                        "Core",
-                        "Steam is not running - Online Fix needs it for SpaceWar/overlay. Starting Steam…"));
-                }
-            }
-        }
-        {
-            if (!watchHints.executablePath.isEmpty()) {
-                const QString provisionSummary = ensureSteamApiDllForExecutable(
-                    gameCopy.installPath, watchHints.executablePath);
-                if (!provisionSummary.isEmpty())
-                    logLine(provisionSummary);
-            }
-        }
-        {
-            const QVector<GameLaunchOption> launchOpts = availableLaunchOptions(gameCopy.id);
-            const VrGameDetection vrDetection =
-                detectVrGame(gameCopy.installPath, info.executable, gameCopy.genres, gameCopy.title,
-                             launchOpts, gameCopy.selectedLaunchOptionId,
-                             info.arguments + parseLaunchOptions(gameCopy.launchArgs).arguments);
-            if (vrDetection.isCurrentLaunchVr) {
-                logLine(QCoreApplication::translate("Core", "VR launch mode active (runtime: %1, engine: %2)")
-                            .arg(vrRuntimeName(vrDetection.runtime),
-                                 vrDetection.isUnreal ? QStringLiteral("Unreal Engine")
-                                                      : (vrDetection.isUnity ? QStringLiteral("Unity")
-                                                                             : QStringLiteral("Standard"))));
-                if (!isSteamVrRunning()) {
-                    logLine(QCoreApplication::translate("Core", "SteamVR is not running. Starting SteamVR…"));
-                    if (tryStartSteamVr()) {
-                        logLine(QCoreApplication::translate("Core", "SteamVR start requested"));
-                    } else {
-                        logLine(QCoreApplication::translate(
-                            "Core",
-                            "Could not start SteamVR automatically. Make sure SteamVR is installed and running."));
-                    }
-                }
-
-                const bool hasVrArg =
-                    gameCopy.launchArgs.contains(QStringLiteral("-vr"), Qt::CaseInsensitive)
-                    || gameCopy.launchArgs.contains(QStringLiteral("-vrmode"), Qt::CaseInsensitive)
-                    || info.arguments.contains(QStringLiteral("-vr"), Qt::CaseInsensitive)
-                    || info.arguments.contains(QStringLiteral("-vrmode"), Qt::CaseInsensitive);
-
-                if (!hasVrArg && !vrDetection.suggestedArgs.isEmpty()) {
-                    info.arguments += vrDetection.suggestedArgs;
-                    logLine(QCoreApplication::translate("Core", "Applied VR launch arguments: %1")
-                                .arg(vrDetection.suggestedArgs.join(QLatin1Char(' '))));
-                }
-            } else if (vrDetection.vrMode == VrMode::VrOptional) {
-                logLine(QCoreApplication::translate("Core", "Hybrid VR/Desktop game detected - launching in 2D Desktop mode"));
-            }
-        }
-        ResolvedLaunch resolved = resolveLaunch(info, gameCopy, *m_settings, m_protons);
-        if (resolved.program.isEmpty()) {
-            const QString notFound =
-                QCoreApplication::translate("Core", "Executable not found for %1")
-                    .arg(gameCopy.title);
-#if defined(Q_OS_LINUX)
-            logLine(QCoreApplication::translate(
-                "Core",
-                "Could not resolve a launch command (missing Proton or game executable)."));
-#else
-            logLine(notFound);
-#endif
-            if (m_hooks.notice)
-                m_hooks.notice(notFound);
-            return;
-        }
-        logLine(QStringLiteral("Arachnel %1 · %2 (%3)")
-                    .arg(QCoreApplication::applicationVersion(), QSysInfo::prettyProductName(),
-                         QSysInfo::currentCpuArchitecture()));
-        if (m_protons && resolved.viaProton) {
-            const QString protonId = m_settings->resolvedProtonId(gameCopy.protonId, *m_protons);
-            const QString protonName = m_protons->activeVersionName(protonId);
-            if (!protonName.isEmpty())
-                logLine(QCoreApplication::translate("Core", "Proton: %1").arg(protonName));
-            const QString compat = m_protons->compatDataPathForGame(gameCopy.id);
-            if (!compat.isEmpty())
-                logLine(QStringLiteral("STEAM_COMPAT_DATA_PATH: %1").arg(compat));
-        }
-        {
-            const OnlineFixOverlayState of = detectOnlineFixOverlay(gameCopy.installPath);
-            logLine(QCoreApplication::translate("Core", "Online Fix: %1")
-                        .arg(onlineFixStatusLabel(of)));
-            if (of.present && !of.overlayDir.isEmpty())
-                logLine(QCoreApplication::translate("Core", "Online Fix dir: %1")
-                            .arg(of.overlayDir));
-        }
-        if (m_steamless) {
-            const QVariantMap steamless = SteamlessService::installInfo(gameCopy.installPath);
-            logLine(QCoreApplication::translate("Core", "Steamless: %1")
-                        .arg(steamless.value(QStringLiteral("steamlessLabel")).toString()));
-        }
-        {
-            const QString appId = readSteamAppId(gameCopy.installPath);
-            if (!appId.isEmpty())
-                logLine(QStringLiteral("steam_appid.txt: %1").arg(appId));
-        }
-        logLine(QCoreApplication::translate("Core", "Program: %1").arg(resolved.program));
-        logLine(QCoreApplication::translate("Core", "Working dir: %1").arg(resolved.workingDirectory));
-        logLine(QCoreApplication::translate("Core", "Args: %1")
-                    .arg(resolved.arguments.join(QLatin1Char(' '))));
-        {
-            const QString wineDll =
-                resolved.environment.value(QStringLiteral("WINEDLLOVERRIDES"));
-            if (!wineDll.isEmpty())
-                logLine(QStringLiteral("WINEDLLOVERRIDES: %1").arg(wineDll));
-            const QString preload = resolved.environment.value(QStringLiteral("LD_PRELOAD"));
-            if (!preload.isEmpty())
-                logLine(QStringLiteral("LD_PRELOAD: %1").arg(preload));
-            const QString steamAppId = resolved.environment.value(QStringLiteral("SteamAppId"));
-            const QString steamGameId = resolved.environment.value(QStringLiteral("SteamGameId"));
-            if (!steamAppId.isEmpty() || !steamGameId.isEmpty()) {
-                logLine(QStringLiteral("SteamAppId=%1 SteamGameId=%2")
-                            .arg(steamAppId.isEmpty() ? QStringLiteral("-") : steamAppId,
-                                 steamGameId.isEmpty() ? QStringLiteral("-") : steamGameId));
-            }
-        }
-
-        QString error;
-        if (m_protons && resolved.viaProton && detectUnsteamOverlay(gameCopy.installPath).enabled) {
-            // The shim is a long-running Wine process in the SAME prefix, started
-            // before the game. `waitforexitandrun` waits for every Wine process in the
-            // prefix to exit before starting - it would wait on the shim forever. Keep
-            // the plain `run` verb for these launches (they lose protonfixes).
-            const int verbAt = resolved.arguments.indexOf(QStringLiteral("waitforexitandrun"));
-            if (verbAt >= 0) {
-                resolved.arguments[verbAt] = QStringLiteral("run");
-                logLine(QStringLiteral("Unsteam shim in use: Proton verb 'run' (no protonfixes)"));
-            }
-            startSteamShim(m_protons->compatDataPathForGame(gameCopy.id), resolved);
-        }
-
-        qint64 processId = 0;
-        if (!ProcessLauncher::launch(resolved, &error, &processId, launchLogFilePath())) {
-            stopSteamShim();
-            logLine(QCoreApplication::translate("Core", "Failed to start process: %1")
-                        .arg(error.isEmpty()
-                                 ? QCoreApplication::translate("Core", "unknown error")
-                                 : error));
-            if (m_hooks.notice) {
-                m_hooks.notice(error.isEmpty()
-                                   ? QCoreApplication::translate("Core", "Failed to launch game")
-                                   : error);
-            }
-            return;
-        }
-        QTimer::singleShot(0, this, [this, gameCopy, processId, watchOnlineFix, watchHints]() {
-            markRunning(gameCopy, processId, watchOnlineFix, watchHints);
-        });
+        auto resume = [this, gameCopy](bool ready) {
+            m_launchPending = false;
+            const auto* current = m_library->gameById(gameCopy.id);
+            if (ready && current && current->installPath == gameCopy.installPath
+                && QFileInfo::exists(current->installPath))
+                launchAfterRuntime(gameCopy);
+        };
+        if (m_hooks.ensureRuntime) m_hooks.ensureRuntime(gameCopy, std::move(resume));
+        else resume(true);
     });
+}
+
+void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
+{
+    // Default Play pipeline: Steamless (SteamStub) then Online Fix env.
+    if (m_steamless) {
+        QString steamlessError;
+        const int stripped = m_steamless->ensureUnpacked(gameCopy.installPath, &steamlessError);
+        if (stripped > 0) {
+            logLine(QCoreApplication::translate(
+                        "Core", "Steamless removed SteamStub from %1 file(s)")
+                        .arg(stripped));
+        } else if (stripped < 0) {
+            logLine(QCoreApplication::translate("Core", "Steamless: %1")
+                        .arg(steamlessError.isEmpty()
+                                 ? QCoreApplication::translate("Core", "unknown error")
+                                 : steamlessError));
+            if (m_hooks.notice) {
+                m_hooks.notice(QCoreApplication::translate(
+                                   "Core", "Steamless failed: %1")
+                                   .arg(steamlessError.isEmpty()
+                                            ? QCoreApplication::translate("Core", "unknown error")
+                                            : steamlessError));
+            }
+            // Still try to launch - games without a live stub may boot anyway.
+        }
+    }
+
+    LaunchInfo info;
+    if (ISourcePlugin* plugin = m_plugins->plugin(gameCopy.sourceId)) {
+        // Keep SteamFix.ini / stplug lua in sync with library toggles (toggle alone can race).
+        QStringList enabledDlc;
+        enabledDlc.reserve(gameCopy.components.size());
+        for (const InstalledComponent& component : gameCopy.components) {
+            if (component.installed && component.enabled)
+                enabledDlc.append(component.id);
+        }
+        if (!plugin->applySelectedDlc(gameCopy, enabledDlc) && m_hooks.notice) {
+            m_hooks.notice(QCoreApplication::translate("Core", "Couldn't update DLC unlocks."));
+        }
+        info = plugin->launchInfo(gameCopy);
+    }
+    if (!gameCopy.selectedLaunchOptionId.isEmpty() && (info.executable.isEmpty() || !QFileInfo::exists(info.executable))) {
+        const auto opts = availableLaunchOptions(gameCopy.id);
+        for (const auto& opt : opts) {
+            if (opt.id == gameCopy.selectedLaunchOptionId && !opt.executable.isEmpty()
+                && QFileInfo::exists(opt.executable)) {
+                info.executable = opt.executable;
+                info.workingDirectory = opt.workingDirectory.isEmpty()
+                                            ? QFileInfo(opt.executable).absolutePath()
+                                            : opt.workingDirectory;
+                info.arguments = opt.arguments;
+                break;
+            }
+        }
+    }
+    if (info.executable.isEmpty() && gameCopy.executableOverride.isEmpty())
+        info.executable = findGameExecutableInTree(gameCopy.installPath);
+
+    // Refuse steam://rungameid - that needs a Store license. Depot installs
+    // must run the local exe (Proton / Windows), never Steam as the game host.
+    const bool steamUriLaunch = std::any_of(
+        info.arguments.cbegin(), info.arguments.cend(), [](const QString& arg) {
+            return arg.startsWith(QStringLiteral("steam://rungameid/"), Qt::CaseInsensitive);
+        });
+    if (steamUriLaunch) {
+        const QString reason = QCoreApplication::translate(
+            "Core",
+            "Game files are missing or incomplete - reinstall from the catalog. "
+            "Steam Store launch is not used.");
+        logLine(reason);
+        if (m_hooks.notice)
+            m_hooks.notice(reason);
+        return;
+    }
+
+    // Apply installscript.vdf registry entries for Ubisoft, EA, and Steam titles before launch.
+    if (!gameCopy.installPath.isEmpty()) {
+        QString protonPrefix;
+#if defined(Q_OS_LINUX)
+        if (m_protons)
+            protonPrefix = m_protons->compatDataPathForGame(gameCopy.id);
+#endif
+        applyInstallScriptForGame(gameCopy.installPath, protonPrefix);
+    }
+
+    if (isUbisoftGame(gameCopy.installPath)) {
+        if (!info.arguments.contains(QStringLiteral("-uplay_steam_mode")))
+            info.arguments.append(QStringLiteral("-uplay_steam_mode"));
+        logLine(QCoreApplication::translate("Core", "Ubisoft game detected - applied launcher-less Steam mode"));
+    }
+
+    const OnlineFixOverlayState overlayBefore = detectOnlineFixOverlay(gameCopy.installPath);
+    const bool watchOnlineFix = overlayBefore.enabled && !m_onlineFixFallbackUsed;
+    WineErrorWatchHints watchHints;
+    watchHints.installPath = gameCopy.installPath;
+    {
+        const QString exePath = chooseLaunchExecutable(info, gameCopy);
+        watchHints.executablePath = exePath;
+        watchHints.executableName = QFileInfo(exePath).fileName();
+    }
+    watchHints.fakeSteamAppId = QStringLiteral("480");
+    {
+        const QString ov =
+            overlayBefore.overlayDir.isEmpty() ? gameCopy.installPath : overlayBefore.overlayDir;
+        const QString onlineFixIni = QDir(ov).filePath(QStringLiteral("OnlineFix.ini"));
+        const QString steamFixIni = QDir(ov).filePath(QStringLiteral("SteamFix.ini"));
+        auto readFake = [](const QString& path) -> QString {
+            QFile f(path);
+            if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
+                return {};
+            const QString text = QString::fromUtf8(f.readAll());
+            for (const QString& line : text.split(QLatin1Char('\n'))) {
+                const QString t = line.trimmed();
+                if (t.startsWith(QLatin1String("FakeAppId="), Qt::CaseInsensitive))
+                    return t.section(QLatin1Char('='), 1).trimmed();
+            }
+            return {};
+        };
+        if (QFileInfo::exists(onlineFixIni)) {
+            const QString id = readFake(onlineFixIni);
+            if (!id.isEmpty())
+                watchHints.fakeSteamAppId = id;
+        } else if (QFileInfo::exists(steamFixIni)) {
+            const QString id = readFake(steamFixIni);
+            if (!id.isEmpty())
+                watchHints.fakeSteamAppId = id;
+        }
+    }
+    {
+        // Put the fix next to the executable before anything reads it, or the loader
+        // is never found and the layer does nothing while reporting itself enabled.
+        // The heal walks the whole install; skip it when there is no fix to place.
+        if (const int placed = overlayBefore.present
+                ? healOnlineFixLayoutForExecutable(gameCopy.installPath,
+                                                   watchHints.executablePath)
+                : 0;
+            placed > 0) {
+            logLine(QCoreApplication::translate(
+                        "Core", "Online Fix: placed %1 file(s) next to the game executable")
+                        .arg(placed));
+        }
+
+        applyOnlineFixLaunchInfo(gameCopy.installPath, &info, realSteamAppId(gameCopy));
+    }
+
+    {
+        const OnlineFixOverlayState overlay = detectOnlineFixOverlay(gameCopy.installPath);
+#if defined(Q_OS_LINUX)
+        if (overlay.enabled)
+            logLine(QCoreApplication::translate("Core", "Online Fix overlay detected"));
+#endif
+
+        // FreeTP SteamFix needs the Steam client for SpaceWar/overlay IPC.
+        // OF.me (OnlineFix.ini) does not - starting Steam next to it often trips
+        // Self-protection (error 4) under Proton.
+        const QString ov = overlay.overlayDir.isEmpty() ? gameCopy.installPath : overlay.overlayDir;
+        const bool steamFix = QDir(ov).exists(QStringLiteral("SteamFix.ini"))
+                              || QDir(ov).exists(QStringLiteral("SteamFix64.dll"))
+                              || QDir(ov).exists(QStringLiteral("SteamFix32.dll"));
+        if (overlay.enabled && steamFix && !isSteamClientRunning()) {
+            tryStartSteamClient();
+            if (m_hooks.notice) {
+                m_hooks.notice(QCoreApplication::translate(
+                    "Core",
+                    "Steam is not running - Online Fix needs it for SpaceWar/overlay. Starting Steam…"));
+            }
+        }
+    }
+    {
+        if (!watchHints.executablePath.isEmpty()) {
+            const QString provisionSummary = ensureSteamApiDllForExecutable(
+                gameCopy.installPath, watchHints.executablePath);
+            if (!provisionSummary.isEmpty())
+                logLine(provisionSummary);
+        }
+    }
+    {
+        const QVector<GameLaunchOption> launchOpts = availableLaunchOptions(gameCopy.id);
+        const VrGameDetection vrDetection =
+            detectVrGame(gameCopy.installPath, info.executable, gameCopy.genres, gameCopy.title,
+                         launchOpts, gameCopy.selectedLaunchOptionId,
+                         info.arguments + parseLaunchOptions(gameCopy.launchArgs).arguments);
+        if (vrDetection.isCurrentLaunchVr) {
+            logLine(QCoreApplication::translate("Core", "VR launch mode active (runtime: %1, engine: %2)")
+                        .arg(vrRuntimeName(vrDetection.runtime),
+                             vrDetection.isUnreal ? QStringLiteral("Unreal Engine")
+                                                  : (vrDetection.isUnity ? QStringLiteral("Unity")
+                                                                         : QStringLiteral("Standard"))));
+            if (!isSteamVrRunning()) {
+                logLine(QCoreApplication::translate("Core", "SteamVR is not running. Starting SteamVR…"));
+                if (tryStartSteamVr()) {
+                    logLine(QCoreApplication::translate("Core", "SteamVR start requested"));
+                } else {
+                    logLine(QCoreApplication::translate(
+                        "Core",
+                        "Could not start SteamVR automatically. Make sure SteamVR is installed and running."));
+                }
+            }
+
+            const bool hasVrArg =
+                gameCopy.launchArgs.contains(QStringLiteral("-vr"), Qt::CaseInsensitive)
+                || gameCopy.launchArgs.contains(QStringLiteral("-vrmode"), Qt::CaseInsensitive)
+                || info.arguments.contains(QStringLiteral("-vr"), Qt::CaseInsensitive)
+                || info.arguments.contains(QStringLiteral("-vrmode"), Qt::CaseInsensitive);
+
+            if (!hasVrArg && !vrDetection.suggestedArgs.isEmpty()) {
+                info.arguments += vrDetection.suggestedArgs;
+                logLine(QCoreApplication::translate("Core", "Applied VR launch arguments: %1")
+                            .arg(vrDetection.suggestedArgs.join(QLatin1Char(' '))));
+            }
+        } else if (vrDetection.vrMode == VrMode::VrOptional) {
+            logLine(QCoreApplication::translate("Core", "Hybrid VR/Desktop game detected - launching in 2D Desktop mode"));
+        }
+    }
+    ResolvedLaunch resolved = resolveLaunch(info, gameCopy, *m_settings, m_protons);
+    if (resolved.program.isEmpty()) {
+        const QString notFound =
+            QCoreApplication::translate("Core", "Executable not found for %1")
+                .arg(gameCopy.title);
+#if defined(Q_OS_LINUX)
+        logLine(QCoreApplication::translate(
+            "Core",
+            "Could not resolve a launch command (missing Proton or game executable)."));
+#else
+        logLine(notFound);
+#endif
+        if (m_hooks.notice)
+            m_hooks.notice(notFound);
+        return;
+    }
+    logLine(QStringLiteral("Arachnel %1 · %2 (%3)")
+                .arg(QCoreApplication::applicationVersion(), QSysInfo::prettyProductName(),
+                     QSysInfo::currentCpuArchitecture()));
+    if (m_protons && resolved.viaProton) {
+        const QString protonId = m_settings->resolvedProtonId(gameCopy.protonId, *m_protons);
+        const QString protonName = m_protons->activeVersionName(protonId);
+        if (!protonName.isEmpty())
+            logLine(QCoreApplication::translate("Core", "Proton: %1").arg(protonName));
+        const QString compat = m_protons->compatDataPathForGame(gameCopy.id);
+        if (!compat.isEmpty())
+            logLine(QStringLiteral("STEAM_COMPAT_DATA_PATH: %1").arg(compat));
+    }
+    {
+        const OnlineFixOverlayState of = detectOnlineFixOverlay(gameCopy.installPath);
+        logLine(QCoreApplication::translate("Core", "Online Fix: %1")
+                    .arg(onlineFixStatusLabel(of)));
+        if (of.present && !of.overlayDir.isEmpty())
+            logLine(QCoreApplication::translate("Core", "Online Fix dir: %1")
+                        .arg(of.overlayDir));
+    }
+    if (m_steamless) {
+        const QVariantMap steamless = SteamlessService::installInfo(gameCopy.installPath);
+        logLine(QCoreApplication::translate("Core", "Steamless: %1")
+                    .arg(steamless.value(QStringLiteral("steamlessLabel")).toString()));
+    }
+    {
+        const QString appId = readSteamAppId(gameCopy.installPath);
+        if (!appId.isEmpty())
+            logLine(QStringLiteral("steam_appid.txt: %1").arg(appId));
+    }
+    logLine(QCoreApplication::translate("Core", "Program: %1").arg(resolved.program));
+    logLine(QCoreApplication::translate("Core", "Working dir: %1").arg(resolved.workingDirectory));
+    logLine(QCoreApplication::translate("Core", "Args: %1")
+                .arg(resolved.arguments.join(QLatin1Char(' '))));
+    {
+        const QString wineDll =
+            resolved.environment.value(QStringLiteral("WINEDLLOVERRIDES"));
+        if (!wineDll.isEmpty())
+            logLine(QStringLiteral("WINEDLLOVERRIDES: %1").arg(wineDll));
+        const QString preload = resolved.environment.value(QStringLiteral("LD_PRELOAD"));
+        if (!preload.isEmpty())
+            logLine(QStringLiteral("LD_PRELOAD: %1").arg(preload));
+        const QString steamAppId = resolved.environment.value(QStringLiteral("SteamAppId"));
+        const QString steamGameId = resolved.environment.value(QStringLiteral("SteamGameId"));
+        if (!steamAppId.isEmpty() || !steamGameId.isEmpty()) {
+            logLine(QStringLiteral("SteamAppId=%1 SteamGameId=%2")
+                        .arg(steamAppId.isEmpty() ? QStringLiteral("-") : steamAppId,
+                             steamGameId.isEmpty() ? QStringLiteral("-") : steamGameId));
+        }
+    }
+
+    QString error;
+    if (m_protons && resolved.viaProton && detectUnsteamOverlay(gameCopy.installPath).enabled) {
+        // The shim is a long-running Wine process in the SAME prefix, started
+        // before the game. `waitforexitandrun` waits for every Wine process in the
+        // prefix to exit before starting - it would wait on the shim forever. Keep
+        // the plain `run` verb for these launches (they lose protonfixes).
+        const int verbAt = resolved.arguments.indexOf(QStringLiteral("waitforexitandrun"));
+        if (verbAt >= 0) {
+            resolved.arguments[verbAt] = QStringLiteral("run");
+            logLine(QStringLiteral("Unsteam shim in use: Proton verb 'run' (no protonfixes)"));
+        }
+        startSteamShim(m_protons->compatDataPathForGame(gameCopy.id), resolved);
+    }
+
+    qint64 processId = 0;
+    if (!ProcessLauncher::launch(resolved, &error, &processId, launchLogFilePath())) {
+        stopSteamShim();
+        logLine(QCoreApplication::translate("Core", "Failed to start process: %1")
+                    .arg(error.isEmpty()
+                             ? QCoreApplication::translate("Core", "unknown error")
+                             : error));
+        if (m_hooks.notice) {
+            m_hooks.notice(error.isEmpty()
+                               ? QCoreApplication::translate("Core", "Failed to launch game")
+                               : error);
+        }
+        return;
+    }
+    if (processId > 0)
+        markRunning(gameCopy, processId, watchOnlineFix, watchHints);
+#ifdef Q_OS_WIN
+    else {
+        m_launchPending = true;
+        ProcessLauncher::awaitDetachedGame(resolved.program, this, 10000,
+                                          [this, gameCopy, watchOnlineFix, watchHints](qint64 pid) {
+            m_launchPending = false;
+            if (pid) markRunning(gameCopy, pid, watchOnlineFix, watchHints);
+            else {
+                const QString msg = tr("Launch requested, but the game process was not found.");
+                logLine(msg);
+                if (m_hooks.notice) m_hooks.notice(msg);
+            }
+        });
+    }
+#endif
 }
 
 void LaunchController::startSteamShim(const QString& compatDataPath,

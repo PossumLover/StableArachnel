@@ -7,6 +7,8 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QRegularExpression>
+#include <QSaveFile>
+#include <memory>
 #include <QUrl>
 #include <QCoreApplication>
 
@@ -79,13 +81,18 @@ bool HttpDownloadSession::addJob(const QString& jobId, const QString& url, const
     if (!QDir().mkpath(saveDirectory))
         return false;
 
-    QNetworkRequest request(url);
+    const QUrl source(url);
+    if (source.scheme() != QStringLiteral("http") && source.scheme() != QStringLiteral("https"))
+        return false;
+    QNetworkRequest request(source);
+    request.setTransferTimeout(60000);
     request.setHeader(QNetworkRequest::UserAgentHeader,
                       QStringLiteral("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Arachnel/0.1"));
     if (!referer.isEmpty())
         request.setRawHeader("Referer", referer.toUtf8());
 
     QNetworkReply* reply = m_impl->network.get(request);
+    reply->setReadBufferSize(1024 * 1024);
     m_impl->replies.insert(jobId, reply);
 
     connect(reply, &QNetworkReply::downloadProgress, this,
@@ -95,41 +102,50 @@ bool HttpDownloadSession::addJob(const QString& jobId, const QString& url, const
                 emit httpProgress(jobId, progress, received, total);
             });
 
-    connect(reply, &QNetworkReply::finished, this, [this, jobId, reply, saveDirectory]() {
-        if (!m_impl) {
-            reply->deleteLater();
+    struct Output {
+        QSaveFile file;
+        QString error;
+    };
+    auto out = std::make_shared<Output>();
+    auto drain = [reply, out, saveDirectory] {
+        if (!out->error.isEmpty() || reply->error() != QNetworkReply::NoError)
             return;
+        if (!out->file.isOpen()) {
+            QString name = filenameFromContentDisposition(
+                reply->header(QNetworkRequest::ContentDispositionHeader).toString());
+            if (name.isEmpty()) name = QFileInfo(reply->url().path()).fileName();
+            name = sanitizeFileName(name);
+            if (name.isEmpty() || name == "." || name == "..") name = QStringLiteral("download.bin");
+            out->file.setFileName(QDir(saveDirectory).absoluteFilePath(name));
+            if (!out->file.open(QIODevice::WriteOnly)) {
+                out->error = out->file.errorString();
+                return;
+            }
         }
+        while (reply->bytesAvailable() > 0) {
+            const QByteArray bytes = reply->read(256 * 1024);
+            if (bytes.isEmpty() || out->file.write(bytes) != bytes.size()) {
+                out->error = bytes.isEmpty() ? reply->errorString() : out->file.errorString();
+                break;
+            }
+        }
+    };
+    connect(reply, &QNetworkReply::readyRead, this, [drain, reply, out] {
+        drain();
+        if (!out->error.isEmpty()) reply->abort();
+    });
+    connect(reply, &QNetworkReply::finished, this, [this, jobId, reply, out, drain] {
         m_impl->replies.remove(jobId);
-
-        if (reply->error() != QNetworkReply::NoError) {
-            const QString error = reply->errorString();
-            reply->deleteLater();
-            emit httpFailed(jobId, error);
-            return;
-        }
-
-        QString fileName = filenameFromContentDisposition(
-            reply->header(QNetworkRequest::ContentDispositionHeader).toString());
-        if (fileName.isEmpty()) {
-            const QUrl sourceUrl(reply->url());
-            fileName = QFileInfo(sourceUrl.path()).fileName();
-        }
-        fileName = sanitizeFileName(fileName);
-        if (fileName.isEmpty())
-            fileName = QStringLiteral("download.bin");
-
-        const QString filePath = QDir(saveDirectory).absoluteFilePath(fileName);
-        QFile file(filePath);
-        if (!file.open(QIODevice::WriteOnly)) {
-            reply->deleteLater();
-            emit httpFailed(jobId, QCoreApplication::translate("Core", "Failed to save file"));
-            return;
-        }
-        file.write(reply->readAll());
-        file.close();
+        drain();
         reply->deleteLater();
-        emit httpFinished(jobId, filePath);
+        if (out->error.isEmpty() && reply->error() != QNetworkReply::NoError)
+            out->error = reply->errorString();
+        if (out->error.isEmpty() && !out->file.commit())
+            out->error = out->file.errorString();
+        if (!out->error.isEmpty())
+            emit httpFailed(jobId, out->error);
+        else
+            emit httpFinished(jobId, out->file.fileName());
     });
 
     return true;

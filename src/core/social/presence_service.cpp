@@ -141,11 +141,25 @@ void PresenceService::handleRefreshFinished(QNetworkReply* reply)
     }
 
     QVector<FriendEntry> friends;
-    const QJsonObject root = QJsonDocument::fromJson(reply->readAll()).object();
-    const QJsonArray items = root.value(QStringLiteral("friends")).toArray();
+    const auto itemsValue = QJsonDocument::fromJson(reply->readAll()).object().value(QStringLiteral("friends"));
+    auto invalidRoster = [this] {
+        m_connected = false;
+        emit relayStateChanged(false, tr("Invalid friends response from relay"));
+    };
+    if (!itemsValue.isArray()) {
+        invalidRoster();
+        return;
+    }
+    const QJsonArray items = itemsValue.toArray();
     friends.reserve(items.size());
-    for (const QJsonValue& value : items)
-        friends.append(friendFromRelayJson(value.toObject()));
+    for (const QJsonValue& value : items) {
+        FriendEntry entry = friendFromRelayJson(value.toObject());
+        if (entry.friendId.isEmpty() && entry.publicKey.isEmpty()) {
+            invalidRoster();
+            return;
+        }
+        friends.append(std::move(entry));
+    }
     m_connected = true;
     emit relayStateChanged(true, tr("Relay connected"));
     emit friendsPresenceReceived(std::move(friends));

@@ -36,7 +36,6 @@
                                                     const JobEntry* = nullptr) const;
     bool gameNeedsInstall(const QString&) const;
     void retryPendingInstalls();
-    void pruneBrokenLibraryEntries();
     void migratePollutedEntryIds();
     void pruneAddonLibraryEntries();
     void restoreLibraryPlaceholders();
@@ -81,7 +80,7 @@
                                      const QVariantList& addonIdsVariant,
                                      const QString& installMode);
     void enrichLibraryGameCover(LibraryGame&) const;
-    bool ensureRuntimeDependenciesForGame(const LibraryGame&);
+    void ensureRuntimeDependenciesForGame(const LibraryGame&, std::function<void(bool)>);
     void setRuntimeSetupActive(const LibraryGame&, const QString&);
     void clearRuntimeSetup();
     void scheduleOfficialPluginAutoUpdate();
@@ -139,12 +138,14 @@
     QString m_pendingDeepLinkGameId;
     QString m_lastPluginError;
     bool m_runtimeSetupInProgress = false;
+    std::shared_ptr<std::atomic_bool> m_runtimeCancel;
     QString m_runtimeSetupGameId;
     QString m_runtimeSetupTitle;
     QString m_runtimeSetupCoverUrl;
     QString m_runtimeSetupStatus;
     bool m_applicationDataCleared = false;
     bool m_prepareShutdownDone = false;
+    bool m_quitRequested = false;
     bool m_startupLibraryUpdatesHandled = false;
     QSet<QString> m_catalogAddonEnrichInFlight;
     /** Verify jobs started on a game whose Online Fix the user had turned off. */

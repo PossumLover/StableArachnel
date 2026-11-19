@@ -6,6 +6,8 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QDeadlineTimer>
+#include <QTimer>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -109,45 +111,27 @@ QSet<qint64> processIdsNamed(const QString& exeName)
     return ids;
 }
 
-bool adoptPid(qint64 pid, qint64* processIdOut)
+qint64 findMatchingProcess(const QString& nativeProgram)
 {
-    HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE,
-                                static_cast<DWORD>(pid));
-    if (!handle)
-        return false;
-    return adoptWindowsProcess(handle, processIdOut);
-}
-
-bool waitForNewExecutablePid(const QString& exeName, const QString& nativeProgram,
-                             const QSet<qint64>& before, qint64* processIdOut)
-{
-    for (int i = 0; i < 15; ++i) {
-        Sleep(40);
-        const QSet<qint64> born = processIdsNamed(exeName) - before;
-        if (born.isEmpty())
+    for (qint64 candidate : processIdsNamed(QFileInfo(nativeProgram).fileName())) {
+        HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE,
+                                    static_cast<DWORD>(candidate));
+        if (!handle)
             continue;
-        for (qint64 candidate : born) {
-            HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE,
-                                        static_cast<DWORD>(candidate));
-            if (!handle)
+        wchar_t path[MAX_PATH * 4] = {};
+        DWORD n = MAX_PATH * 4;
+        if (QueryFullProcessImageNameW(handle, 0, path, &n)) {
+            const QString image = QDir::toNativeSeparators(QString::fromWCharArray(path));
+            if (image.compare(nativeProgram, Qt::CaseInsensitive) == 0) {
+                qint64 pid = 0;
+                if (adoptWindowsProcess(handle, &pid))
+                    return pid;
                 continue;
-            wchar_t path[MAX_PATH * 4] = {};
-            DWORD n = MAX_PATH * 4;
-            if (QueryFullProcessImageNameW(handle, 0, path, &n)) {
-                const QString image = QDir::toNativeSeparators(QString::fromWCharArray(path));
-                if (image.compare(nativeProgram, Qt::CaseInsensitive) == 0) {
-                    arachnel::logDiagnostic(
-                        QStringLiteral("Windows detached game pid=%1").arg(candidate));
-                    return adoptWindowsProcess(handle, processIdOut);
-                }
             }
-            CloseHandle(handle);
         }
-        const qint64 pid = *born.constBegin();
-        arachnel::logDiagnostic(QStringLiteral("Windows detached game pid=%1").arg(pid));
-        return adoptPid(pid, processIdOut);
+        CloseHandle(handle);
     }
-    return false;
+    return 0;
 }
 
 bool launchWindowsCreateProcess(const QString& nativeProgram, const QString& nativeWorkDir,
@@ -198,8 +182,6 @@ bool launchWindowsDetached(const ResolvedLaunch& launch, const QString& workDir,
 {
     const QString nativeProgram = QDir::toNativeSeparators(launch.program);
     const QString nativeWorkDir = QDir::toNativeSeparators(workDir);
-    const QString exeName = QFileInfo(nativeProgram).fileName();
-    const QSet<qint64> before = processIdsNamed(exeName);
 
     // Detach via `cmd /c start` so the game is not a child of the Qt process.
     // SteamFix / Super Meat Boy exit immediately when spawned from Arachnel
@@ -230,17 +212,8 @@ bool launchWindowsDetached(const ResolvedLaunch& launch, const QString& workDir,
         if (exec.hProcess)
             CloseHandle(exec.hProcess);
         arachnel::logDiagnostic(QStringLiteral("Windows cmd start %1").arg(nativeProgram));
-        if (waitForNewExecutablePid(exeName, nativeProgram, before, processIdOut))
-            return true;
-        // Single-instance games reuse the already-running exe.
-        if (!before.isEmpty() && adoptPid(*before.constBegin(), processIdOut)) {
-            arachnel::logDiagnostic(
-                QStringLiteral("Windows cmd start reused pid=%1").arg(*before.constBegin()));
-            return true;
-        }
-        arachnel::logDiagnostic(QStringLiteral("Windows cmd start: game pid not seen yet"));
         if (processIdOut)
-            *processIdOut = 0;
+            *processIdOut = findMatchingProcess(nativeProgram);
         return true;
     }
 
@@ -348,6 +321,23 @@ void writeReplayScript(const ResolvedLaunch& launch, const QString& workDir,
 #endif
 
 } // namespace
+
+#ifdef Q_OS_WIN
+void ProcessLauncher::awaitDetachedGame(const QString& program, QObject* context, int timeoutMs,
+                                       std::function<void(qint64)> done)
+{
+    auto* poll = new QTimer(context);
+    QObject::connect(poll, &QTimer::timeout, context, [poll, native = QDir::toNativeSeparators(program),
+                     deadline = QDeadlineTimer(timeoutMs), done = std::move(done)] {
+        const qint64 pid = findMatchingProcess(native);
+        if (!pid && !deadline.hasExpired()) return;
+        poll->stop();
+        poll->deleteLater();
+        done(pid);
+    });
+    poll->start(200);
+}
+#endif
 
 bool ProcessLauncher::launch(const ResolvedLaunch& launch, QString* errorOut, qint64* processIdOut,
                              const QString& logFilePath)

@@ -120,7 +120,7 @@ Item {
         && downloadJob.status === "completed"
         && root.downloadFilesExist
         && !root.installFailed
-    readonly property bool canManageDownload: !root.playable && (
+    readonly property bool canManageDownload: !root.info.installUnavailable && !root.playable && (
         root.fromCatalog
         || root.inLibrary
         || root.showDownloadProgress

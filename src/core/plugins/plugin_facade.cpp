@@ -196,16 +196,16 @@ bool CoreController::uninstallPlugin(const QString& pluginId)
         const bool busy = hasInFlightCatalogAddonEnrich()
                           || m_pluginHost->hasInFlightPluginWorkers(pluginId)
                           || (m_catalogController && m_catalogController->hasDrainingPluginCatalogLoads());
-        // Give up waiting after 30 s rather than leaving the overlay up forever; the removal
-        // below still waits for whatever is left, as it always did.
+        // A deadline is a reason to abandon removal, never permission to unload.
         if (busy && waited->elapsed() < 30000)
             return;
         poll->stop();
         poll->deleteLater();
         delete waited;
 
-        const bool ok = m_pluginHost->uninstallPlugin(pluginId);
-        m_lastPluginError = ok ? QString() : m_pluginHost->lastError();
+        const bool ok = !busy && m_pluginHost->uninstallPlugin(pluginId);
+        m_lastPluginError = busy ? tr("Plugin is still busy. Try removing it again later.")
+                                 : (ok ? QString() : m_pluginHost->lastError());
         emit lastPluginErrorChanged();
         if (ok) {
             showNotice(QCoreApplication::translate("Core", "Plugin removed"));

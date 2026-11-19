@@ -327,6 +327,8 @@ QVariantMap LibraryController::entryDetails(const QString& entryId) const
 
     const QString installPath = info.value(QStringLiteral("installPath")).toString();
     const LibraryGame* libraryGame = m_store ? m_store->gameById(entryId) : nullptr;
+    info.insert(QStringLiteral("installUnavailable"), libraryGame && !libraryGame->installPath.isEmpty()
+                    && !QFileInfo::exists(libraryGame->installPath));
     const FsProbe& probe = fsProbeFor(entryId, installPath, libraryGame);
     for (auto it = probe.fixInfo.constBegin(); it != probe.fixInfo.constEnd(); ++it)
         info.insert(it.key(), it.value());
@@ -692,9 +694,9 @@ void LibraryController::moveGame(const QString& gameId, const QString& targetLib
     }
 
     for (const JobEntry& job : m_jobs->jobs()) {
-        if (job.entryId != gameId || job.kind != JobKind::Move || isJobTerminal(job.status))
+        if ((job.entryId != gameId && job.parentEntryId != gameId) || isJobTerminal(job.status))
             continue;
-        m_hooks.notice(QCoreApplication::translate("Core", "Already moving: %1").arg(game.title));
+        m_hooks.notice(QCoreApplication::translate("Core", "Finish the active job before moving %1").arg(game.title));
         return;
     }
 
@@ -708,21 +710,20 @@ void LibraryController::moveGame(const QString& gameId, const QString& targetLib
         fromPath = game.installPath;
 
     if (fromPath.isEmpty()) {
-        // Metadata-only reassign (files already gone / never on disk).
-        finalizeMovedGame(gameId, targetLibraryId, sourceDir, targetDir);
-        m_hooks.notice(QCoreApplication::translate("Core", "Game moved: %1").arg(game.title));
+        m_hooks.notice(QCoreApplication::translate("Core", "Game files are unavailable: %1").arg(game.title));
         return;
     }
 
     if (!m_hooks.moveGameAsync) {
-        QString error;
+        QString error, cleanupWarning;
         QDir().mkpath(QFileInfo(targetDir).absolutePath());
-        if (!movePathRecursive(fromPath, targetDir, &error)) {
+        if (!movePathRecursive(fromPath, targetDir, &error, {}, &cleanupWarning)) {
             m_hooks.notice(QCoreApplication::translate("Core", "Could not move: %1").arg(error));
             return;
         }
         finalizeMovedGame(gameId, targetLibraryId, fromPath, targetDir);
-        m_hooks.notice(QCoreApplication::translate("Core", "Game moved: %1").arg(game.title));
+        m_hooks.notice(cleanupWarning.isEmpty()
+            ? QCoreApplication::translate("Core", "Game moved: %1").arg(game.title) : cleanupWarning);
         return;
     }
 
@@ -747,15 +748,17 @@ void LibraryController::finalizeMovedGame(const QString& gameId, const QString& 
         return;
 
     LibraryGame game = *existing;
-    const QString sourceId = game.libraryId.isEmpty() ? m_settings->defaultLibraryId() : game.libraryId;
     game.libraryId = targetLibraryId;
     game.installPath = relocatePathPrefix(game.installPath, fromPath, toPath);
     if (game.installPath.isEmpty() || !QDir(game.installPath).exists())
         game.installPath = toPath;
     game.executableOverride = relocatePathPrefix(game.executableOverride, fromPath, toPath);
-    game.downloadPath =
-        relocatePathPrefix(game.downloadPath, m_settings->resolvedDownloadsRoot(sourceId),
-                           m_settings->resolvedDownloadsRoot(targetLibraryId));
+    // Archives under the separate downloads root did not move.
+    game.downloadPath = relocatePathPrefix(game.downloadPath, fromPath, toPath);
+    for (auto& option : game.launchOptions) {
+        option.executable = relocatePathPrefix(option.executable, fromPath, toPath);
+        option.workingDirectory = relocatePathPrefix(option.workingDirectory, fromPath, toPath);
+    }
 
     // Absolute launch paths inside steamidra marker must follow the folder.
     rewritePathPrefixInFile(toPath + QStringLiteral("/.arachnel-steamidra"), fromPath, toPath);
@@ -900,24 +903,27 @@ bool installPathTaken(const LibraryStore* store, const QString& installPath)
 
 int LibraryController::scanInstalledGames()
 {
-    return commitScanCandidates(discoverInstallCandidates());
+    return commitScanCandidates(discoverInstallCandidates(scanInput()));
 }
 
-QVector<LibraryController::ScanCandidate> LibraryController::discoverInstallCandidates() const
+LibraryController::ScanInput LibraryController::scanInput() const
+{
+    ScanInput input;
+    if (!m_settings || !m_store)
+        return input;
+    input.libraries = m_settings->storageLibraries()->libraries();
+    for (const LibraryGame& game : m_store->games()) {
+        input.knownIds.insert(game.id);
+        if (!game.installPath.isEmpty())
+            input.knownPaths.insert(QDir::cleanPath(game.installPath).toLower());
+    }
+    return input;
+}
+
+QVector<LibraryController::ScanCandidate> LibraryController::discoverInstallCandidates(const ScanInput& input)
 {
     QVector<ScanCandidate> out;
-    if (!m_settings || !m_store)
-        return out;
-
-    QSet<QString> knownIds;
-    QSet<QString> knownPaths;
-    for (const LibraryGame& game : m_store->games()) {
-        knownIds.insert(game.id);
-        if (!game.installPath.isEmpty())
-            knownPaths.insert(QDir::cleanPath(game.installPath).toLower());
-    }
-
-    for (const StorageLibrary& library : m_settings->storageLibraries()->libraries()) {
+    for (const StorageLibrary& library : input.libraries) {
         const QString rootPath = normalizedStoragePath(library.path);
         if (rootPath.isEmpty() || !QFileInfo::exists(rootPath))
             continue;
@@ -931,8 +937,8 @@ QVector<LibraryController::ScanCandidate> LibraryController::discoverInstallCand
                 continue;
 
             const QString installPath = QDir::cleanPath(dirInfo.absoluteFilePath());
-            if (knownIds.contains(folderName)
-                || knownPaths.contains(installPath.toLower()))
+            if (input.knownIds.contains(folderName)
+                || input.knownPaths.contains(installPath.toLower()))
                 continue;
 
             // Only folders Arachnel itself installed (marker written on commit).
@@ -970,6 +976,10 @@ int LibraryController::commitScanCandidates(const QVector<ScanCandidate>& candid
 
     int added = 0;
     for (const ScanCandidate& c : candidates) {
+        const auto root = m_settings->storageLibraries()->libraryPath(c.libraryId);
+        if (root.isEmpty() || QDir(root).absolutePath() != QFileInfo(c.installPath).absolutePath()
+            || !QFileInfo::exists(c.executable))
+            continue;
         if (m_store->gameById(c.folderName) || installPathTaken(m_store, c.installPath))
             continue;
 

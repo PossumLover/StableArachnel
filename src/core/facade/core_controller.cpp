@@ -209,6 +209,12 @@ CoreController::CoreController(QObject* parent)
     if (g_crashReporterMode)
         return;
 
+    const auto reportSaveError = [this](const QString& detail) {
+        showNotice(tr("Could not save changes. Sprout will retry: %1").arg(detail));
+    };
+    connect(&m_settings, &SettingsStore::saveFailed, this, reportSaveError);
+    connect(&m_jobStore, &JobStore::saveFailed, this, reportSaveError);
+    connect(&m_libraryStore, &LibraryStore::saveFailed, this, reportSaveError);
     m_settings.load();
     m_jobStore.load();
     m_libraryStore.load();
@@ -250,7 +256,6 @@ CoreController::CoreController(QObject* parent)
     syncSourcesFromPlugins();
     emit pluginsChanged();
     m_libraryMaintenance->migratePollutedEntryIds();
-    m_libraryMaintenance->pruneBrokenLibraryEntries();
     pruneAddonLibraryEntries();
     m_libraryMaintenance->runStartupMaintenance();
     connect(&m_sources, &SourcePluginModel::sourcesChanged, this,
@@ -300,18 +305,17 @@ CoreController::CoreController(QObject* parent)
     });
     QTimer::singleShot(0, this, [this]() {
         if (!m_libraryController)
-                    return;
+            return;
         using Candidates = QVector<LibraryController::ScanCandidate>;
         auto* watcher = new QFutureWatcher<Candidates>(this);
         connect(watcher, &QFutureWatcher<Candidates>::finished, this, [this, watcher]() {
             const Candidates found = watcher->result();
-                        watcher->deleteLater();
+            watcher->deleteLater();
             if (m_libraryController)
                 m_libraryController->commitScanCandidates(found);
         });
-        LibraryController* library = m_libraryController;
-        watcher->setFuture(QtConcurrent::run([library]() {
-            return library->discoverInstallCandidates();
+        watcher->setFuture(QtConcurrent::run([input = m_libraryController->scanInput()]() {
+            return LibraryController::discoverInstallCandidates(input);
         }));
     });
 

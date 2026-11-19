@@ -1,4 +1,5 @@
 #include "runtime_dependency_service.h"
+#include "runtime_installer_wait.h"
 
 #include "crash_log.h"
 
@@ -25,6 +26,8 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QProcess>
+#include <QSaveFile>
+#include <QDeadlineTimer>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QThread>
@@ -107,7 +110,7 @@ QString stageInstallerForProton(const QString& cacheDir, const QString& depotId,
 bool appendCdnVcSteps(QNetworkAccessManager* network, const QString& cacheDir,
                       const RuntimeDepotRef& depot,
                       const std::function<void(const QString&)>& onStatus,
-                      QVector<RedistInstallStep>* steps, QString* errorOut)
+                      QVector<RedistInstallStep>* steps, QString* errorOut, const std::atomic_bool* cancelled)
 {
     if (!steps)
         return false;
@@ -129,7 +132,7 @@ bool appendCdnVcSteps(QNetworkAccessManager* network, const QString& cacheDir,
                                           ? QStringLiteral("228986")
                                           : QStringLiteral("228985");
             QString downloadError;
-            if (!downloadCdnFallbackInstaller(network, fakeDepot, cdnPath, &downloadError)) {
+            if (!downloadCdnFallbackInstaller(network, fakeDepot, cdnPath, &downloadError, cancelled)) {
                 if (errorOut)
                     *errorOut = downloadError;
                 return false;
@@ -145,10 +148,11 @@ bool appendCdnVcSteps(QNetworkAccessManager* network, const QString& cacheDir,
 
 bool runProtonInstallerSteps(const QVector<RedistInstallStep>& steps, const QString& cacheDir,
                              const QString& depotId, const QString& protonExecutable,
-                             const QProcessEnvironment& env)
+                             const QProcessEnvironment& env, const std::atomic_bool* cancelled)
 {
     bool ranAny = false;
     for (const RedistInstallStep& step : steps) {
+        if (cancelled && cancelled->load()) return false;
         if (step.processPath.isEmpty() || !QFileInfo::exists(step.processPath))
             continue;
 
@@ -171,11 +175,11 @@ bool runProtonInstallerSteps(const QVector<RedistInstallStep>& steps, const QStr
         QStringList args = {QStringLiteral("run"), staged};
         args += silentArgs;
         runSilentInstaller(protonExecutable, args, QFileInfo(staged).absolutePath(), env,
-                           &exitCode, &stepError, staged);
+                           &exitCode, &stepError, staged, cancelled);
 #else
         Q_UNUSED(protonExecutable);
         runSilentInstaller(staged, silentArgs, QFileInfo(staged).absolutePath(), env, &exitCode,
-                           &stepError, staged);
+                           &stepError, staged, cancelled);
 #endif
         ranAny = true;
         Q_UNUSED(exitCode);
@@ -188,7 +192,6 @@ bool runProtonInstallerSteps(const QVector<RedistInstallStep>& steps, const QStr
 
 bool RuntimeDependencyService::installDepotIntoContainer(
     const RuntimeDepotRef& depot, const RuntimeEnsureRequest& request,
-    ProtonManager* protonManager, SettingsStore* settings,
     const std::function<void(const QString&)>& onStatus, QString* errorOut) const
 {
 #if defined(Q_OS_LINUX)
@@ -219,7 +222,7 @@ bool RuntimeDependencyService::installDepotIntoContainer(
         steps.clear();
 
     if (steps.isEmpty() && depotHasCdnFallback(depot.depotId)) {
-        if (!appendCdnVcSteps(network(), cacheDir, depot, onStatus, &steps, errorOut))
+        if (!appendCdnVcSteps(network(), cacheDir, depot, onStatus, &steps, errorOut, request.cancelled.get()))
             return false;
     }
 
@@ -245,28 +248,22 @@ bool RuntimeDependencyService::installDepotIntoContainer(
     }
 
 #if defined(Q_OS_LINUX)
-    if (!protonManager || !settings) {
-        if (errorOut)
-            *errorOut = QCoreApplication::translate(
-                "Core", "Proton is required to install runtime dependencies");
-        return false;
-    }
-    const QString protonId = settings->resolvedProtonId(request.protonId, *protonManager);
-    const QString protonExecutable = protonManager->executableForId(protonId);
+    const QString protonExecutable = request.protonExecutable;
     if (protonExecutable.isEmpty()) {
         if (errorOut)
             *errorOut = QCoreApplication::translate(
                 "Core", "Proton not found. Install Proton-GE in Settings → Launch.");
         return false;
     }
-    const QProcessEnvironment env =
-        protonEnvForGame(protonManager, settings, request.gameId, request.protonId);
+    const QProcessEnvironment env = request.environment;
+    QDir().mkpath(QDir(env.value(QStringLiteral("STEAM_COMPAT_DATA_PATH"))).filePath(QStringLiteral("pfx")));
 #else
     const QString protonExecutable;
     const QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 #endif
 
-    runProtonInstallerSteps(steps, cacheDir, depot.depotId, protonExecutable, env);
+    runProtonInstallerSteps(steps, cacheDir, depot.depotId, protonExecutable, env, request.cancelled.get());
+    if (request.cancelled && request.cancelled->load()) return false;
 
     auto markOk = [&]() {
         containers.markDepotInstalled(request.gameId, request.steamAppId, depot.depotId);
@@ -291,13 +288,13 @@ bool RuntimeDependencyService::installDepotIntoContainer(
         && !RuntimeDepotCatalog::isModernVcDepotId(depot.depotId)) {
         QVector<RedistInstallStep> cdnSteps;
         QString cdnError;
-        if (appendCdnVcSteps(network(), cacheDir, depot, onStatus, &cdnSteps, &cdnError)
+        if (appendCdnVcSteps(network(), cacheDir, depot, onStatus, &cdnSteps, &cdnError, request.cancelled.get())
             && !cdnSteps.isEmpty()) {
             if (onStatus) {
                 onStatus(QCoreApplication::translate("Core", "Installing runtime: %1")
                              .arg(depot.label));
             }
-            runProtonInstallerSteps(cdnSteps, cacheDir, depot.depotId, protonExecutable, env);
+            runProtonInstallerSteps(cdnSteps, cacheDir, depot.depotId, protonExecutable, env, request.cancelled.get());
             if (probeOk())
                 return markOk();
         }
@@ -318,27 +315,26 @@ bool RuntimeDependencyService::installDepotIntoContainer(
 }
 
 RuntimeEnsureResult RuntimeDependencyService::ensureInstalled(
-    const RuntimeEnsureRequest& request, ProtonManager* protonManager, SettingsStore* settings,
+    const RuntimeEnsureRequest& request,
     const std::function<void(const QString&)>& onStatus) const
 {
     RuntimeEnsureResult result;
 
 #if !defined(Q_OS_LINUX)
     Q_UNUSED(request);
-    Q_UNUSED(protonManager);
-    Q_UNUSED(settings);
     Q_UNUSED(onStatus);
     result.success = true;
     return result;
 #else
     QString steamAppId = request.steamAppId.trimmed();
     if (steamAppId.isEmpty())
-        steamAppId = resolveSteamAppIdFromTitle(network(), request.title);
+        steamAppId = resolveSteamAppIdFromTitle(network(), request.title, request.cancelled.get());
 
     QString resolveError;
     QVector<RuntimeDepotRef> deps;
     if (!steamAppId.isEmpty())
-        deps = resolveFromSteamCmd(steamAppId, &resolveError);
+        deps = resolveFromSteamCmd(steamAppId, &resolveError, request.cancelled.get());
+    if (request.cancelled && request.cancelled->load()) return result;
 
     if (!request.installPath.isEmpty()) {
         const QString executable = findGameExecutableInTree(request.installPath);
@@ -363,6 +359,7 @@ RuntimeEnsureResult RuntimeDependencyService::ensureInstalled(
     effectiveRequest.steamAppId = steamAppId;
 
     for (const RuntimeDepotRef& depot : deps) {
+        if (request.cancelled && request.cancelled->load()) return result;
         if (!isWindowsRuntimeDepot(depot)) {
             result.skippedLabels.append(depot.label);
             continue;
@@ -371,13 +368,12 @@ RuntimeEnsureResult RuntimeDependencyService::ensureInstalled(
             result.skippedLabels.append(depot.label);
             continue;
         }
+        // Only the setup worker updates this state; the settings page is a reader.
+        RuntimeContainerManager().unmarkDepotInstalled(request.gameId, depot.depotId);
 
         QString installError;
-        // This runs on the GUI thread and blocks it for as long as the depot's
-        // installer takes (up to 10 min). Leave a breadcrumb so a hang report
-        // names the installer instead of pointing at the whole launch path.
         arachnel::logBreadcrumb(QStringLiteral("runtime.install"), depot.label);
-        if (!installDepotIntoContainer(depot, effectiveRequest, protonManager, settings, onStatus,
+        if (!installDepotIntoContainer(depot, effectiveRequest, onStatus,
                                        &installError)) {
             result.success = false;
             result.error = installError;

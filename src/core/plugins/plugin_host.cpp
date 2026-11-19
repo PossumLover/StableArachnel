@@ -156,6 +156,8 @@ void PluginHost::unloadPlugin(const QString& pluginId)
     if (it == m_plugins.end())
         return;
 
+    // The loader owns this invariant even when no UI before-unload hook is installed.
+    waitForInFlightPluginWorkers(pluginId);
     LoadedPlugin* loaded = it.value();
     m_plugins.erase(it);
     if (!loaded)
@@ -685,15 +687,8 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
         }
     }
 
-    loaded->instance = createFn(dirPath.toUtf8().constData());
-    loaded->rawInstance = loaded->instance;
     loaded->destroyFn = destroyFn;
     loaded->catalogEntryLayoutTrusted = layoutTrusted;
-    if (!loaded->instance) {
-        setLoadRejectReason(QCoreApplication::translate("Core", "%1 failed to start.")
-                                .arg(displayName));
-        return abandon();
-    }
 
     // --- vtable layout -------------------------------------------------------
     // apiVersion does not describe where the virtuals sit, and upstream moved one
@@ -723,6 +718,7 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
             {"InstallResult", pluginSizes.installResult, coreSizes.installResult},
             {"InstallAnalysis", pluginSizes.installAnalysis, coreSizes.installAnalysis},
             {"LaunchInfo", pluginSizes.launchInfo, coreSizes.launchInfo},
+            {"GameLaunchOption", pluginSizes.gameLaunchOption, coreSizes.gameLaunchOption},
             {"OwnedDownloadProgress", pluginSizes.ownedDownloadProgress,
              coreSizes.ownedDownloadProgress},
         };
@@ -756,6 +752,14 @@ bool PluginHost::loadPluginDir(const QString& dirPath)
     }
     loaded->interfaceRevision = pluginRevision;
 
+    if (pluginRevision == ARACHNEL_PLUGIN_INTERFACE_REVISION || pluginRevision == 1) {
+        loaded->instance = createFn(dirPath.toUtf8().constData());
+        loaded->rawInstance = loaded->instance;
+        if (!loaded->instance) {
+            setLoadRejectReason(QCoreApplication::translate("Core", "%1 failed to start.").arg(displayName));
+            return abandon();
+        }
+    }
     if (loaded->interfaceRevision != ARACHNEL_PLUGIN_INTERFACE_REVISION) {
         if (loaded->interfaceRevision == 1) {
             // Route every call to the slot this plugin actually has.

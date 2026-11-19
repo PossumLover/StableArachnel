@@ -295,6 +295,7 @@ void CoreController::initializeServices()
 
         struct MoveResult {
             QString error;
+            QString cleanupWarning;
             qint64 totalBytes = 0;
         };
 
@@ -339,8 +340,9 @@ void CoreController::initializeServices()
                              done.totalBytes = result.totalBytes;
                              m_jobs.updateJob(done);
                              m_jobStore.upsertJob(done);
-                             showNotice(QCoreApplication::translate("Core", "Game moved: %1")
-                                            .arg(work.title));
+                             showNotice(result.cleanupWarning.isEmpty()
+                                 ? QCoreApplication::translate("Core", "Game moved: %1").arg(work.title)
+                                 : result.cleanupWarning);
                          });
 
         static QThreadPool movePool;
@@ -387,12 +389,10 @@ void CoreController::initializeServices()
             };
 
             QString error;
-            if (!movePathRecursive(work.fromPath, work.toPath, &error, publish)) {
+            if (!movePathRecursive(work.fromPath, work.toPath, &error, publish, &out.cleanupWarning)) {
                 out.error = error.isEmpty()
                                 ? QCoreApplication::translate("Core", "Move failed")
                                 : error;
-                // Best-effort cleanup of a partial destination.
-                removePathRecursive(work.toPath);
                 return out;
             }
             return out;
@@ -464,8 +464,8 @@ void CoreController::initializeServices()
                 showNotice(QCoreApplication::translate("Core", "Achievement unlocked: %1 - %2").arg(game->title, title));
         });
     launchHooks.notice = [this](const QString& message) { showNotice(message); };
-    launchHooks.ensureRuntime = [this](const LibraryGame& game) {
-        return ensureRuntimeDependenciesForGame(game);
+    launchHooks.ensureRuntime = [this](const LibraryGame& game, std::function<void(bool)> done) {
+        ensureRuntimeDependenciesForGame(game, std::move(done));
     };
     launchHooks.touchLastPlayed = [this](const QString& gameId) {
         touchLastPlayed(gameId);
@@ -601,9 +601,7 @@ void CoreController::initializeServices()
                     QStringLiteral("info"));
             });
     connect(m_appUpdater, &AppUpdater::installerLaunchRequested, this, [this]() {
-        prepareShutdown();
-        // Give the Setup process time to create its window before we exit.
-        QTimer::singleShot(1200, qApp, []() { QCoreApplication::quit(); });
+        requestQuit();
     });
     connect(m_protonManager, &ProtonManager::downloadStateChanged, this,
             &CoreController::protonDownloadChanged);

@@ -50,22 +50,6 @@ void LibraryMaintenanceService::migratePollutedEntryIds()
     }
 }
 
-void LibraryMaintenanceService::pruneBrokenLibraryEntries()
-{
-    bool changed = false;
-    for (const LibraryGame& game : m_library->games()) {
-        if (!game.installPath.isEmpty() && !QFileInfo::exists(game.installPath)) {
-            m_library->removeGame(game.id);
-            changed = true;
-        }
-    }
-    if (changed) {
-        m_library->save();
-        if (m_hooks.syncLibrary)
-            m_hooks.syncLibrary();
-    }
-}
-
 void LibraryMaintenanceService::pruneCancelledAddonJobs()
 {
     bool changed = false;
@@ -85,9 +69,8 @@ void LibraryMaintenanceService::pruneCancelledAddonJobs()
 
 void LibraryMaintenanceService::runStartupMaintenance()
 {
-    // migratePollutedEntryIds / pruneBrokenLibraryEntries already ran from
-    // CoreController::initialize (before the addon prune); repeating them stat'ed every
-    // install path twice during startup.
+    // Missing paths can belong to offline drives. isEntryPlayable handles
+    // availability; only an explicit removal should forget the saved game.
     pruneCancelledAddonJobs();
     if (m_hooks.reconcileInstallState)
         m_hooks.reconcileInstallState();

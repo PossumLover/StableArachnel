@@ -65,17 +65,17 @@ QString PluginHost::pluginIdForInstance(const ISourcePlugin* instance) const
     return {};
 }
 
-void PluginHost::trackPluginWorker(const QString& pluginId, QFuture<void> future)
+void PluginHost::trackPluginWorker(const QString& pluginId, QFuture<void> future, const QString& jobId)
 {
     QMutexLocker lock(&m_pluginWorkerMutex);
     // Drop finished slots so the list does not grow forever across many installs.
-    QList<QPair<QString, QFuture<void>>> live;
+    QList<PluginWorker> live;
     live.reserve(m_pluginWorkerFutures.size() + 1);
     for (auto& existing : m_pluginWorkerFutures) {
-        if (!existing.second.isFinished())
+        if (!existing.future.isFinished())
             live.append(std::move(existing));
     }
-    live.append({pluginId, std::move(future)});
+    live.append({pluginId, std::move(future), jobId});
     m_pluginWorkerFutures.swap(live);
 }
 
@@ -86,13 +86,13 @@ void PluginHost::waitForInFlightPluginWorkers(const QString& pluginId)
     // unrelated download - installing any plugin blocked on, say, a multi-hour
     // Steam depot download owned by steamidra.
     for (;;) {
-        QList<QPair<QString, QFuture<void>>> waiting;
+        QList<PluginWorker> waiting;
         {
             QMutexLocker lock(&m_pluginWorkerMutex);
-            QList<QPair<QString, QFuture<void>>> keep;
+            QList<PluginWorker> keep;
             keep.reserve(m_pluginWorkerFutures.size());
             for (auto& entry : m_pluginWorkerFutures) {
-                if (pluginId.isEmpty() || entry.first == pluginId)
+                if (pluginId.isEmpty() || entry.pluginId == pluginId)
                     waiting.append(std::move(entry));
                 else
                     keep.append(std::move(entry));
@@ -102,7 +102,7 @@ void PluginHost::waitForInFlightPluginWorkers(const QString& pluginId)
         if (waiting.isEmpty())
             break;
         for (auto& entry : waiting)
-            entry.second.waitForFinished();
+            entry.future.waitForFinished();
     }
 }
 
@@ -110,9 +110,9 @@ bool PluginHost::hasInFlightPluginWorkers(const QString& pluginId) const
 {
     QMutexLocker lock(&m_pluginWorkerMutex);
     for (const auto& entry : m_pluginWorkerFutures) {
-        if (!pluginId.isEmpty() && entry.first != pluginId)
+        if (!pluginId.isEmpty() && entry.pluginId != pluginId)
             continue;
-        if (!entry.second.isFinished())
+        if (!entry.future.isFinished())
             return true;
     }
     return false;
@@ -179,30 +179,48 @@ void PluginHost::runOwnedDownloadAsync(ISourcePlugin* plugin, const InstallConte
     }
 
     const QString workerPluginId = pluginIdForInstance(plugin);
-    QFuture<void> future = QtConcurrent::run(pluginWorkerPool(), [plugin, ctx, onProgress, onFinished]() {
-        auto progressBridge = [onProgress](const OwnedDownloadProgress& p) {
-            if (!onProgress)
+    const auto stopping = m_stopping;
+    if (stopping->load()) return;
+    QFuture<void> future = QtConcurrent::run(pluginWorkerPool(), [plugin, ctx, onProgress, onFinished, stopping]() {
+        if (stopping->load()) return;
+        auto progressBridge = [onProgress, stopping](const OwnedDownloadProgress& p) {
+            if (!onProgress || stopping->load())
                 return;
             QObject* app = QCoreApplication::instance();
             if (!app) {
                 onProgress(p);
                 return;
             }
-            QTimer::singleShot(0, app, [onProgress, p]() { onProgress(p); });
+            QTimer::singleShot(0, app, [onProgress, p, stopping]() { if (!stopping->load()) onProgress(p); });
         };
         const InstallResult result = plugin->startOwnedDownload(ctx, progressBridge);
+        if (stopping->load()) return;
         QObject* app = QCoreApplication::instance();
         if (!app) {
             if (onFinished)
                 onFinished(result);
             return;
         }
-        QTimer::singleShot(0, app, [onFinished, result]() {
-            if (onFinished)
+        QTimer::singleShot(0, app, [onFinished, result, stopping]() {
+            if (onFinished && !stopping->load())
                 onFinished(result);
         });
     });
-    trackPluginWorker(workerPluginId, std::move(future));
+    trackPluginWorker(workerPluginId, std::move(future), ctx.jobId);
+}
+
+void PluginHost::requestOwnedDownloadStop()
+{
+    if (m_stopping->exchange(true)) return;
+    QList<PluginWorker> workers;
+    {
+        QMutexLocker lock(&m_pluginWorkerMutex);
+        workers = m_pluginWorkerFutures;
+    }
+    for (const auto& worker : workers) {
+        if (!worker.jobId.isEmpty() && !worker.future.isFinished())
+            cancelOwnedDownload(worker.pluginId, worker.jobId);
+    }
 }
 
 void PluginHost::cancelOwnedDownload(const QString& pluginId, const QString& jobId)

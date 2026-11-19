@@ -24,6 +24,8 @@ SettingsStore::SettingsStore(QObject* parent)
     , m_storageLibraries(this, this)
 {
     ensureDefaultStorageLibraries();
+    m_saveRetry.setSingleShot(true);
+    connect(&m_saveRetry, &QTimer::timeout, this, &SettingsStore::save);
 }
 
 void SettingsStore::setAchievementNotifications(bool enabled)

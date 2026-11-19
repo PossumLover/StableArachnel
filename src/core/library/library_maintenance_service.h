@@ -19,7 +19,6 @@ public:
 
     LibraryMaintenanceService(LibraryStore* library, JobStore* jobs, Hooks hooks);
     void migratePollutedEntryIds();
-    void pruneBrokenLibraryEntries();
     void pruneCancelledAddonJobs();
     void runStartupMaintenance();
 

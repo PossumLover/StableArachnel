@@ -3,6 +3,9 @@
 #include <QString>
 #include <QStringList>
 #include <QVector>
+#include <QProcessEnvironment>
+#include <atomic>
+#include <memory>
 
 namespace arachnel::core {
 
@@ -43,6 +46,9 @@ struct RuntimeEnsureRequest {
     QString installPath;
     /** Per-game Proton id (empty = settings default). Used when installing redists. */
     QString protonId;
+    QString protonExecutable;
+    QProcessEnvironment environment;
+    std::shared_ptr<std::atomic_bool> cancelled;
 };
 
 } // namespace arachnel::core

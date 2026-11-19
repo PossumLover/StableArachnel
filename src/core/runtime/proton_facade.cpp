@@ -1,17 +1,21 @@
 #include "core_controller_impl.h"
+#include <QFutureWatcher>
+#include <QtConcurrent>
 
 namespace arachnel::core {
 
-bool CoreController::ensureRuntimeDependenciesForGame(const LibraryGame& game)
+void CoreController::ensureRuntimeDependenciesForGame(const LibraryGame& game, std::function<void(bool)> done)
 {
 #if !defined(Q_OS_LINUX)
     // Proton prefix / Wine redistributables are a Linux concern. On Windows the OS
     // already hosts native .exe games — do not block Play on runtime container setup.
     Q_UNUSED(game);
-    return true;
+    done(!m_quitRequested);
 #else
-    if (!m_runtimeDependencyService)
-        return true;
+    if (m_runtimeSetupInProgress || m_quitRequested || !m_protonManager) {
+        done(false);
+        return;
+    }
 
     QString steamAppId = game.steamAppId;
     if (steamAppId.isEmpty()) {
@@ -29,34 +33,42 @@ bool CoreController::ensureRuntimeDependenciesForGame(const LibraryGame& game)
     request.title = game.title;
     request.installPath = game.installPath;
     request.protonId = game.protonId;
+    RuntimeDependencyService::snapshotRunner(request, *m_protonManager, m_settings);
+    request.cancelled = m_runtimeCancel = std::make_shared<std::atomic_bool>(false);
 
     setRuntimeSetupActive(game,
                           QCoreApplication::translate("Core", "Preparing runtime environment…"));
 
-    const RuntimeEnsureResult result = m_runtimeDependencyService->ensureInstalled(
-        request, m_protonManager, &m_settings, [this](const QString& status) {
-            if (status.isEmpty())
-                return;
-            // Queue UI updates — never processEvents() from inside launch/setup.
-            QMetaObject::invokeMethod(
-                this,
-                [this, status]() {
-                    m_runtimeSetupStatus = status;
-                    emit runtimeSetupChanged();
-                },
-                Qt::QueuedConnection);
+    auto* watcher = new QFutureWatcher<RuntimeEnsureResult>(this);
+    connect(watcher, &QFutureWatcherBase::finished, this, [this, watcher, done = std::move(done)] {
+        const auto result = watcher->result();
+        watcher->deleteLater();
+        const bool cancelled = m_runtimeCancel->load();
+        m_runtimeCancel.reset();
+        clearRuntimeSetup();
+        if (!cancelled && !result.success)
+            showNotice(result.error.isEmpty() ? tr("Failed to prepare runtime") : result.error);
+        done(!cancelled && result.success && !m_quitRequested);
+    });
+    watcher->setFuture(QtConcurrent::run([this, request] {
+        RuntimeDependencyService worker;
+        return worker.ensureInstalled(request, [this, token = request.cancelled](const QString& status) {
+            QMetaObject::invokeMethod(this, [this, token, status] {
+                if (token != m_runtimeCancel || token->load()) return;
+                m_runtimeSetupStatus = status;
+                emit runtimeSetupChanged();
+            }, Qt::QueuedConnection);
         });
-
-    clearRuntimeSetup();
-
-    if (!result.success) {
-        showNotice(result.error.isEmpty()
-                       ? QCoreApplication::translate("Core", "Failed to launch game")
-                       : result.error);
-        return false;
-    }
-    return true;
+    }));
 #endif
+}
+
+void CoreController::cancelRuntimeSetup()
+{
+    if (m_runtimeCancel && !m_runtimeCancel->exchange(true)) {
+        m_runtimeSetupStatus = tr("Cancelling runtime setup…");
+        emit runtimeSetupChanged();
+    }
 }
 
 void CoreController::setRuntimeSetupActive(const LibraryGame& game, const QString& status)

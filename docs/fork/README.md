@@ -7,6 +7,7 @@ out.
 
 | | |
 |---|---|
+| [code-review-v0.3.0.md](code-review-v0.3.0.md) | The 14 stability and data-loss findings from v0.3.0, their resolutions, and regression coverage. |
 | [diagnosing-game-launch.md](diagnosing-game-launch.md) | How to find out why a game will not start on Linux. Read this first; it is the method the rest came from. |
 | [steam-compat-layers.md](steam-compat-layers.md) | Online Fix / SteamFix / Unsteam: what each one is, the layout rule that governs all of them, and the AppId split. |
 | [steam-overlay.md](steam-overlay.md) | The shift+tab overlay. **Solved** — the four conditions that all have to hold, and the history of what was ruled out. |

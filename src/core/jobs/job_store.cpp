@@ -1,6 +1,7 @@
 #include "job_store.h"
 
 #include "job_status.h"
+#include "../util/atomic_json.h"
 
 #include <QDir>
 #include <QFile>
@@ -94,6 +95,8 @@ QJsonObject jobToJson(const JobEntry& job)
 JobStore::JobStore(QObject* parent)
     : QObject(parent)
 {
+    m_retry.setSingleShot(true);
+    connect(&m_retry, &QTimer::timeout, this, &JobStore::save);
 }
 
 void JobStore::setJobs(QVector<JobEntry> jobs)
@@ -167,10 +170,14 @@ void JobStore::save()
     for (const auto& job : m_jobs)
         array.append(jobToJson(job));
 
-    QFile file(jobsFilePath());
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
-        return;
-    file.write(QJsonDocument(array).toJson(QJsonDocument::Indented));
+    QString error;
+    if (saveJsonAtomically(jobsFilePath(), QJsonDocument(array), &error)) {
+        m_retry.stop();
+        m_saveFailed = false;
+    } else {
+        if (!m_retry.isActive()) m_retry.start(5000);
+        if (!std::exchange(m_saveFailed, true)) emit saveFailed(error);
+    }
 }
 
 } // namespace arachnel::core

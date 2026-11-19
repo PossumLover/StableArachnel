@@ -1,4 +1,5 @@
 #include "runtime_dependency_service.h"
+#include "runtime_installer_wait.h"
 
 #include "installscript_vdf.h"
 #include "proton_manager.h"
@@ -23,6 +24,8 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QProcess>
+#include <QSaveFile>
+#include <QDeadlineTimer>
 #include <QSettings>
 #include <QStandardPaths>
 #include <QThread>
@@ -54,12 +57,20 @@ QNetworkAccessManager* RuntimeDependencyService::network() const
     return m_network;
 }
 
+void RuntimeDependencyService::snapshotRunner(RuntimeEnsureRequest& request, ProtonManager& manager,
+                                             SettingsStore& settings)
+{
+    const QString id = settings.resolvedProtonId(request.protonId, manager);
+    request.protonExecutable = manager.executableForId(id);
+    request.environment = protonEnvForGame(&manager, &settings, request.gameId, request.protonId);
+}
+
 QVector<RuntimeDepotRef> RuntimeDependencyService::resolveFromSteamCmd(const QString& steamAppId,
-                                                                       QString* errorOut) const
+                                                                       QString* errorOut, const std::atomic_bool* cancelled) const
 {
     QVector<RuntimeDepotRef> result;
     const QUrl url(QString::fromUtf8(kSteamCmdInfo) + steamAppId);
-    const QByteArray body = httpGetBlocking(network(), url, 20000, errorOut);
+    const QByteArray body = httpGetBlocking(network(), url, 20000, errorOut, cancelled);
     if (body.isEmpty())
         return result;
 
@@ -149,9 +160,6 @@ bool RuntimeDependencyService::isDepotSatisfied(const RuntimeDepotRef& depot,
     if (isDepotInstalledInPrefix(depot, prefixDir))
         return true;
 #endif
-
-    if (containers.isDepotInstalledForGame(gameId, depot.depotId))
-        containers.unmarkDepotInstalled(gameId, depot.depotId);
 
     return false;
 }

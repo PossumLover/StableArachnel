@@ -167,3 +167,5 @@
     Q_INVOKABLE void resetCoverFetchMetrics();
     Q_INVOKABLE void enrichCatalogEntry(const QString&);
     void prepareShutdown();
+    Q_INVOKABLE void requestQuit();
+    Q_INVOKABLE void cancelRuntimeSetup();

@@ -287,8 +287,9 @@ MD.ApplicationWindow {
     }
 
     onClosing: function (close) {
-        close.accepted = true
-        Qt.quit()
+        close.accepted = false
+        root.hide()
+        Core.requestQuit()
     }
 
     Connections {

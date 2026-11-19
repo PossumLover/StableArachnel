@@ -14,7 +14,7 @@ bool copyPathRecursive(const QString& src, const QString& dst, QString* errorOut
                        const FileProgressCallback& onProgress = {}, qint64* copiedInOut = nullptr,
                        qint64 totalHint = 0);
 bool movePathRecursive(const QString& src, const QString& dst, QString* errorOut = nullptr,
-                       const FileProgressCallback& onProgress = {});
+                       const FileProgressCallback& onProgress = {}, QString* cleanupWarning = nullptr);
 QString relocatePathPrefix(const QString& path, const QString& oldRoot, const QString& newRoot);
 /** Rewrite absolute path prefixes inside a text/JSON file (install markers). */
 bool rewritePathPrefixInFile(const QString& filePath, const QString& oldRoot,

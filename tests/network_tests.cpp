@@ -312,6 +312,34 @@ private slots:
         QCOMPARE(restored.gameById(game.id)->lastSessionMs, 70000);
         restored.removeGame(game.id);
     }
+    void failedLibraryCommitRemainsDirty()
+    {
+        // Isolate the failure from other tests' stores.
+        const auto oldName = QCoreApplication::applicationName();
+        QCoreApplication::setApplicationName(QStringLiteral("SproutLibrarySaveRetryTests"));
+        auto restore = qScopeGuard([&] { QCoreApplication::setApplicationName(oldName); });
+        const QString path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
+                             + QStringLiteral("/library.json");
+        if (QFileInfo(path).isFile()) QVERIFY(QFile::remove(path));
+        QVERIFY(QDir().mkpath(path)); // an existing directory cannot be replaced by a file
+        LibraryStore store;
+        QSignalSpy failure(&store, &LibraryStore::saveFailed);
+        LibraryGame game;
+        game.id = QStringLiteral("offline-game");
+        game.playtimeMs = 12345;
+        game.installPath = QStringLiteral("/unmounted-library/game");
+        store.setGames({game});
+        store.flush();
+        QCOMPARE(failure.size(), 1);
+        QVERIFY(QDir().rmdir(path));
+        store.flush(); // no intervening mutation
+        LibraryStore restored;
+        restored.load();
+        QVERIFY(restored.gameById(game.id));
+        QCOMPARE(restored.gameById(game.id)->playtimeMs, game.playtimeMs);
+        QCOMPARE(restored.gameById(game.id)->installPath, game.installPath);
+        QVERIFY(QFile::remove(path));
+    }
     void achievementFilesAndProtonPaths()
     {
         QTemporaryDir dir;

@@ -19,13 +19,12 @@ class RuntimeDependencyService : public QObject
 
 public:
     explicit RuntimeDependencyService(QObject* parent = nullptr);
+    static void snapshotRunner(RuntimeEnsureRequest& request, ProtonManager& manager, SettingsStore& settings);
 
     QVector<RuntimeDepotRef> resolveDependencies(const QString& steamAppId,
                                                  QString* errorOut = nullptr) const;
 
     RuntimeEnsureResult ensureInstalled(const RuntimeEnsureRequest& request,
-                                        ProtonManager* protonManager,
-                                        SettingsStore* settings,
                                         const std::function<void(const QString&)>& onStatus =
                                             {}) const;
 
@@ -38,13 +37,13 @@ private:
     QNetworkAccessManager* network() const;
 
     QVector<RuntimeDepotRef> resolveFromSteamCmd(const QString& steamAppId,
-                                                 QString* errorOut) const;
+                                                 QString* errorOut,
+                                                 const std::atomic_bool* cancelled = nullptr) const;
     QVector<RuntimeDepotRef> mergeDependencies(const QVector<RuntimeDepotRef>& primary,
                                                  const QVector<RuntimeDepotRef>& extra) const;
 
     bool isDepotSatisfied(const RuntimeDepotRef& depot, const QString& gameId) const;
     bool installDepotIntoContainer(const RuntimeDepotRef& depot, const RuntimeEnsureRequest& request,
-                                   ProtonManager* protonManager, SettingsStore* settings,
                                    const std::function<void(const QString&)>& onStatus,
                                    QString* errorOut) const;
 };

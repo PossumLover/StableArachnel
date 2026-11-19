@@ -32,6 +32,7 @@ struct FriendEntry {
     QString suggestedAt;
 
     QString shownName() const { return alias.isEmpty() ? nickname : alias; }
+    bool operator==(const FriendEntry&) const = default;
 };
 
 struct PendingInvite {

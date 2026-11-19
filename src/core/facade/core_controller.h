@@ -23,6 +23,8 @@
 #include <QVariant>
 #include <QVector>
 #include <functional>
+#include <atomic>
+#include <memory>
 #include <optional>
 
 class QTimer;

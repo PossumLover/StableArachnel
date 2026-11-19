@@ -16,7 +16,7 @@ bool loadPayload(const QString& sourceId, QByteArray* payload, QByteArray* etag 
                  qint64* savedAtMs = nullptr);
 /**
  * Content fingerprint used to detect an unchanged feed (cache keys, "same payload" checks).
- * Not cryptographic: SHA-256 over a ~70 MB catalog cost ~300 ms on every launch.
+ * Versioned so changes of algorithm cannot alias an old snapshot.
  */
 QByteArray payloadFingerprint(const QByteArray& payload);
 /** Fingerprint recorded when the payload was last saved; empty when there is none. Reads only .meta. */

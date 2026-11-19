@@ -48,6 +48,11 @@ private slots:
         manifest.close();
 
         PluginHost host;
+        qputenv("SPROUT_TEST_WRONG_OPTION_SIZE", "1");
+        host.scan();
+        qunsetenv("SPROUT_TEST_WRONG_OPTION_SIZE");
+        QVERIFY(!host.hasPlugin(QStringLiteral("boundary-test")));
+        QVERIFY(host.lastLoadRejectReason().contains(QStringLiteral("GameLaunchOption")));
         host.scan();
         QVERIFY2(host.hasPlugin(QStringLiteral("boundary-test")), qPrintable(host.lastLoadRejectReason()));
         ISourcePlugin* plugin = host.plugin(QStringLiteral("boundary-test"));
@@ -74,6 +79,19 @@ private slots:
         LibraryStore store;
         store.setGames({game});
 
+        // A busy source cannot be unloaded. A quit requests stop without
+        // publishing a cancellation as an install failure to the job store.
+        InstallContext ctx;
+        ctx.jobId = QStringLiteral("paused-transfer");
+        bool started = false, completed = false;
+        host.runOwnedDownloadAsync(plugin, ctx, [&](const auto&) { started = true; },
+                                   [&](const auto&) { completed = true; });
+        QTRY_VERIFY(started);
+        QVERIFY(!host.uninstallPlugin(info.id));
+        QVERIFY(host.hasPlugin(info.id));
+        host.requestOwnedDownloadStop();
+        QTRY_VERIFY_WITH_TIMEOUT(!host.hasInFlightPluginWorkers(info.id), 3000);
+        QVERIFY(!completed);
         host.shutdownPlugins();
 
         // The library save after a catalog refresh is what crashed.

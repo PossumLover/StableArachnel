@@ -52,6 +52,20 @@ if(WIN32)
 endif()
 add_test(NAME network_tests COMMAND network_tests)
 
+add_executable(reliability_tests reliability_tests.cpp
+    ${core}/catalog/catalog_disk_cache.cpp ${core}/util/file_utils.cpp
+    ${core}/social/presence_service.cpp ${core}/jobs/http_download_session.cpp)
+target_include_directories(reliability_tests PRIVATE ${core}/catalog ${core}/util ${core}/social ${core}/jobs ${core}/runtime)
+target_link_libraries(reliability_tests PRIVATE Qt6::Core Qt6::Network Qt6::Test Qt6::Concurrent)
+add_test(NAME reliability_tests COMMAND reliability_tests)
+if(WIN32)
+    target_sources(reliability_tests PRIVATE
+        ${core}/launch/process_launcher.cpp ${core}/launch/process_tracker.cpp)
+    target_include_directories(reliability_tests PRIVATE ${core}/launch ${core}/library
+        ${core}/plugins ${core}/install ${core}/settings ${CMAKE_CURRENT_SOURCE_DIR}/../src/app)
+    target_link_libraries(reliability_tests PRIVATE shell32)
+endif()
+
 # A plugin that answers with string literals, loaded through the real plugin host and
 # unloaded again; everything the host kept from it must still be readable.
 find_package(Qt6 6.8 REQUIRED COMPONENTS Concurrent Gui)

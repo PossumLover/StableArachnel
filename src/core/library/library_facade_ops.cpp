@@ -184,6 +184,10 @@ void CoreController::removeEntry(const QString& entryId, bool deleteFiles)
 
 void CoreController::moveGame(const QString& gameId, const QString& targetLibraryId)
 {
+    if (runningGameId() == gameId || (m_runtimeSetupInProgress && m_runtimeSetupGameId == gameId)) {
+        showNotice(tr("Stop the game before moving its files."));
+        return;
+    }
     if (m_libraryController)
         m_libraryController->moveGame(gameId, targetLibraryId);
 }

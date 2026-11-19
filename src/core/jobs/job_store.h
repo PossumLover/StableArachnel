@@ -3,6 +3,7 @@
 #include "job_model.h"
 
 #include <QObject>
+#include <QTimer>
 #include <QVector>
 
 namespace arachnel::core {
@@ -28,9 +29,12 @@ public:
     void save();
 
 signals:
+    void saveFailed(const QString& error);
     void jobsChanged();
 
 private:
+    QTimer m_retry;
+    bool m_saveFailed = false;
     QVector<JobEntry> m_jobs;
 };
 

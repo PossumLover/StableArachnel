@@ -1056,6 +1056,7 @@ void CatalogController::loadCatalogSourceNowFromNetwork(const QString& sourceId)
             watcher->setFuture(QtConcurrent::run([host, sourceId, prepare, expectedSha, previewCb]() {
                 return loadPluginCatalogEntries(host, sourceId, expectedSha, prepare, previewCb);
             }));
+            host->trackPluginWorker(sourceId, watcher->future());
             return;
         }
     }
@@ -1110,6 +1111,7 @@ void CatalogController::revalidateCatalogSource(const QString& sourceId, const Q
         watcher->setFuture(QtConcurrent::run([host, sourceId, prepare, expectedSha]() {
                 return loadPluginCatalogEntries(host, sourceId, expectedSha, prepare);
             }));
+        host->trackPluginWorker(sourceId, watcher->future());
         return;
     }
 
@@ -1297,6 +1299,7 @@ void CatalogController::prefetchPluginCatalogCount(const QString& sourceId)
     watcher->setFuture(QtConcurrent::run([host, sourceId]() {
         return host->loadPluginCatalog(sourceId);
     }));
+    host->trackPluginWorker(sourceId, watcher->future());
 }
 
 void CatalogController::startNextCatalogPrefetch()
@@ -1326,7 +1329,8 @@ void CatalogController::waitForInFlightPluginCatalogLoads()
 
     // List holds QFutureWatcher<PluginCatalogLoad|DiskCatalogLoad|QVector<...>>.
     // Waiting only on QVector skipped real plugin loads (unload race, #29).
-    const QList<QObject*> watchers = m_inFlightPluginCatalogWatchers;
+    const QList<QObject*> watchers = m_inFlightPluginCatalogWatchers + m_drainingPluginCatalogWatchers;
+    m_drainingPluginCatalogWatchers.clear();
     m_inFlightPluginCatalogWatchers.clear();
     for (QObject* obj : watchers) {
         auto* base = dynamic_cast<QFutureWatcherBase*>(obj);

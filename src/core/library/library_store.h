@@ -32,12 +32,14 @@ public:
     void flush();
 
 signals:
+    void saveFailed(const QString& error);
     void gamesChanged();
 
 private:
     QVector<LibraryGame> m_games;
     QTimer m_saveTimer;
     bool m_dirty = false;
+    bool m_saveFailed = false;
 };
 
 } // namespace arachnel::core
