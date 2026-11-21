@@ -39,6 +39,19 @@ MD.Pane {
             compare(Core.savedGameId, "game")
             compare(Core.savedGameStatus, "backlog")
         }
+        function test_sort_label_fits_narrow_library() {
+            // 900px window with the wide navigation drawer and both page margins.
+            toolbar.width = 580
+            Core.libraryView.sortMode = 1
+            const menu = findChild(toolbar, "librarySort")
+            tryCompare(menu.contentItem, "text", "Recently played")
+            wait(20)
+            verify(!menu.contentItem.truncated)
+            compare(menu.contentItem.lineCount, 1)
+            verify(menu.contentItem.x + menu.contentItem.width <= menu.indicator.x)
+            Core.libraryView.sortMode = 0
+            toolbar.width = 800
+        }
         function test_cache_states() {
             Core.settings.torboxEnabled = true
             Core.settings.torboxApiKey = "test"

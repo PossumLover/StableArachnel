@@ -8,6 +8,13 @@ RowLayout {
         id: menu
         leftPadding: mirrored ? 36 : MD.Token.spacing.medium
         rightPadding: mirrored ? MD.Token.spacing.medium : 36
+        TextMetrics {
+            id: labelMetrics
+            font: menu.contentItem.font
+            text: menu.displayText
+        }
+        Layout.minimumWidth: Math.max(184, Math.ceil(labelMetrics.advanceWidth) + leftPadding + rightPadding + 8)
+        Layout.preferredWidth: Layout.minimumWidth
         contentItem: MD.Label {
             text: menu.displayText
             typescale: MD.Token.typescale.body_large
@@ -36,7 +43,6 @@ RowLayout {
     }
     LibraryMenu {
         objectName: "libraryStatusFilter"
-        Layout.preferredWidth: 180
         model: [qsTr("All games"), qsTr("Backlog"), qsTr("Playing"), qsTr("Completed"), qsTr("Unorganized")]
         readonly property var statuses: ["", "backlog", "playing", "completed", "unorganized"]
         currentIndex: Math.max(0, statuses.indexOf(Core.libraryView.playStatus))
@@ -45,7 +51,6 @@ RowLayout {
     }
     LibraryMenu {
         objectName: "librarySort"
-        Layout.preferredWidth: 180
         model: [qsTr("Title"), qsTr("Recently played"), qsTr("Most played")]
         currentIndex: Core.libraryView.sortMode
         onActivated: Core.libraryView.sortMode = currentIndex
