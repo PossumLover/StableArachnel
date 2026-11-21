@@ -10,21 +10,12 @@ Item {
     required property string gameId
     required property string title
     required property string coverUrl
-    required property string sourceName
-    required property string version
-    required property string installKindLabel
     // Model role: updates through dataChanged, no Core call per card.
     required property string installPath
     required property bool hasUpdate
     required property double playtimeMs
     property int componentCount: 0
     property int installedComponentCount: 0
-
-    // "Steam · v123" without a dangling "v" when the version is unknown.
-    readonly property string metaText: {
-        const src = root.sourceName.length ? root.sourceName.charAt(0).toUpperCase() + root.sourceName.slice(1) : ""
-        return root.version.length ? src + " · v" + root.version : src
-    }
 
     readonly property bool hasAddons: componentCount > 0
     readonly property string addonLabel: {
@@ -77,7 +68,7 @@ Item {
     }
     readonly property string statusLine: {
         if (!showJobStatus)
-            return root.metaText
+            return ""
         if (activeJob.status === "installing") {
             if (activeJob.detail && activeJob.detail.length)
                 return activeJob.detail
@@ -116,7 +107,7 @@ Item {
 
         Item {
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.preferredHeight: Math.max(1, width * 4 / 3)
 
             GamePoster {
                 anchors.fill: parent
@@ -170,7 +161,8 @@ Item {
             text: root.title
             typescale: MD.Token.typescale.title_small
             elide: Text.ElideRight
-            maximumLineCount: 1
+            wrapMode: Text.Wrap
+            maximumLineCount: 2
         }
 
         PlaytimeLabel {
@@ -204,13 +196,6 @@ Item {
             }
         }
 
-        MD.Label {
-            Layout.fillWidth: true
-            visible: !root.showJobStatus && !root.isRunning
-            text: root.metaText
-            color: MD.Token.color.on_surface_variant
-            typescale: MD.Token.typescale.label_medium
-            elide: Text.ElideRight
-        }
+        Item { Layout.fillHeight: true }
     }
 }

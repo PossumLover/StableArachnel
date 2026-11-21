@@ -90,16 +90,6 @@ Item {
         }
     }
 
-    readonly property string monogram: {
-        const s = (seed || fallbackText || "?").trim()
-        if (!s.length)
-            return "?"
-        const parts = s.split(/\s+/).filter(p => p.length > 0)
-        if (parts.length >= 2)
-            return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase()
-        return s.slice(0, Math.min(2, s.length)).toUpperCase()
-    }
-
     signal clicked()
     signal loadFailed()
 
@@ -147,7 +137,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: MD.Token.color.surface_container_high
+            color: MD.Token.color.secondary_container
         }
 
         Rectangle {
@@ -193,25 +183,18 @@ Item {
             }
         }
 
-        Column {
-            anchors.centerIn: parent
-            spacing: MD.Token.spacing.small
+        MD.Label {
+            anchors.fill: parent
+            anchors.margins: Math.min(MD.Token.spacing.medium, parent.width / 10)
             visible: !root.showShimmer
-            opacity: 0.9
-
-            MD.Icon {
-                anchors.horizontalCenter: parent.horizontalCenter
-                name: MD.Token.icon.sports_esports
-                size: 32
-                color: MD.Token.color.on_surface_variant
-            }
-
-            MD.Label {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: root.monogram
-                typescale: MD.Token.typescale.title_large
-                color: MD.Token.color.on_surface_variant
-            }
+            text: root.seed || root.fallbackText
+            textFormat: Text.PlainText
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+            wrapMode: Text.Wrap
+            elide: Text.ElideRight
+            typescale: root.width >= 100 ? MD.Token.typescale.title_medium : MD.Token.typescale.label_small
+            color: MD.Token.color.on_secondary_container
         }
     }
 

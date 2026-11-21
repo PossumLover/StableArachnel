@@ -39,6 +39,7 @@ add_executable(network_tests
     ${core}/library/library_store.cpp
     ${core}/library/achievement_files.cpp
     ${core}/library/achievement_service.cpp
+    ${core}/library/library_snapshot.cpp
     ${core}/library/storage_library_model.cpp
     ${core}/plugins/source_plugin_model.cpp)
 target_include_directories(network_tests PRIVATE

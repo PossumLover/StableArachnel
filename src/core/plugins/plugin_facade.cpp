@@ -137,25 +137,25 @@ bool CoreController::isPluginInstalledOnDisk(const QString& pluginId) const
 
 bool CoreController::installPluginArach(const QUrl& fileUrl)
 {
+    if (m_autoUpdatingOfficialPlugins) {
+        showNotice(QCoreApplication::translate("Core", "Wait for the plugin update to finish."));
+        return false;
+    }
     return installPluginArachInternal(fileUrl, false);
 }
 
 bool CoreController::installPluginArachInternal(const QUrl& fileUrl, bool quiet)
 {
-    if (!m_pluginHost)
+    if (!m_pluginHost || m_pluginInstallBusy || m_pluginRemoveBusy)
         return false;
 
     const QString path = fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString();
-    if (!m_pluginInstallBusy) {
-        m_pluginInstallBusy = true;
-        emit pluginInstallBusyChanged();
-        QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
-    }
+    m_pluginInstallBusy = true;
+    emit pluginInstallBusyChanged();
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
     const bool ok = m_pluginHost->installFromArach(path);
-    if (m_pluginInstallBusy) {
-        m_pluginInstallBusy = false;
-        emit pluginInstallBusyChanged();
-    }
+    m_pluginInstallBusy = false;
+    emit pluginInstallBusyChanged();
     m_lastPluginError = ok ? QString() : m_pluginHost->lastError();
     emit lastPluginErrorChanged();
     if (ok) {
@@ -172,7 +172,11 @@ bool CoreController::installPluginArachInternal(const QUrl& fileUrl, bool quiet)
 
 bool CoreController::uninstallPlugin(const QString& pluginId)
 {
-    if (!m_pluginHost || m_pluginRemoveBusy)
+    if (m_autoUpdatingOfficialPlugins) {
+        showNotice(QCoreApplication::translate("Core", "Wait for the plugin update to finish."));
+        return false;
+    }
+    if (!m_pluginHost || m_pluginRemoveBusy || m_pluginInstallBusy)
         return false;
 
     // Unloading the library must wait for every catalog load / install worker that is still

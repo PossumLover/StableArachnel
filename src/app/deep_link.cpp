@@ -3,10 +3,12 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QIODevice>
 #include <QLocalServer>
 #include <QLocalSocket>
+#include <QSaveFile>
 #include <QStandardPaths>
 #include <QUrl>
 #include <QWindow>
@@ -31,6 +33,51 @@ QString localServerName()
         return QStringLiteral("Arachnel-Arachnel-single-instance-") + suffix;
     return QStringLiteral("Arachnel-Arachnel-single-instance");
 }
+
+#if defined(Q_OS_LINUX)
+void migrateLegacyDesktopEntry(const QString& applicationsDir)
+{
+    QFile file(applicationsDir + QStringLiteral("/arachnel.desktop"));
+    if (!file.open(QIODevice::ReadOnly) || file.size() > 64 * 1024)
+        return;
+    const auto original = file.readAll();
+    file.close();
+    auto lines = original.split('\n');
+    bool inEntry = false;
+    bool legacyName = false;
+    int iconLine = -1;
+    for (qsizetype i = 0; i < lines.size(); ++i) {
+        const QByteArray line = lines[i].trimmed();
+        if (line.startsWith('['))
+            inEntry = line == "[Desktop Entry]";
+        if (!inEntry)
+            continue;
+        if (line == "Name=Arachnel") {
+            lines[i] = "Name=Sprout";
+            legacyName = true;
+        } else if (line == "Icon=arachnel") {
+            iconLine = i;
+        } else if (line == "StartupWMClass=arachnel_app") {
+            lines[i] = "StartupWMClass=SproutLauncher";
+        }
+    }
+    if (!legacyName)
+        return;
+    if (iconLine >= 0) {
+        const QString iconDir = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
+            + QStringLiteral("/icons/hicolor/256x256/apps");
+        const QString icon = iconDir + QStringLiteral("/sproutlauncher.png");
+        if (QFileInfo::exists(icon) || (QDir().mkpath(iconDir) && QFile::copy(QStringLiteral(":/icons/256.png"), icon)))
+            lines[iconLine] = "Icon=sproutlauncher";
+        else
+            return; // Keep the original entry intact and retry next launch.
+    }
+    QSaveFile updated(file.fileName());
+    const auto body = lines.join('\n');
+    if (updated.open(QIODevice::WriteOnly) && updated.write(body) == body.size())
+        updated.commit();
+}
+#endif
 
 #if defined(Q_OS_WIN)
 void forceActivateHwnd(HWND hwnd)
@@ -105,12 +152,15 @@ void registerGameDeepLinkProtocol()
     if (apps.isEmpty())
         return;
     QDir().mkpath(apps);
+#if defined(Q_OS_LINUX)
+    migrateLegacyDesktopEntry(apps);
+#endif
     const QString desktopPath = apps + QStringLiteral("/arachnel-url-handler.desktop");
     const QString execPath = QCoreApplication::applicationFilePath();
     const QByteArray body =
         QByteArrayLiteral("[Desktop Entry]\n"
                           "Type=Application\n"
-                          "Name=Arachnel URL Handler\n"
+                          "Name=Sprout URL Handler\n"
                           "Exec=\"")
         + QFile::encodeName(execPath) + QByteArrayLiteral("\" %u\n"
                                                           "NoDisplay=true\n"

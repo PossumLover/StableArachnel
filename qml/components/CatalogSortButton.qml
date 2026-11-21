@@ -12,10 +12,11 @@ Item {
     implicitWidth: btn.implicitWidth
     implicitHeight: btn.implicitHeight
 
-    MD.IconButton {
+    MD.Button {
         id: btn
         anchors.centerIn: parent
-        mdState.type: MD.Enum.IBtStandard
+        text: qsTr("Sort")
+        mdState.type: MD.Enum.BtText
         icon.name: MD.Token.icon.sort
         onClicked: sortMenu.open()
 

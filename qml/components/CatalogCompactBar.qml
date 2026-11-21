@@ -128,41 +128,11 @@ Rectangle {
             onSortModeChosen: function (mode) { page.applySortMode(mode) }
         }
 
-        Item {
-            Layout.preferredWidth: compactFilterBtn.implicitWidth
-            Layout.preferredHeight: compactFilterBtn.implicitHeight
-            opacity: 0.4 + 0.6 * root.barOpacity
-
-            MD.IconButton {
-                id: compactFilterBtn
-                anchors.centerIn: parent
-                mdState.type: Core.catalogActiveFilterCount > 0
-                              ? MD.Enum.IBtFilledTonal
-                              : MD.Enum.IBtStandard
-                icon.name: MD.Token.icon.filter_list
-                onClicked: page.openFilterSheet()
-            }
-
-            Rectangle {
-                visible: Core.catalogActiveFilterCount > 0
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.rightMargin: 2
-                anchors.topMargin: 2
-                width: Math.max(18, compactBadgeLabel.implicitWidth + 6)
-                height: 18
-                radius: 9
-                color: MD.Token.color.error
-                z: 2
-
-                MD.Label {
-                    id: compactBadgeLabel
-                    anchors.centerIn: parent
-                    text: Core.catalogActiveFilterCount
-                    color: MD.Token.color.on_error
-                    typescale: MD.Token.typescale.label_small
-                }
-            }
+        MD.Button {
+            text: Core.catalogActiveFilterCount > 0 ? qsTr("Filter (%1)").arg(Core.catalogActiveFilterCount) : qsTr("Filter")
+            icon.name: MD.Token.icon.filter_list
+            mdState.type: Core.catalogActiveFilterCount > 0 ? MD.Enum.BtFilledTonal : MD.Enum.BtText
+            onClicked: page.openFilterSheet()
         }
 
         ConnectedIconToggle {

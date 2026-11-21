@@ -10,7 +10,7 @@ Item {
     required property var page
     required property int pageMargin
 
-    property alias searchText: catalogSearch.searchText
+    property alias searchText: catalogSearch.text
     property bool syncingSearch: false
 
     function focusSearch() {
@@ -45,55 +45,56 @@ Item {
 
             Item { Layout.fillWidth: true }
 
-        MD.SearchBar {
-            id: catalogSearch
-            Layout.fillWidth: true
-            Layout.maximumWidth: 560
-            Layout.alignment: Qt.AlignVCenter
+            LauncherSearchField {
+                id: catalogSearch
+                placeholderText: qsTr("Search catalog")
+                Layout.fillWidth: true
+                Layout.maximumWidth: 560
+                Layout.alignment: Qt.AlignVCenter
 
-            // Keep results in sync with the field. Enter used to be required, so
-            // typing a new query over a failed search left "Found: 0" on screen.
-            Timer {
-                id: searchDebounce
-                interval: 250
-                onTriggered: {
-                    if (page.enabled && root.visible)
-                        page.applyCatalogSearch(catalogSearch.searchText.trim())
+                // Keep results in sync with the field. Enter used to be required, so
+                // typing a new query over a failed search left "Found: 0" on screen.
+                Timer {
+                    id: searchDebounce
+                    interval: 250
+                    onTriggered: {
+                        if (page.enabled && root.visible)
+                            page.applyCatalogSearch(catalogSearch.text.trim())
+                    }
                 }
-            }
 
-            onAccepted: {
-                searchDebounce.stop()
-                page.applyCatalogSearch(catalogSearch.searchText.trim())
-            }
-            onSearchTextChanged: {
-                if (root.syncingSearch || !page.enabled || !root.visible)
-                    return
-                if (!catalogSearch.searchText.length) {
+                onAccepted: {
                     searchDebounce.stop()
-                    page.applyCatalogSearch("")
-                    return
+                    page.applyCatalogSearch(catalogSearch.text.trim())
                 }
-                searchDebounce.restart()
-            }
-
-            Connections {
-                target: page
-                function onSearchQueryChanged() {
-                    if (catalogSearch.searchText === page.searchQuery)
+                onTextChanged: {
+                    if (root.syncingSearch || !page.enabled || !root.visible)
                         return
-                    // Avoid re-debounce when we push the committed query back.
-                    searchDebounce.stop()
-                    root.syncingSearch = true
-                    catalogSearch.searchText = page.searchQuery
-                    root.syncingSearch = false
-                }
-                function onEnabledChanged() {
-                    if (!page.enabled)
+                    if (!catalogSearch.text.length) {
                         searchDebounce.stop()
+                        page.applyCatalogSearch("")
+                        return
+                    }
+                    searchDebounce.restart()
+                }
+
+                Connections {
+                    target: page
+                    function onSearchQueryChanged() {
+                        if (catalogSearch.text === page.searchQuery)
+                            return
+                        // Avoid re-debounce when we push the committed query back.
+                        searchDebounce.stop()
+                        root.syncingSearch = true
+                        catalogSearch.text = page.searchQuery
+                        root.syncingSearch = false
+                    }
+                    function onEnabledChanged() {
+                        if (!page.enabled)
+                            searchDebounce.stop()
+                    }
                 }
             }
-        }
         }
 
         Flow {

@@ -31,6 +31,12 @@ void CoreController::touchLastPlayed(const QString& gameId)
 
 void CoreController::launchGame(const QString& gameId, const QString& optionId)
 {
+    const auto* game = m_libraryStore.gameById(gameId);
+    if (m_autoUpdatingOfficialPlugins && m_pluginInstallBusy && game && m_pluginCatalog
+        && game->sourceId == m_pluginCatalog->installingPluginId()) {
+        showNotice(QCoreApplication::translate("Core", "This game's source is updating. Try Play again in a moment."));
+        return;
+    }
     if (m_launchController)
         m_launchController->launchGame(gameId, optionId);
 }
@@ -71,8 +77,7 @@ void CoreController::launchGameWithOption(const QString& gameId, const QString& 
 {
     if (rememberChoice && m_launchController)
         m_launchController->setGameSelectedLaunchOption(gameId, optionId);
-    if (m_launchController)
-        m_launchController->launchGame(gameId, optionId);
+    launchGame(gameId, optionId);
 }
 
 QVariantList CoreController::gameLaunchOptions(const QString& gameId) const

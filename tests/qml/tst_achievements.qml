@@ -13,6 +13,19 @@ MD.Pane {
     TestCase {
         name: "GameActivity"
         when: windowShown
+        function test_missing_save_keeps_progress_unknown() {
+            const rows = [{name: "A", title: "A", description: "", icon: "", unlocked: false}]
+            Core.achievementInfo = {rows: rows, total: 1, unlocked: 0, localFileFound: false,
+                                    checkedPaths: ["game/achievements.json"]}
+            Core.gameAchievementsChanged("game")
+            tryCompare(findChild(panel, "achievementProgress"), "text", "Progress unknown · 1 listed")
+            verify(!findChild(panel, "achievementFilter").visible)
+            panel.showLocations = true
+            Core.achievementInfo = {rows: rows, total: 1, unlocked: 0, localFileFound: true}
+            Core.gameAchievementsChanged("game")
+            tryCompare(findChild(panel, "achievementProgress"), "text", "0/1 unlocked")
+            verify(findChild(panel, "achievementFilter").visible)
+        }
         function test_playtime_and_achievements() {
             playtime.durationMs = 7260000
             compare(playtime.durationText, "2 h 1 min")

@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Dialogs as Dialogs
 import QtQuick.Layouts
 
 import Arachnel.Core 1.0
@@ -433,6 +434,12 @@ Item {
                                                : root.openGame(friendItem.currentGameId)
                                 }
 
+                                MD.Button {
+                                    text: qsTr("Compare libraries")
+                                    mdState.type: MD.Enum.BtText
+                                    onClicked: sharedDialog.openFor(friendItem.friendId, friendItem.nickname)
+                                }
+
                                 MD.IconButton {
                                     mdState.type: MD.Enum.IBtStandard
                                     icon.name: MD.Token.icon.share
@@ -533,6 +540,117 @@ Item {
                     onClicked: renameDialog.commit()
                 }
             }
+        }
+    }
+
+    MD.Dialog {
+        id: sharedDialog
+        standardButtons: MD.Dialog.Close
+        property string friendId
+        property string friendName
+        property var comparison: ({})
+        property string message: ""
+        function openFor(id, name) {
+            friendId = id
+            friendName = name
+            comparison = ({})
+            message = ""
+            open()
+        }
+        function compareFile(url) {
+            const result = Core.compareLibrarySnapshot(url)
+            if (result.error) {
+                comparison = ({})
+                message = result.error
+                return
+            }
+            comparison = result
+            message = ""
+        }
+        modal: true
+        width: Math.min(540, root.width - 48)
+        title: qsTr("Installed on both PCs")
+        contentItem: ColumnLayout {
+            spacing: MD.Token.spacing.medium
+            MD.Label {
+                Layout.fillWidth: true
+                text: qsTr("Open a list shared by %1, or export yours to send. Lists contain game IDs, available Steam build numbers, and the export date.").arg(sharedDialog.friendName)
+                textFormat: Text.PlainText
+                wrapMode: Text.WordWrap
+            }
+            RowLayout {
+                MD.Button {
+                    text: qsTr("Open shared list")
+                    onClicked: openList.open()
+                }
+                MD.Button {
+                    text: qsTr("Export my list")
+                    mdState.type: MD.Enum.BtFilledTonal
+                    onClicked: saveList.open()
+                }
+            }
+            MD.Label {
+                Layout.fillWidth: true
+                visible: text.length > 0
+                text: sharedDialog.message
+                wrapMode: Text.WordWrap
+            }
+            MD.Label {
+                visible: !!sharedDialog.comparison.createdAt
+                text: visible ? qsTr("List from %1").arg(Qt.formatDateTime(sharedDialog.comparison.createdAt, Qt.DefaultLocaleShortDate)) : ""
+            }
+            MD.Label {
+                visible: !!sharedDialog.comparison.games && sharedDialog.comparison.games.length === 0
+                text: qsTr("No installed games match this list.")
+            }
+            ListView {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.min(contentHeight, 280)
+                clip: true
+                model: sharedDialog.comparison.games ?? []
+                delegate: RowLayout {
+                    required property var modelData
+                    width: ListView.view.width
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        MD.Label {
+                            Layout.fillWidth: true
+                            text: modelData.title
+                            textFormat: Text.PlainText
+                            elide: Text.ElideRight
+                        }
+                        MD.Label {
+                            visible: text.length > 0
+                            text: modelData.detail
+                            typescale: MD.Token.typescale.body_small
+                        }
+                    }
+                    MD.Button {
+                        text: qsTr("Suggest")
+                        mdState.type: MD.Enum.BtText
+                        onClicked: {
+                            Core.social.suggestGame(sharedDialog.friendId, modelData.peerGameId, modelData.title, "")
+                            sharedDialog.close()
+                        }
+                    }
+                }
+            }
+        }
+
+        Dialogs.FileDialog {
+            id: openList
+            title: qsTr("Open shared library list")
+            nameFilters: [qsTr("Sprout library list (*.sprout-library)")]
+            onAccepted: sharedDialog.compareFile(selectedFile)
+        }
+        Dialogs.FileDialog {
+            id: saveList
+            title: qsTr("Export my installed games")
+            fileMode: Dialogs.FileDialog.SaveFile
+            nameFilters: openList.nameFilters
+            defaultSuffix: "sprout-library"
+            onAccepted: sharedDialog.message = Core.exportLibrarySnapshot(selectedFile)
+                ? qsTr("Library list saved.") : qsTr("Could not save the library list.")
         }
     }
 

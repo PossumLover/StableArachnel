@@ -10,7 +10,7 @@ Item {
 
     readonly property int pageMargin: Appearance.pageMargin
     property var expandedGroups: ({})
-    readonly property bool downloadsEmpty: groupsModel.count === 0
+    readonly property bool downloadsEmpty: groupsModel.count === 0 && !Core.pluginAutoUpdating
 
     ListModel {
         id: groupsModel
@@ -132,7 +132,7 @@ Item {
                     return qsTr("%1 active · will resume after restart").arg(active)
                 if (finished > 0)
                     return qsTr("%1 finished").arg(finished)
-                return qsTr("No downloads yet")
+                return Core.pluginAutoUpdating ? "" : qsTr("No downloads yet")
             }
 
             MD.Button {
@@ -141,6 +141,24 @@ Item {
                 icon.name: MD.Token.icon.delete_sweep
                 mdState.type: MD.Enum.BtText
                 onClicked: Core.clearFinishedJobs()
+            }
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.leftMargin: pageMargin
+            Layout.rightMargin: pageMargin
+            visible: Core.pluginAutoUpdating
+            MD.Label {
+                text: qsTr("Updating plugin · %1").arg(Core.pluginCatalog.installingPluginId)
+                typescale: MD.Token.typescale.title_small
+            }
+            MD.LinearIndicator {
+                Layout.fillWidth: true
+                from: 0
+                to: 100
+                value: Core.pluginCatalog.downloadProgress
+                indeterminate: value === 0
             }
         }
 

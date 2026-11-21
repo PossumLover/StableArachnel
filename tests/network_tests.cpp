@@ -6,6 +6,7 @@
 #include "catalog_identity.h"
 #include "catalog_filter_service.h"
 #include "library_store.h"
+#include "library_snapshot.h"
 #include "achievement_service.h"
 #include "library_view_model.h"
 #include "torbox_cache_service.h"
@@ -179,6 +180,45 @@ class NetworkTests : public QObject
 {
     Q_OBJECT
 private slots:
+    void sharedLibrarySnapshot()
+    {
+        QTemporaryDir dir;
+        QVERIFY(dir.isValid());
+        LibraryGame local;
+        local.id = "local-id";
+        local.steamAppId = "123";
+        local.title = "Shared title";
+        local.sourceId = "steamidra";
+        local.version = "200";
+        local.installPath = dir.path();
+        auto peer = local;
+        peer.id = "different-provider-id";
+        peer.version = "199";
+        auto missing = peer;
+        missing.steamAppId = "456";
+        missing.installPath = dir.filePath("missing");
+        const auto url = QUrl::fromLocalFile(dir.filePath("list.sprout-library"));
+        QVERIFY(writeLibrarySnapshot(url, {peer, missing}));
+        QFile file(url.toLocalFile());
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const auto object = QJsonDocument::fromJson(file.readAll()).object();
+        file.close();
+        QCOMPARE(object.value("games").toObject().keys(), QStringList{"123"});
+        QCOMPARE(object.value("games").toObject().value("123").toObject().value("build").toString(), peer.version);
+        auto matches = readSharedLibrary(url, {local, local}).value("games").toList();
+        QCOMPARE(matches.size(), 1);
+        QCOMPARE(matches.first().toMap().value("peerGameId").toString(), peer.id);
+        QVERIFY(matches.first().toMap().value("detail").toString().contains("199"));
+        local.sourceId = "other";
+        matches = readSharedLibrary(url, {local}).value("games").toList();
+        QVERIFY(matches.first().toMap().value("detail").toString().isEmpty());
+        QVERIFY(!readSharedLibrary(url, {}).contains("error"));
+        QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        file.write("{}");
+        file.close();
+        QVERIFY(readSharedLibrary(url, {local}).contains("error"));
+    }
+
     void initTestCase()
     {
         QStandardPaths::setTestModeEnabled(true);

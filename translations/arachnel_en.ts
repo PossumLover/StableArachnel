@@ -171,6 +171,14 @@
         <source>List</source>
         <translation>List</translation>
     </message>
+    <message>
+        <source>Filter</source>
+        <translation>Filter</translation>
+    </message>
+    <message>
+        <source>Filter (%1)</source>
+        <translation>Filter (%1)</translation>
+    </message>
 </context>
 <context>
     <name>CatalogDiscoveryHeader</name>
@@ -586,6 +594,14 @@
         <source>List</source>
         <translation>List</translation>
     </message>
+    <message>
+        <source>Filter</source>
+        <translation>Filter</translation>
+    </message>
+    <message>
+        <source>Filter (%1)</source>
+        <translation>Filter (%1)</translation>
+    </message>
 </context>
 <context>
     <name>CatalogSourceChips</name>
@@ -626,6 +642,10 @@
         <location line="-110"/>
         <source>Catalog</source>
         <translation>Catalog</translation>
+    </message>
+    <message>
+        <source>Search catalog</source>
+        <translation>Search catalog</translation>
     </message>
 </context>
 <context>
@@ -3057,6 +3077,14 @@
         <source>GitHub API request failed.</source>
         <translation>GitHub API request failed.</translation>
     </message>
+    <message>
+        <source>This game's source is updating. Try Play again in a moment.</source>
+        <translation>This game's source is updating. Try Play again in a moment.</translation>
+    </message>
+    <message>
+        <source>Wait for the plugin update to finish.</source>
+        <translation>Wait for the plugin update to finish.</translation>
+    </message>
 </context>
 <context>
     <name>CrashReportDialog</name>
@@ -3390,6 +3418,10 @@
         <source>Open catalog</source>
         <translation>Open catalog</translation>
     </message>
+    <message>
+        <source>Updating plugin · %1</source>
+        <translation>Updating plugin · %1</translation>
+    </message>
 </context>
 <context>
     <name>FriendCodePin</name>
@@ -3547,6 +3579,74 @@
         <source>Friends you add can see when you are online and which game you are playing.</source>
         <translation>Friends you add can see when you are online and which game you are playing.</translation>
     </message>
+    <message>
+        <source>Compare libraries</source>
+        <translation>Compare libraries</translation>
+    </message>
+    <message>
+        <source>Installed on both PCs</source>
+        <translation>Installed on both PCs</translation>
+    </message>
+    <message>
+        <source>Open a list shared by %1, or export yours to send. Lists contain game IDs, available Steam build numbers, and the export date.</source>
+        <translation>Open a list shared by %1, or export yours to send. Lists contain game IDs, available Steam build numbers, and the export date.</translation>
+    </message>
+    <message>
+        <source>Open shared list</source>
+        <translation>Open shared list</translation>
+    </message>
+    <message>
+        <source>Export my list</source>
+        <translation>Export my list</translation>
+    </message>
+    <message>
+        <source>List from %1</source>
+        <translation>List from %1</translation>
+    </message>
+    <message>
+        <source>No installed games match this list.</source>
+        <translation>No installed games match this list.</translation>
+    </message>
+    <message>
+        <source>Suggest</source>
+        <translation>Suggest</translation>
+    </message>
+    <message>
+        <source>Open shared library list</source>
+        <translation>Open shared library list</translation>
+    </message>
+    <message>
+        <source>Sprout library list (*.sprout-library)</source>
+        <translation>Sprout library list (*.sprout-library)</translation>
+    </message>
+    <message>
+        <source>Export my installed games</source>
+        <translation>Export my installed games</translation>
+    </message>
+    <message>
+        <source>Library list saved.</source>
+        <translation>Library list saved.</translation>
+    </message>
+    <message>
+        <source>Could not save the library list.</source>
+        <translation>Could not save the library list.</translation>
+    </message>
+    <message>
+        <source>Could not read this library list.</source>
+        <translation>Could not read this library list.</translation>
+    </message>
+    <message>
+        <source>Choose a library list exported by Sprout.</source>
+        <translation>Choose a library list exported by Sprout.</translation>
+    </message>
+    <message>
+        <source>Same build · %1</source>
+        <translation>Same build · %1</translation>
+    </message>
+    <message>
+        <source>Your build %1 · Shared build %2</source>
+        <translation>Your build %1 · Shared build %2</translation>
+    </message>
 </context>
 <context>
     <name>GameAchievementsPanel</name>
@@ -3626,6 +3726,22 @@
         <location line="+0"/>
         <source>Show all (%1)</source>
         <translation>Show all (%1)</translation>
+    </message>
+    <message>
+        <source>Progress unknown · %1 listed</source>
+        <translation>Progress unknown · %1 listed</translation>
+    </message>
+    <message>
+        <source>No supported achievement save was found.</source>
+        <translation>No supported achievement save was found.</translation>
+    </message>
+    <message>
+        <source>Show locations checked</source>
+        <translation>Show locations checked</translation>
+    </message>
+    <message>
+        <source>Hide locations</source>
+        <translation>Hide locations</translation>
     </message>
 </context>
 <context>
@@ -3856,6 +3972,10 @@
         <location line="-245"/>
         <source>More actions</source>
         <translation>More actions</translation>
+    </message>
+    <message>
+        <source>Updating source…</source>
+        <translation>Updating source…</translation>
     </message>
 </context>
 <context>
@@ -4590,6 +4710,18 @@
             <numerusform>%n game</numerusform>
             <numerusform>%n games</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Last session</source>
+        <translation>Last session</translation>
+    </message>
+    <message>
+        <source>%1 of %2 games</source>
+        <translation>%1 of %2 games</translation>
+    </message>
+    <message>
+        <source>Launch a game from your library - it will appear here.</source>
+        <translation>Launch a game from your library - it will appear here.</translation>
     </message>
 </context>
 <context>
@@ -6821,6 +6953,20 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+122"/>
         <source>Friend</source>
         <translation>Friend</translation>
+    </message>
+</context>
+<context>
+    <name>LauncherSearchField</name>
+    <message>
+        <source>Clear search</source>
+        <translation>Clear search</translation>
+    </message>
+</context>
+<context>
+    <name>CatalogSortButton</name>
+    <message>
+        <source>Sort</source>
+        <translation>Sort</translation>
     </message>
 </context>
 </TS>

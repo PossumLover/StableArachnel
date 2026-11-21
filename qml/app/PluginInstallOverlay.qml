@@ -10,7 +10,7 @@ Item {
     readonly property bool busy: (Core.pluginCatalog && Core.pluginCatalog.installing)
                                  || Core.pluginInstallBusy || Core.pluginRemoveBusy
 
-    visible: busy
+    visible: busy && !Core.pluginAutoUpdating
 
     MouseArea {
         anchors.fill: parent

@@ -69,7 +69,9 @@ Item {
 
                 Repeater {
                     model: [
-                        { icon: MD.Token.icon.sports_esports, text: qsTr("%n game(s)", "", Core.library.count), act: "" },
+                        { icon: MD.Token.icon.sports_esports, text: Core.libraryView.count < Core.library.count
+                              ? qsTr("%1 of %2 games").arg(Core.libraryView.count).arg(Core.library.count)
+                              : qsTr("%n game(s)", "", Core.library.count), act: "" },
                         { icon: MD.Token.icon.storefront, text: qsTr("%n source(s)", "", Core.sources.enabledCount), act: "sources" },
                         { icon: MD.Token.icon.downloading, text: qsTr("%n task(s)", "", Core.jobs.count), act: "downloads" },
                         { icon: MD.Token.icon.update, text: qsTr("%n update(s)", "", (void page.libraryRevision, Core.library.updateCount())), act: "" }
@@ -176,16 +178,20 @@ Item {
                                 maximumLineCount: 2
                             }
 
+                            PlaytimeLabel {
+                                Layout.fillWidth: true
+                                visible: !page.showRunningHero && !page.featuredShowJobStatus && durationMs > 0
+                                durationMs: page.heroGame?.lastSessionMs ?? 0
+                                caption: qsTr("Last session")
+                                typescale: MD.Token.typescale.body_large
+                            }
+
                             MD.Label {
                                 Layout.fillWidth: true
-                                text: page.heroSubtitle
+                                visible: !heroHost.hasHero
+                                text: qsTr("Launch a game from your library - it will appear here.")
+                                wrapMode: Text.WordWrap
                                 color: MD.Token.color.on_surface_variant
-                                typescale: MD.Token.typescale.body_large
-                                elide: Text.ElideRight
-                                wrapMode: page.heroHasRecentPlay || page.showRunningHero
-                                           ? Text.NoWrap
-                                           : Text.WordWrap
-                                visible: !page.featuredShowJobStatus && !page.showRunningHero
                             }
 
                             RowLayout {
@@ -252,6 +258,8 @@ Item {
                                     text: qsTr("Play")
                                     mdState.type: MD.Enum.BtFilled
                                     enabled: !!(page.heroGameId)
+                                             && !(Core.pluginAutoUpdating && Core.pluginInstallBusy
+                                                  && Core.pluginCatalog.installingPluginId === page.heroGame?.sourceId)
                                              && Core.isEntryPlayable(page.heroGameId)
                                              && !(Core.runtimeSetupInProgress
                                                   && Core.runtimeSetupGameId === page.heroGameId)
@@ -372,22 +380,6 @@ Item {
                 Layout.leftMargin: page.pageMargin
                 Layout.rightMargin: page.pageMargin
                 spacing: MD.Token.spacing.small
-
-                RowLayout {
-                    Layout.fillWidth: true
-
-                    MD.Label {
-                        Layout.fillWidth: true
-                        text: qsTr("My library")
-                        typescale: MD.Token.typescale.title_large
-                    }
-
-                    MD.Label {
-                        text: qsTr("%n game(s)", "", Core.libraryView.count)
-                        color: MD.Token.color.on_surface_variant
-                        typescale: MD.Token.typescale.label_large
-                    }
-                }
 
                 LibraryToolbar { Layout.fillWidth: true }
 

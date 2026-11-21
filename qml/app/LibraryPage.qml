@@ -9,7 +9,7 @@ Item {
 
     readonly property int minCardWidth: 160
     readonly property int gridSpacing: MD.Token.spacing.medium
-    readonly property int metaHeight: 48
+    readonly property int metaHeight: 76
     readonly property bool libraryEmpty: Core.library.count === 0
     readonly property int pageMargin: Appearance.pageMargin
     readonly property int cardRadius: MD.Token.shape.corner.extra_large
@@ -40,11 +40,6 @@ Item {
     }
     readonly property string heroCoverUrl: root.heroGame?.coverUrl ?? ""
     readonly property string heroGameId: root.heroGame?.gameId ?? ""
-    readonly property string heroSubtitle: {
-        if (root.showRunningHero || root.heroHasRecentPlay)
-            return (root.heroGame?.sourceName ?? "") + " · v" + (root.heroGame?.version ?? "")
-        return qsTr("Launch a game from your library - it will appear here.")
-    }
     readonly property bool heroHasUpdate: !!(root.heroGame?.hasUpdate)
 
     property int jobRevision: 0

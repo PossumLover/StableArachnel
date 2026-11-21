@@ -427,10 +427,14 @@ Item {
 
                             MD.Button {
                                 visible: page.playable
-                                enabled: !page.runtimeSetupActive
+                                readonly property bool sourceUpdating: Core.pluginAutoUpdating && Core.pluginInstallBusy
+                                    && Core.pluginCatalog.installingPluginId === page.info.sourceId
+                                enabled: !page.runtimeSetupActive && (page.isRunning || !sourceUpdating)
                                 text: {
                                     if (page.isRunning)
                                         return qsTr("Stop")
+                                    if (sourceUpdating)
+                                        return qsTr("Updating source…")
                                     if (page.runtimeSetupActive)
                                         return Core.runtimeSetupStatus.length > 0
                                                ? Core.runtimeSetupStatus

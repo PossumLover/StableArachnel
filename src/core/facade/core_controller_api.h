@@ -143,6 +143,8 @@
     Q_INVOKABLE void acceptFriendInvite(const QString& code);
     Q_INVOKABLE void removeFriendById(const QString& friendId);
     Q_INVOKABLE void renameFriendById(const QString& friendId, const QString& nickname);
+    Q_INVOKABLE bool exportLibrarySnapshot(const QUrl& fileUrl);
+    Q_INVOKABLE QVariantMap compareLibrarySnapshot(const QUrl& fileUrl) const;
     Q_INVOKABLE void suggestGameToFriend(const QString& friendId, const QString& entryId);
     Q_INVOKABLE void suggestGameToFriends(const QStringList& friendIds, const QString& entryId);
     Q_INVOKABLE void toggleBookmark(const QString& entryId);

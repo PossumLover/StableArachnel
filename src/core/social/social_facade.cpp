@@ -1,8 +1,19 @@
 #include "core_controller_impl.h"
 
+#include "library_snapshot.h"
 #include "social_controller.h"
 
 namespace arachnel::core {
+
+bool CoreController::exportLibrarySnapshot(const QUrl& fileUrl)
+{
+    return writeLibrarySnapshot(fileUrl, m_libraryStore.games());
+}
+
+QVariantMap CoreController::compareLibrarySnapshot(const QUrl& fileUrl) const
+{
+    return readSharedLibrary(fileUrl, m_libraryStore.games());
+}
 
 void CoreController::refreshFriends()
 {

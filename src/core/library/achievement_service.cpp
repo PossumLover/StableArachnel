@@ -95,7 +95,8 @@ void AchievementService::refresh(const QString& gameId, const QString& appId, co
     bool unlocksChanged = false;
     QStringList newUnlocks;
     state.localFileFound = false;
-    for (const auto& path : achievementFileCandidates(appId, locations)) {
+    state.checkedPaths = achievementFileCandidates(appId, locations);
+    for (const auto& path : std::as_const(state.checkedPaths)) {
         bool valid = false;
         const auto unlocks = readAchievementUnlocks(path, &valid);
         state.localFileFound |= valid;
@@ -196,6 +197,7 @@ QVariantMap AchievementService::info(const QString& gameId) const
     });
     return {{QStringLiteral("rows"), rows}, {QStringLiteral("total"), rows.size()},
         {QStringLiteral("unlocked"), unlockedCount}, {QStringLiteral("loading"), state.loading},
+        {QStringLiteral("checkedPaths"), state.checkedPaths},
         {QStringLiteral("localFileFound"), state.localFileFound}, {QStringLiteral("error"), state.error}};
 }
 

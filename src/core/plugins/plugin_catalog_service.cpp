@@ -344,8 +344,8 @@ bool PluginCatalogService::beginInstall(const QString& pluginId)
 void PluginCatalogService::finishInstallAttempt(const QString& pluginId, bool ok,
                                                 const QString& pathOrError)
 {
-    setInstalling({});
     emit installFinished(pluginId, ok, pathOrError);
+    setInstalling({});
     processInstallQueue();
 }
 

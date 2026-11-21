@@ -100,7 +100,7 @@ MD.ApplicationWindow {
     property bool detailsOpen: pageStack.depth > 1
     property string detailsGameId: ""
     property bool detailsFromCatalog: false
-    readonly property int downloadBadge: Core.jobs.activeCount
+    readonly property int downloadBadge: Core.jobs.activeCount + (Core.pluginAutoUpdating ? 1 : 0)
 
     function goToPage(index) {
         if (pageStack.depth > 1)

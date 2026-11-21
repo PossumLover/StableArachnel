@@ -172,6 +172,14 @@
         <source>List</source>
         <translation>Список</translation>
     </message>
+    <message>
+        <source>Filter</source>
+        <translation>Фильтры</translation>
+    </message>
+    <message>
+        <source>Filter (%1)</source>
+        <translation>Фильтры (%1)</translation>
+    </message>
 </context>
 <context>
     <name>CatalogDiscoveryHeader</name>
@@ -587,6 +595,14 @@
         <source>List</source>
         <translation>Список</translation>
     </message>
+    <message>
+        <source>Filter</source>
+        <translation>Фильтры</translation>
+    </message>
+    <message>
+        <source>Filter (%1)</source>
+        <translation>Фильтры (%1)</translation>
+    </message>
 </context>
 <context>
     <name>CatalogSourceChips</name>
@@ -627,6 +643,10 @@
         <location line="-110"/>
         <source>Catalog</source>
         <translation>Каталог</translation>
+    </message>
+    <message>
+        <source>Search catalog</source>
+        <translation>Поиск по каталогу</translation>
     </message>
 </context>
 <context>
@@ -3058,6 +3078,14 @@
         <source>GitHub API request failed.</source>
         <translation>Не удалось обратиться к GitHub API.</translation>
     </message>
+    <message>
+        <source>This game's source is updating. Try Play again in a moment.</source>
+        <translation>Источник игры обновляется. Попробуйте запустить игру чуть позже.</translation>
+    </message>
+    <message>
+        <source>Wait for the plugin update to finish.</source>
+        <translation>Дождитесь окончания обновления плагина.</translation>
+    </message>
 </context>
 <context>
     <name>CrashReportDialog</name>
@@ -3391,6 +3419,10 @@
         <source>Open catalog</source>
         <translation>Открыть каталог</translation>
     </message>
+    <message>
+        <source>Updating plugin · %1</source>
+        <translation>Обновление плагина · %1</translation>
+    </message>
 </context>
 <context>
     <name>FriendCodePin</name>
@@ -3548,6 +3580,74 @@
         <source>Friends you add can see when you are online and which game you are playing.</source>
         <translation>Друзья, которых вы добавите, видят, когда вы в сети и в какую игру играете.</translation>
     </message>
+    <message>
+        <source>Compare libraries</source>
+        <translation>Сравнить библиотеки</translation>
+    </message>
+    <message>
+        <source>Installed on both PCs</source>
+        <translation>Установлено на обоих ПК</translation>
+    </message>
+    <message>
+        <source>Open a list shared by %1, or export yours to send. Lists contain game IDs, available Steam build numbers, and the export date.</source>
+        <translation>Откройте список от %1 или экспортируйте свой, чтобы поделиться им. Список содержит идентификаторы игр, доступные номера сборок Steam и дату экспорта.</translation>
+    </message>
+    <message>
+        <source>Open shared list</source>
+        <translation>Открыть список друга</translation>
+    </message>
+    <message>
+        <source>Export my list</source>
+        <translation>Экспортировать мой список</translation>
+    </message>
+    <message>
+        <source>List from %1</source>
+        <translation>Список от %1</translation>
+    </message>
+    <message>
+        <source>No installed games match this list.</source>
+        <translation>Среди установленных игр нет совпадений с этим списком.</translation>
+    </message>
+    <message>
+        <source>Suggest</source>
+        <translation>Предложить</translation>
+    </message>
+    <message>
+        <source>Open shared library list</source>
+        <translation>Открыть список игр друга</translation>
+    </message>
+    <message>
+        <source>Sprout library list (*.sprout-library)</source>
+        <translation>Список игр Sprout (*.sprout-library)</translation>
+    </message>
+    <message>
+        <source>Export my installed games</source>
+        <translation>Экспортировать список установленных игр</translation>
+    </message>
+    <message>
+        <source>Library list saved.</source>
+        <translation>Список игр сохранён.</translation>
+    </message>
+    <message>
+        <source>Could not save the library list.</source>
+        <translation>Не удалось сохранить список игр.</translation>
+    </message>
+    <message>
+        <source>Could not read this library list.</source>
+        <translation>Не удалось прочитать список игр.</translation>
+    </message>
+    <message>
+        <source>Choose a library list exported by Sprout.</source>
+        <translation>Выберите список игр, экспортированный из Sprout.</translation>
+    </message>
+    <message>
+        <source>Same build · %1</source>
+        <translation>Одинаковая сборка · %1</translation>
+    </message>
+    <message>
+        <source>Your build %1 · Shared build %2</source>
+        <translation>Ваша сборка: %1 · Сборка друга: %2</translation>
+    </message>
 </context>
 <context>
     <name>GameAchievementsPanel</name>
@@ -3627,6 +3727,22 @@
         <location line="+0"/>
         <source>Show all (%1)</source>
         <translation>Показать все (%1)</translation>
+    </message>
+    <message>
+        <source>Progress unknown · %1 listed</source>
+        <translation>Прогресс неизвестен · Всего: %1</translation>
+    </message>
+    <message>
+        <source>No supported achievement save was found.</source>
+        <translation>Поддерживаемый файл достижений не найден.</translation>
+    </message>
+    <message>
+        <source>Show locations checked</source>
+        <translation>Показать проверенные пути</translation>
+    </message>
+    <message>
+        <source>Hide locations</source>
+        <translation>Скрыть пути</translation>
     </message>
 </context>
 <context>
@@ -3858,6 +3974,10 @@
         <location line="-245"/>
         <source>More actions</source>
         <translation>Ещё действия</translation>
+    </message>
+    <message>
+        <source>Updating source…</source>
+        <translation>Обновление источника…</translation>
     </message>
 </context>
 <context>
@@ -4600,6 +4720,18 @@
             <numerusform>%n игры</numerusform>
             <numerusform>%n игр</numerusform>
         </translation>
+    </message>
+    <message>
+        <source>Last session</source>
+        <translation>Последний сеанс</translation>
+    </message>
+    <message>
+        <source>%1 of %2 games</source>
+        <translation>Игры: %1 из %2</translation>
+    </message>
+    <message>
+        <source>Launch a game from your library - it will appear here.</source>
+        <translation>Запустите игру из библиотеки, и она появится здесь.</translation>
     </message>
 </context>
 <context>
@@ -6832,6 +6964,20 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
         <location line="+122"/>
         <source>Friend</source>
         <translation>Друг</translation>
+    </message>
+</context>
+<context>
+    <name>LauncherSearchField</name>
+    <message>
+        <source>Clear search</source>
+        <translation>Очистить поиск</translation>
+    </message>
+</context>
+<context>
+    <name>CatalogSortButton</name>
+    <message>
+        <source>Sort</source>
+        <translation>Сортировка</translation>
     </message>
 </context>
 </TS>

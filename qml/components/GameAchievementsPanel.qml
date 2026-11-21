@@ -10,6 +10,9 @@ MD.Pane {
     property int revision: 0
     property bool expanded: false
     property int filterIndex: 0
+    property bool showLocations: false
+    readonly property bool progressKnown: info.localFileFound ?? false
+    onProgressKnownChanged: { if (!progressKnown) filterIndex = 0 }
     property string search: ""
     readonly property var filteredRows: rows.filter(row =>
         (filterIndex === 0 || (filterIndex === 1 ? row.unlocked : !row.unlocked))
@@ -29,6 +32,7 @@ MD.Pane {
     }
     onGameIdChanged: {
         expanded = false
+        showLocations = false
         filterIndex = 0
         search = ""
         refresh(false)
@@ -54,7 +58,9 @@ MD.Pane {
             }
             MD.Label {
                 visible: root.rows.length > 0
-                text: qsTr("%1/%2 unlocked").arg(root.info.unlocked ?? 0).arg(root.info.total ?? 0)
+                objectName: "achievementProgress"
+                text: root.progressKnown ? qsTr("%1/%2 unlocked").arg(root.info.unlocked ?? 0).arg(root.info.total ?? 0)
+                                         : qsTr("Progress unknown · %1 listed").arg(root.info.total ?? 0)
                 typescale: MD.Token.typescale.body_medium
             }
             MD.Button {
@@ -75,13 +81,27 @@ MD.Pane {
                     return root.info.error
                 if (!root.rows.length)
                     return qsTr("No achievement details available for this game.")
-                if (!(root.info.localFileFound ?? false))
-                    return qsTr("No supported achievement save found yet. Play the game, then refresh.")
+                if (!root.progressKnown)
+                    return qsTr("No supported achievement save was found.")
                 return ""
             }
             typescale: MD.Token.typescale.body_small
             color: MD.Token.color.on_surface_variant
             wrapMode: Text.WordWrap
+        }
+        MD.Button {
+            visible: !root.progressKnown && (root.info.checkedPaths ?? []).length > 0
+            text: root.showLocations ? qsTr("Hide locations") : qsTr("Show locations checked")
+            mdState.type: MD.Enum.BtText
+            onClicked: root.showLocations = !root.showLocations
+        }
+        MD.Label {
+            Layout.fillWidth: true
+            visible: root.showLocations && !root.progressKnown
+            text: (root.info.checkedPaths ?? []).join("\n")
+            textFormat: Text.PlainText
+            wrapMode: Text.WrapAnywhere
+            typescale: MD.Token.typescale.body_small
         }
         RowLayout {
             Layout.fillWidth: true
@@ -95,6 +115,7 @@ MD.Pane {
             }
             MD.ComboBox {
                 objectName: "achievementFilter"
+                visible: root.progressKnown
                 Layout.preferredWidth: 150
                 model: [qsTr("All"), qsTr("Unlocked"), qsTr("Locked")]
                 currentIndex: root.filterIndex
@@ -143,6 +164,7 @@ MD.Pane {
                     }
                 }
                 MD.Label {
+                    visible: modelData.unlocked || root.progressKnown
                     text: modelData.unlocked
                         ? ((modelData.unlockedAt ?? 0) > 0
                             ? qsTr("Unlocked %1").arg(Qt.formatDateTime(new Date(modelData.unlockedAt), Qt.DefaultLocaleShortDate))

@@ -30,6 +30,7 @@ private:
         qint64 retryAt = 0;
         quint64 generation = 0;
         bool loading = false;
+        QStringList checkedPaths;
         bool scanned = false;
         bool localFileFound = false;
         QString error;

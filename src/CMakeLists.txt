@@ -34,6 +34,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/library/library_store.cpp
     src/core/library/achievement_files.cpp
     src/core/library/achievement_service.cpp
+    src/core/library/library_snapshot.cpp
     src/core/library/library_controller.cpp
     src/core/library/library_maintenance_service.cpp
     src/core/library/game_update_service.cpp
