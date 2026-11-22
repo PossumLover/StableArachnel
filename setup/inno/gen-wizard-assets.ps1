@@ -1,68 +1,33 @@
 #Requires -Version 5.1
-# Regenerates setup/inno/assets/wizard-*.bmp from resources/icons/png/256.png
-
+# Render the launcher artwork at twice the wizard's standard bitmap resolution.
+$ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
-
-$root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$resources = Join-Path $PSScriptRoot "..\..\resources"
 $outDir = Join-Path $PSScriptRoot "assets"
 New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 
-$logo = [System.Drawing.Image]::FromFile((Join-Path $root "resources\icons\png\256.png"))
+$logo = [Drawing.Image]::FromFile((Join-Path $resources "icons\png\256.png"))
+$hills = [Drawing.Image]::FromFile((Join-Path $resources "art\hills-light.png"))
+$panel = [Drawing.Bitmap]::new(328, 628)
+$g = [Drawing.Graphics]::FromImage($panel)
+$g.InterpolationMode = "HighQualityBicubic"
+$g.Clear([Drawing.ColorTranslator]::FromHtml("#FCF8EE"))
+$g.DrawImage($logo, 68, 128, 192, 192)
+$format = [Drawing.StringFormat]::new()
+$format.Alignment = "Center"
+$font = [Drawing.Font]::new("Segoe UI Semibold", 36, [Drawing.GraphicsUnit]::Pixel)
+$ink = [Drawing.SolidBrush]::new([Drawing.ColorTranslator]::FromHtml("#35584B"))
+$g.DrawString("Sprout", $font, $ink, [Drawing.RectangleF]::new(0, 336, 328, 56), $format)
+# Crop around the glasshouse, keeping the original landscape proportions.
+$g.DrawImage($hills, [Drawing.Rectangle]::new(0, 468, 328, 160),
+    [Drawing.Rectangle]::new(390, 0, 615, 300), [Drawing.GraphicsUnit]::Pixel)
+$panel.Save((Join-Path $outDir "wizard-image.bmp"), [Drawing.Imaging.ImageFormat]::Bmp)
+$g.Dispose(); $panel.Dispose(); $hills.Dispose(); $font.Dispose(); $ink.Dispose(); $format.Dispose()
 
-function Draw-Web(
-    [System.Drawing.Graphics]$g,
-    [int]$cx,
-    [int]$cy,
-    [int]$maxR,
-    [System.Drawing.Color]$color
-) {
-    $pen = New-Object System.Drawing.Pen $color, 1.6
-    $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
-    $spokes = 8
-    $rings = 4
-    for ($s = 0; $s -lt $spokes; $s++) {
-        $a = [Math]::PI * 2 * $s / $spokes - [Math]::PI / 2
-        $g.DrawLine($pen, $cx, $cy,
-            [int]($cx + [Math]::Cos($a) * $maxR),
-            [int]($cy + [Math]::Sin($a) * $maxR))
-    }
-    for ($r = 1; $r -le $rings; $r++) {
-        $rr = [int]($maxR * $r / $rings)
-        $g.DrawEllipse($pen, $cx - $rr, $cy - $rr, $rr * 2, $rr * 2)
-    }
-    $pen.Dispose()
-}
-
-$surface = [System.Drawing.Color]::FromArgb(255, 28, 28, 30)
-$web = [System.Drawing.Color]::FromArgb(28, 142, 142, 147)
-$onSurface = [System.Drawing.Color]::FromArgb(255, 230, 230, 235)
-$muted = [System.Drawing.Color]::FromArgb(255, 142, 142, 147)
-
-$bmp = New-Object System.Drawing.Bitmap 360, 720
-$g = [System.Drawing.Graphics]::FromImage($bmp)
-$g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-$g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-$g.Clear($surface)
-Draw-Web $g 280 360 220 $web
-$g.DrawImage($logo, 110, 200, 140, 140)
-$sf = New-Object System.Drawing.StringFormat
-$sf.Alignment = [System.Drawing.StringAlignment]::Center
-$font = New-Object System.Drawing.Font "Segoe UI Semibold", 26
-$brush = New-Object System.Drawing.SolidBrush $onSurface
-$g.DrawString("Arachnel", $font, $brush, (New-Object System.Drawing.RectangleF 0, 360, 360, 48), $sf)
-$sub = New-Object System.Drawing.Font "Segoe UI", 12
-$brush2 = New-Object System.Drawing.SolidBrush $muted
-$g.DrawString("Setup", $sub, $brush2, (New-Object System.Drawing.RectangleF 0, 408, 360, 28), $sf)
-$bmp.Save((Join-Path $outDir "wizard-image.bmp"), [System.Drawing.Imaging.ImageFormat]::Bmp)
-$g.Dispose(); $bmp.Dispose(); $font.Dispose(); $sub.Dispose(); $brush.Dispose(); $brush2.Dispose(); $sf.Dispose()
-
-$sb = New-Object System.Drawing.Bitmap 128, 128
-$sg = [System.Drawing.Graphics]::FromImage($sb)
-$sg.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-$sg.Clear($surface)
-Draw-Web $sg 64 64 58 ([System.Drawing.Color]::FromArgb(50, 142, 142, 147))
-$sg.DrawImage($logo, 24, 24, 80, 80)
-$sb.Save((Join-Path $outDir "wizard-small.bmp"), [System.Drawing.Imaging.ImageFormat]::Bmp)
-$sg.Dispose(); $sb.Dispose(); $logo.Dispose()
-
-Write-Host "Wrote $outDir\wizard-image.bmp and wizard-small.bmp"
+$small = [Drawing.Bitmap]::new(110, 110)
+$g = [Drawing.Graphics]::FromImage($small)
+$g.Clear([Drawing.Color]::White)
+$g.InterpolationMode = "HighQualityBicubic"
+$g.DrawImage($logo, 5, 5, 100, 100)
+$small.Save((Join-Path $outDir "wizard-small.bmp"), [Drawing.Imaging.ImageFormat]::Bmp)
+$g.Dispose(); $small.Dispose(); $logo.Dispose()

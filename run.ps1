@@ -1009,7 +1009,7 @@ Arachnel dev launcher
   .\run.ps1 --rebuild    clean build-win, then build + run
   .\run.ps1 --run        run without build (exe must exist)
   .\run.ps1 --package    build Release + create dist-win ZIP (SproutLauncher-win64-Release.zip)
-  .\run.ps1 --installer  build SproutLauncher-Setup.exe (Inno + dist-win, Botva2 UI)
+  .\run.ps1 --installer  build SproutLauncher-Setup.exe (Inno + dist-win)
   .\run.ps1 --release    use Release build type (still runs app unless combined with --package)
   BUILD_TYPE=RelWithDebInfo .\run.ps1 --package   debug symbols in the package (larger ZIP)
 

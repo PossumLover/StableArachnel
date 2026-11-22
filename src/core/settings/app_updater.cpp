@@ -813,15 +813,16 @@ QString resolveUpdateInstallDir(const QString& runningAppDir)
         && dirHasAppExecutable(legacyDir))
         return legacyDir;
 
-    // Default per-user install location used by Inno ({localappdata}\Programs\Arachnel).
-    const QString localAppData = QString::fromLocal8Bit(qgetenv("LOCALAPPDATA"));
-    const QString perUser = QDir::toNativeSeparators(QDir::cleanPath(
-        localAppData.isEmpty()
-            ? (QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
-               + QStringLiteral("/Programs/Arachnel"))
-            : (localAppData + QStringLiteral("/Programs/Arachnel"))));
+    // Fresh installs use Sprout; pre-rename installs upgrade in place.
+    QString localAppData = qEnvironmentVariable("LOCALAPPDATA");
+    if (localAppData.isEmpty())
+        localAppData = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+    const QString perUser = QDir::toNativeSeparators(localAppData + QStringLiteral("/Programs/Sprout"));
     if (dirHasAppExecutable(perUser))
         return perUser;
+    const QString oldPerUser = QDir::toNativeSeparators(localAppData + QStringLiteral("/Programs/Arachnel"));
+    if (dirHasAppExecutable(oldPerUser))
+        return oldPerUser;
 
     if (!innoDir.isEmpty())
         return innoDir;
@@ -864,7 +865,7 @@ bool AppUpdater::launchInstaller(const QString& installerPath, QString* errorOut
     }
 
     // In-app update: /SILENT shows unpack progress (no folder wizard), then [Run]
-    // relaunches Arachnel (skipifnotsilent). Never /VERYSILENT - that hides progress.
+    // relaunches Sprout (skipifnotsilent). Never /VERYSILENT - that hides progress.
     QStringList args = {
         QStringLiteral("/SILENT"),
         QStringLiteral("/NORESTART"),

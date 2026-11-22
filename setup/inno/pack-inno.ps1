@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-# Build shipping Inno installer from dist-win (Botva2 UI).
+# Build the Sprout installer from the staged Windows package.
 
 param(
     [string]$Version = "",
@@ -47,14 +47,6 @@ foreach ($legacyName in @("arachnel_app.exe", "JamesGames.exe")) {
     }
 }
 
-$skinScript = Join-Path $PSScriptRoot "skin\gen-skin.ps1"
-$bg = Join-Path $PSScriptRoot "skin\background.bmp"
-if (-not (Test-Path -LiteralPath $bg)) {
-    Write-Host "Generating Botva2 skin assets ..."
-    & $skinScript
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-}
-
 $iscc = @(
     "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
     "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
@@ -66,7 +58,7 @@ if (-not $iscc) {
 }
 
 Write-Host "Building Inno installer (version=$Version, dist=$DistDir) ..."
-& $iscc "/DMyAppVersion=$Version" (Join-Path $PSScriptRoot "Arachnel.iss")
+& $iscc "/DMyAppVersion=$Version" "/DDistDir=$(Convert-Path -LiteralPath $DistDir)" (Join-Path $PSScriptRoot "Sprout.iss")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $built = Join-Path $PSScriptRoot "output\SproutLauncher-$Version-Setup.exe"

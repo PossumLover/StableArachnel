@@ -34,7 +34,7 @@ The app shows whatever was baked in at CMake configure time (`ARACHNEL_VERSION`)
 - **In-app update (Windows)** downloads `SproutLauncher-*-Setup.exe` and runs Inno with `/SILENT /DIR=<install dir>` (unpack progress, no folder prompts, then auto-launches Sprout). Legacy Program Files installs also pass `/ALLUSERS` so elevation can work.
 - **In-app update (Linux AppImage)** downloads the new `.AppImage` next to the running one (`$APPIMAGE`), checks it against `checksums.sha256`, renames it over the old file and restarts. Builds from source, and AppImages in a folder the user can't write to, open the release page instead.
 - **Legacy installs** (`C:\Program Files\Arachnel`, uninstall key `...\Uninstall\Arachnel`): the Inno installer detects that `InstallLocation`, offers it as the default folder, writes the new Inno uninstall entry, removes the old uninstall registry key, and deletes leftover `uninstall.exe` / setup stubs under `{app}`. It does **not** run the old uninstaller.
-- New default for fresh installs: `%LOCALAPPDATA%\Programs\Arachnel` (`PrivilegesRequired=lowest`, elevates only when the target needs it).
+- Fresh installs default to `%LOCALAPPDATA%\Programs\Sprout`. Existing installs keep their previous folder.
 
 ## CI speed (caching)
 

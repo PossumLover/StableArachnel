@@ -1,42 +1,20 @@
-# Inno Setup (Arachnel)
+# Sprout Windows installer
 
-Shipping Windows installer. Botva2 dark UI + payload from `dist-win/`.
-
-## Build
+With [Inno Setup 6](https://jrsoftware.org/isinfo.php) installed, run:
 
 ```powershell
-$env:ARACHNEL_VERSION = "0.1.39"   # required for --installer (or a v* git tag)
-.\run.ps1 --package                  # if dist-win is missing
-.\run.ps1 --installer                # -> Arachnel-Setup.exe at repo root
+.\run.ps1 --installer
 ```
 
-Or directly:
+This builds `dist-win/` if needed and writes `SproutLauncher-Setup.exe` at the repo root. The version comes from `ARACHNEL_VERSION` or the nearest `v*` tag. To package an existing `dist-win/` directly, run `.\setup\inno\pack-inno.ps1 -Version <version>`.
+
+The wizard starts in English. Users can choose Russian in the language dialog, or pass `/LANG=russian` on the command line. Fresh installs default to `%LOCALAPPDATA%\Programs\Sprout`. Upgrades reuse the previous installation folder, including the old Arachnel location. In-app updates use `/SILENT /DIR=<install dir>` and relaunch Sprout.
+
+## Preview the wizard
 
 ```powershell
-.\setup\inno\pack-inno.ps1 -Version 0.1.39
+& "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" /DPreview .\setup\inno\Sprout.iss
+.\setup\inno\output\Sprout-UI-Test.exe
 ```
 
-Needs [Inno Setup 6](https://www.jrsoftware.org/isinfo.php) (`ISCC.exe`).
-
-Output:
-
-- `setup/inno/output/Arachnel-<ver>-Setup.exe`
-- copy to repo root as `Arachnel-Setup.exe` (CI/signing)
-
-Sign when `WINDOWS_SIGN_CERT_PFX_BASE64` + password are set.
-
-## Upgrade notes
-
-- Fresh install default: `%LOCALAPPDATA%\Programs\Arachnel`
-- Existing **Inno** install: same folder (`UsePreviousAppDir`)
-- Existing **legacy** installs (`Program Files\Arachnel` from older builds): detected via uninstall registry, offered as default; old uninstall key removed after install; leftover `uninstall.exe` deleted from `{app}`
-- In-app updates: Inno `/SILENT /DIR=<install dir>` - progress window, no folder picker, then auto-launches Arachnel. Does not touch AppData game libraries/settings
-
-## UI experiment only
-
-[`Arachnel-UI.iss`](Arachnel-UI.iss) is a lightweight Botva2 mock (dummy file, no dist-win). Use for skin tweaks:
-
-```powershell
-.\setup\inno\skin\gen-skin.ps1
-& $iscc .\setup\inno\Arachnel-UI.iss
-```
+The preview uses the shipping wizard with a temporary destination and no launcher payload, shortcuts or registration. The wizard bitmaps are checked in; regenerate them from the launcher artwork with `.\setup\inno\gen-wizard-assets.ps1`.
