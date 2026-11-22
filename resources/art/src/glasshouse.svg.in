@@ -1,18 +1,30 @@
 <g id="glasshouse" stroke-linejoin="round">
-  <!-- The far wing is in shade. The gable faces the viewer. -->
-  <path d="M0 54 43 8 118 0 161 42 161 100 75 115 0 108Z" fill="$glass"/>
+  <path d="M0 53 43 8 78 54V115L0 108Z" fill="$glass"/>
   <path d="M43 8 118 0 161 42 78 54Z" fill="$pane"/>
-  <path d="M78 54 161 42 161 100 78 115Z" fill="$leaf"/>
-  <path d="M79 54 161 42 161 78 79 95Z" fill="$pane"/>
-  <!-- A vine and its reflection behind the sunward panes. -->
-  <path d="M18 109Q23 95 22 76Q19 63 10 58Q25 58 26 77Q27 68 37 63Q39 76 27 82L27 108Z" fill="$leaf"/>
-  <path d="M49 108Q50 91 44 87Q36 82 35 72Q47 73 50 86Q51 75 60 73Q63 85 53 90L56 109Z" fill="$meadow"/>
-  <path d="m89 49 13-30 9-1-14 29zm29-5 11-24 5 5-8 18z" fill="$glass" opacity=".65"/>
+  <path d="M78 54 161 42V100L78 115Z" fill="$glass"/>
+  <path d="M78 54 161 42V100L78 115Z" fill="$frame" opacity=".22"/>
+  <path d="m88 48 14-29 8-1-14 29zm31-5 10-22 5 5-7 16z" fill="$glass" opacity=".65"/>
+
+  <!-- Pots sit on the same receding bench, visible through the side panes. -->
+  <defs>
+    <g id="seedling">
+      <path d="M0-11Q-10-12-11-22Q-2-21 0-13Q1-24 10-26Q10-16 2-12L1-7H-1Z" fill="$pine"/>
+      <path d="m-7-10 14-2-2 10-9 2z" fill="$fold"/>
+      <path d="m-8-12 16-2v4l-16 2z" fill="$petal"/>
+    </g>
+  </defs>
+  <path d="m80 92 79-14v4l-79 14z" fill="$pine"/>
+  <use xlink:href="#seedling" transform="translate(92 90)"/>
+  <use xlink:href="#seedling" transform="translate(119 85) scale(.9)"/>
+  <use xlink:href="#seedling" transform="translate(145 80) scale(.8)"/>
+
   <g fill="none" stroke="$frame" stroke-width="3">
     <path d="M0 108V53L43 8 78 54V115L0 108ZM43 8 118 0 161 42V100L78 115M0 53 78 54 161 42"/>
-    <path d="m68 6 37 44v60m-11-107 39 43v59M1 77l77 3 83-15M23 55v54m35-55v58M43 10v43" stroke-width="2"/>
+    <path d="M68 5.3 106 50v60M94 2.6 134 46v59M43 9v45M1 78l76 3M15 54v55m49-55v59" stroke-width="2"/>
   </g>
-  <path d="m32 109 0-38q8-13 17 1v39z" fill="$pane" stroke="$frame" stroke-width="2.5"/>
-  <path d="m1 108 77 7 83-15v6l-83 15-77-8z" fill="$ink"/>
-  <circle cx="45" cy="92" r="1.6" fill="$pollen"/>
+  <path d="m0 107 78 7 83-15v6l-83 15-78-7z" fill="$ink"/>
+  <path d="M27 110V72a13 13 0 0 1 26 0v40Z" fill="$pane" stroke="$frame" stroke-width="2.6"/>
+  <path d="M30 83l20 1m-20 5 20 1" fill="none" stroke="$frame" stroke-width="1.8"/>
+  <circle cx="48" cy="94" r="1.8" fill="$pollen"/>
+  <path d="m27 110 26 2-3 5-27-2z" fill="$ridge"/>
 </g>

@@ -32,7 +32,6 @@ MD.Pane {
         anchors.bottomMargin: MD.Token.spacing.medium
         spacing: MD.Token.spacing.extra_small
 
-        // The meadow emblem: a sprout and a rose flower in front of the sun.
         Image {
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredWidth: 52

@@ -29,7 +29,7 @@
     <use xlink:href="#cypress" transform="translate(107 191) scale(.56)"/>
     <use xlink:href="#cypress" transform="translate(311 178) scale(.48)"/>
     <path d="M51 244Q119 224 172 232Q264 239 347 209V308H51Z" fill="$leaf"/>
-    <path d="M219 230Q273 243 217 257Q173 269 234 280Q265 286 266 309H157Q178 299 151 290Q111 273 173 257Q243 239 205 234Z" fill="$field"/>
+    <path d="M140 232C135 245 144 251 166 257C191 264 207 267 191 276C175 285 154 293 146 309H226C232 298 257 289 254 277C250 263 218 256 190 250C169 245 159 241 163 234Z" fill="$field"/>
     <use xlink:href="#glasshouse" transform="translate(119 134) scale(.87)"/>
     <path d="M47 276Q82 261 114 280Q145 295 187 304L190 312H44ZM279 301Q312 262 349 256V313H273Z" fill="$pine"/>
     <g fill="none" stroke="$pine" stroke-width="3" stroke-linecap="round">

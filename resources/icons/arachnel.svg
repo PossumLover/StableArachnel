@@ -1,75 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 128 128">
   <defs>
-    <!-- Painted grain: fractal noise multiplied into the fill, clipped to the shape. -->
-    <filter id="paint" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
-      <!-- broad, soft mottling: pigment pooling unevenly -->
-      <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" seed="3" result="mottle"/>
-      <feColorMatrix in="mottle" type="matrix" values="0 0 0 0 0.5  0 0 0 0 0.47  0 0 0 0 0.44  0 0 0 -0.9 0.62" result="mottleA"/>
-      <feComposite in="mottleA" in2="SourceAlpha" operator="in" result="mottleIn"/>
-      <feBlend in="SourceGraphic" in2="mottleIn" mode="soft-light" result="pooled"/>
-      <!-- fine paper grain, low contrast -->
-      <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="7" result="noise"/>
-      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.55  0 0 0 0 0.52  0 0 0 0 0.48  0 0 0 -0.7 0.42" result="speck"/>
-      <feComposite in="speck" in2="SourceAlpha" operator="in" result="grain"/>
-      <feBlend in="pooled" in2="grain" mode="multiply"/>
-    </filter>
-    <!-- Slightly wobbly, hand-cut edges. -->
-    <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4" result="w"/>
-      <feDisplacementMap in="SourceGraphic" in2="w" scale="7" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-    <radialGradient id="sun" cx="42%" cy="38%" r="70%">
-      <stop offset="0" stop-color="#FDD9A3"/>
-      <stop offset="0.55" stop-color="#FCB575"/>
-      <stop offset="1" stop-color="#F29A6A"/>
-    </radialGradient>
-    <linearGradient id="leafA" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#7E9C7E"/><stop offset="1" stop-color="#435A4D"/>
-    </linearGradient>
-    <linearGradient id="leafB" x1="1" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8E9A5A"/><stop offset="1" stop-color="#5F6A42"/>
-    </linearGradient>
-    <clipPath id="disc"><circle cx="256" cy="256" r="236"/></clipPath>
+    <clipPath id="meadow"><circle cx="64" cy="64" r="60"/></clipPath>
   </defs>
+  <circle cx="64" cy="64" r="62" fill="#F5E8D3"/>
+  <g clip-path="url(#meadow)">
+    <circle cx="52" cy="53" r="33" fill="#F3BC78"/>
+    <path d="M0 98Q28 83 58 91T128 82V128H0Z" fill="#C6A39A"/>
+    <path d="M0 105Q27 96 57 102T128 94V128H0Z" fill="#829A78"/>
+    <path d="M0 111Q32 121 68 112T128 108V128H0Z" fill="#5C816C"/>
 
-  <!-- cream plate with a soft sun -->
-  <circle cx="256" cy="256" r="244" fill="#F4EEE3"/>
-  <g clip-path="url(#disc)" filter="url(#paint)">
-    <circle cx="256" cy="244" r="138" fill="url(#sun)" filter="url(#rough)"/>
-    <!-- rolling hill -->
-    <path d="M-10 392 C 90 330, 180 348, 260 372 S 430 356, 530 318 L 530 530 L -10 530 Z" fill="#C79A90"/>
-    <path d="M-10 430 C 110 380, 220 398, 300 414 S 450 400, 530 380 L 530 530 L -10 530 Z" fill="#5E7D66"/>
-  </g>
+    <!-- A curved stem carries two folded leaves and a tilted poppy cup. -->
+    <path d="M46 128C53 115 60 102 62 86S64 64 73 49" fill="none" stroke="#355D50" stroke-width="4.5"/>
+    <path d="M61 92C44 91 33 81 28 65Q38 65 45 70L44 66Q59 73 61 92Z" fill="#5C816C"/>
+    <path d="M61 92Q46 81 35 71Q42 86 61 92Z" fill="#355D50"/>
+    <path d="M62 83Q67 64 79 61L77 65Q87 57 99 56Q95 69 84 75L88 74Q79 83 62 83Z" fill="#829A78"/>
+    <path d="M62 83Q78 72 92 62Q84 76 62 83Z" fill="#5C816C"/>
 
-  <g filter="url(#paint)">
-    <!-- stem -->
-    <path d="M250 430 C 246 360, 262 300, 286 236" stroke="#435A4D" stroke-width="13" stroke-linecap="round" fill="none"/>
-    <!-- leaves -->
-    <path d="M258 350 C 200 346, 160 312, 150 264 C 206 262, 248 294, 258 350 Z" fill="url(#leafA)" filter="url(#rough)"/>
-    <path d="M262 338 C 326 338, 374 300, 390 244 C 322 240, 272 280, 262 338 Z" fill="url(#leafB)" filter="url(#rough)"/>
-    <!-- leaf veins -->
-    <path d="M254 344 C 222 330, 188 304, 162 272" stroke="#F4EEE3" stroke-opacity="0.45" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M268 332 C 306 322, 350 290, 380 250" stroke="#F4EEE3" stroke-opacity="0.45" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <!-- five-petal flower -->
-    <g transform="translate(290 206)" filter="url(#rough)">
-      <g fill="#D99A94">
-        <ellipse cx="0" cy="-40" rx="25" ry="36"/>
-        <ellipse cx="0" cy="-40" rx="25" ry="36" transform="rotate(72)"/>
-        <ellipse cx="0" cy="-40" rx="25" ry="36" transform="rotate(144)"/>
-        <ellipse cx="0" cy="-40" rx="25" ry="36" transform="rotate(216)"/>
-        <ellipse cx="0" cy="-40" rx="25" ry="36" transform="rotate(288)"/>
+    <g transform="translate(70 51) rotate(12)">
+      <path d="M0 2C-14 2-29-10-29-23Q-28-28-23-25Q-18-32-12-26Q-4-27 0-16Z" fill="#B85C57"/>
+      <path d="M-7-1C-15-12-17-28-12-34Q-9-39-4-35Q2-41 8-35Q17-37 17-27C18-14 11-3 5 1Z" fill="#DD806F"/>
+      <path d="M1 0C3-13 12-28 22-30Q27-32 29-27Q36-27 33-19Q36-15 30-9Q20 1 8 3Z" fill="#F3AE95"/>
+      <path d="M5-3Q13-10 22-23M-2-8Q-5-18-4-26" fill="none" stroke="#B85C57" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M-2 0Q-6-4-8-10M1 0Q-1-6 0-12M4-1Q6-7 10-10" fill="none" stroke="#355D50" stroke-width="1.9" stroke-linecap="round"/>
+      <g fill="#F8D388">
+        <ellipse cx="-8" cy="-10" rx="2.4" ry="1.8"/>
+        <ellipse cy="-12" rx="2" ry="2.4"/>
+        <ellipse cx="10" cy="-10" rx="2.5" ry="1.8"/>
       </g>
-      <g fill="#F2C2B8" opacity="0.8">
-        <ellipse cx="0" cy="-36" rx="11" ry="20"/>
-        <ellipse cx="0" cy="-36" rx="11" ry="20" transform="rotate(72)"/>
-        <ellipse cx="0" cy="-36" rx="11" ry="20" transform="rotate(144)"/>
-        <ellipse cx="0" cy="-36" rx="11" ry="20" transform="rotate(216)"/>
-        <ellipse cx="0" cy="-36" rx="11" ry="20" transform="rotate(288)"/>
-      </g>
-      <circle r="17" fill="#F6B26B"/>
-      <circle r="8" fill="#C9803F"/>
+      <path d="M-28-16Q-21-18-12-10Q-3-1 5-2Q16-3 22-10Q19 2 7 6Q-11 12-23-4Z" fill="#D87668"/>
+      <path d="M-18-8Q-6 4 9 2Q-3 10-13 0Z" fill="#B85C57"/>
+      <path d="M-6 6Q0 7 7 5L3 9Q-2 12-6 6Z" fill="#355D50"/>
     </g>
   </g>
-  <!-- thin warm rim -->
-  <circle cx="256" cy="256" r="240" fill="none" stroke="#E7DCCB" stroke-width="8"/>
 </svg>

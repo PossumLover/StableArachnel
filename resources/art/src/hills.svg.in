@@ -25,13 +25,13 @@
   <use xlink:href="#orchard" transform="translate(816 82) scale(.54)"/>
   <path d="M0 116Q75 88 145 109Q247 143 339 121Q421 99 482 107Q602 132 663 124Q736 115 792 109Q901 90 1001 113Q1101 135 1200 99V180H0Z" fill="$meadow"/>
   <path d="M0 145Q85 119 167 131T332 149Q397 150 472 128Q550 107 627 121Q719 144 800 137Q913 125 985 129Q1070 131 1200 145V180H0Z" fill="$leaf"/>
+  <path d="M405 122C399 131 429 132 406 138C371 147 310 145 294 161Q285 172 289 180H339C330 163 362 155 390 149C409 145 434 141 431 134C429 128 411 127 414 123Z" fill="$field"/>
   <use xlink:href="#glasshouse" transform="translate(397 85) scale(.33)"/>
   <use xlink:href="#orchard" transform="translate(371 126) scale(.77)"/>
-  <path d="M436 124Q471 128 446 134Q414 140 364 146Q294 155 310 180H352Q329 161 382 151Q425 144 456 137Q490 127 442 123Z" fill="$field"/>
   <g fill="none" stroke="$etch" stroke-width="1.5" opacity=".6" stroke-linecap="round">
     <path d="M15 150q62-25 125-17m-117 21q53-18 98-18M509 138q48-18 97-13m-81 15q46-13 80-10M885 150q95-29 169-11m-144 11q53-16 109-14"/>
   </g>
-  <path d="M0 160q75 4 125-7q86-18 172 9l50 18H0Zm538 20q98-42 180-30q108 17 167 9q98-14 140-7q76 11 175-8v36Z" fill="$pine"/>
+  <path d="M0 160q75 4 125-7q80-17 134 9l29 18H0Zm538 20q98-42 180-30q108 17 167 9q98-14 140-7q76 11 175-8v36Z" fill="$pine"/>
   <g opacity=".72">
     <use xlink:href="#cut" transform="translate(97 166)"/>
     <use xlink:href="#cut" transform="translate(117 162) scale(.75)"/>

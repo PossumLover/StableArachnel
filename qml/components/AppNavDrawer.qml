@@ -49,7 +49,6 @@ Rectangle {
             Layout.preferredHeight: 56
             spacing: MD.Token.spacing.medium
 
-            // The meadow emblem: a sprout and a rose flower in front of the sun.
             Image {
                 Layout.preferredWidth: 52
                 Layout.preferredHeight: 52
