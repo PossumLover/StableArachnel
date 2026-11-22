@@ -14,7 +14,7 @@ Item {
     property bool syncingSearch: false
 
     function focusSearch() {
-        catalogSearch.forceActiveFocus()
+        catalogSearch.focusEditor()
     }
 
     implicitHeight: catalogStickyCol.implicitHeight + MD.Token.spacing.small
@@ -81,7 +81,8 @@ Item {
                 Connections {
                     target: page
                     function onSearchQueryChanged() {
-                        if (catalogSearch.text === page.searchQuery)
+                        // A debounced search may commit while the user is between words.
+                        if (catalogSearch.text.trim() === page.searchQuery)
                             return
                         // Avoid re-debounce when we push the committed query back.
                         searchDebounce.stop()

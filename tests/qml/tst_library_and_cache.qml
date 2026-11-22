@@ -39,6 +39,45 @@ MD.Pane {
             compare(Core.savedGameId, "game")
             compare(Core.savedGameStatus, "backlog")
         }
+        function test_narrow_search_data() {
+            return [{ tag: "ltr", mirrored: false }, { tag: "rtl", mirrored: true }]
+        }
+        function test_narrow_search(data) {
+            toolbar.width = 580
+            toolbar.LayoutMirroring.childrenInherit = true
+            toolbar.LayoutMirroring.enabled = data.mirrored
+            Core.libraryView.search = ""
+            const search = findChild(toolbar, "librarySearch")
+            const icon = findChild(search, "searchIcon")
+            const clear = findChild(search, "clearSearchButton")
+            waitForPolish(toolbar)
+            mouseClick(icon)
+            keyClick(Qt.Key_A)
+            compare(Core.libraryView.search, "a")
+            const editor = toolbar.Window.window.activeFocusItem
+            function caretBetweenIcons() {
+                const caret = editor.mapToItem(search, editor.cursorRectangle)
+                const left = data.mirrored ? clear : icon
+                const right = data.mirrored ? icon : clear
+                const start = left.mapToItem(search, left.width, 0).x
+                const end = right.mapToItem(search, 0, 0).x
+                return start < caret.x && caret.x + caret.width < end
+            }
+            tryVerify(caretBetweenIcons)
+            for (let i = 0; i < 30; ++i)
+                keyClick(Qt.Key_W)
+            keyClick(Qt.Key_Home)
+            verify(caretBetweenIcons())
+            keyClick(Qt.Key_End)
+            verify(caretBetweenIcons())
+            mouseClick(clear)
+            compare(Core.libraryView.search, "")
+            keyClick(Qt.Key_B)
+            compare(Core.libraryView.search, "b")
+            Core.libraryView.search = ""
+            toolbar.LayoutMirroring.enabled = false
+            toolbar.width = 800
+        }
         function test_sort_label_fits_narrow_library() {
             // 900px window with the wide navigation drawer and both page margins.
             toolbar.width = 580

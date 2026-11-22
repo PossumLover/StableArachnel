@@ -26,20 +26,29 @@ MD.Pane {
         name: "CatalogSearch"
         when: windowShown
         function test_debounce_and_sync() {
-            bar.searchText = "fish "
+            bar.focusSearch()
+            keyClick(Qt.Key_F)
+            keyClick(Qt.Key_I)
+            keyClick(Qt.Key_S)
+            keyClick(Qt.Key_H)
+            keyClick(Qt.Key_Space)
             tryCompare(page, "searchQuery", "fish")
-            compare(bar.searchText, "fish")
+            compare(bar.searchText, "fish ")
             compare(page.searches, 1)
+            keyClick(Qt.Key_O)
+            keyClick(Qt.Key_N)
+            keyClick(Qt.Key_Return)
+            compare(page.searchQuery, "fish on")
             wait(350)
-            compare(page.searches, 1)
+            compare(page.searches, 2)
             page.searchQuery = "rising"
             compare(bar.searchText, "rising")
             wait(350)
-            compare(page.searches, 1)
+            compare(page.searches, 2)
             bar.searchText = "other"
             page.enabled = false
             wait(350)
-            compare(page.searches, 1)
+            compare(page.searches, 2)
         }
     }
 }
