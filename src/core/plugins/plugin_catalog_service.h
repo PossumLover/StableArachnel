@@ -55,6 +55,8 @@ private:
     void processInstallQueue();
     bool beginInstall(const QString& pluginId);
     QString downloadUrlForEntry(const QVariantMap& entry) const;
+    /// Swaps in fork releases for plugins listed in kPluginSourceOverrides, then publishes.
+    void applySourceOverrides(const QVariantList& rows, int generation);
     QString currentPlatformId() const;
 
     QNetworkAccessManager* m_network = nullptr;
@@ -68,6 +70,7 @@ private:
     QString m_installingPluginId;
     QString m_error;
     QString m_pendingInstallId;
+    int m_catalogGeneration = 0;
 };
 
 } // namespace arachnel::core

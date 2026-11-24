@@ -20,6 +20,7 @@
 #include <QVariantMap>
 
 #include <algorithm>
+#include <memory>
 
 namespace arachnel::core {
 
@@ -27,6 +28,29 @@ namespace {
 
 const char* kDefaultCatalogUrl =
     "https://raw.githubusercontent.com/BadKikoSecond/arachnel_plugins_sourcelist/main/plugins.json";
+
+/**
+ * Plugins Sprout takes from a fork's GitHub Releases instead of the official sourcelist.
+ *
+ * steamidra: upstream keeps depots whose manifest platform hint is "unknown", which a
+ * Linux or macOS depot is, so games with native ports got every OS's depot laid over the
+ * Windows one (Core Keeper, Valheim: DllNotFoundException System.Native under Proton).
+ * The fix was never merged upstream, and every Sprout update force-reinstalls official
+ * plugins, which silently put the broken build back. The fork carries the fix and
+ * otherwise tracks upstream.
+ *
+ * The latest release's asset replaces the official row's version, url, sha256 and size.
+ * If the fork can't be reached the row is dropped for this refresh rather than falling
+ * back to the official build: the installed plugin keeps working, it just isn't updated.
+ */
+struct PluginSourceOverride {
+    const char* pluginId;
+    const char* githubRepo;
+    const char* assetName;
+};
+constexpr PluginSourceOverride kPluginSourceOverrides[] = {
+    {"steamidra", "PossumLover/steamidra_linux_fix", "steam.arach"},
+};
 
 QStringList platformsFromJson(const QJsonValue& value)
 {
@@ -193,6 +217,7 @@ void PluginCatalogService::refresh()
 
     setError({});
     setLoading(true);
+    const int generation = ++m_catalogGeneration;
 
     QNetworkRequest request{QUrl(catalogUrl())};
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
@@ -202,7 +227,7 @@ void PluginCatalogService::refresh()
 
     QNetworkReply* reply = m_network->get(request);
     m_catalogReply = reply;
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, generation]() {
         if (m_catalogReply == reply)
             m_catalogReply = nullptr;
         setLoading(false);
@@ -288,9 +313,113 @@ void PluginCatalogService::refresh()
                    < 0;
         });
 
-        m_plugins = next;
-        emit pluginsChanged();
+        applySourceOverrides(next, generation);
     });
+}
+
+void PluginCatalogService::applySourceOverrides(const QVariantList& rows, int generation)
+{
+    struct Pending {
+        int remaining = 0;
+        QVariantList rows;
+    };
+    auto pending = std::make_shared<Pending>();
+    pending->rows = rows;
+
+    const auto publish = [this, pending, generation]() {
+        if (generation != m_catalogGeneration)
+            return; // a newer refresh() owns the list now
+        m_plugins = pending->rows;
+        emit pluginsChanged();
+    };
+
+    for (const PluginSourceOverride& source : kPluginSourceOverrides) {
+        const QString pluginId = QString::fromLatin1(source.pluginId);
+        const bool listed = std::any_of(rows.cbegin(), rows.cend(), [&](const QVariant& row) {
+            return row.toMap().value(QStringLiteral("id")).toString() == pluginId;
+        });
+        if (!listed)
+            continue;
+
+        const QString repo = QString::fromLatin1(source.githubRepo);
+        const QString assetName = QString::fromLatin1(source.assetName);
+        QNetworkRequest request{
+            QUrl(QStringLiteral("https://api.github.com/repos/%1/releases/latest").arg(repo))};
+        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                             QNetworkRequest::NoLessSafeRedirectPolicy);
+        request.setRawHeader("Accept", "application/vnd.github+json");
+        request.setHeader(QNetworkRequest::UserAgentHeader,
+                          QStringLiteral("Arachnel/%1").arg(QCoreApplication::applicationVersion()));
+
+        ++pending->remaining;
+        QNetworkReply* reply = m_network->get(request);
+        connect(reply, &QNetworkReply::finished, this,
+                [reply, pending, publish, pluginId, repo, assetName]() {
+                    reply->deleteLater();
+
+                    QVariantMap patch;
+                    QString problem;
+                    if (reply->error() != QNetworkReply::NoError) {
+                        problem = reply->errorString();
+                    } else {
+                        const QJsonObject release =
+                            QJsonDocument::fromJson(reply->readAll()).object();
+                        QString version = release.value(QStringLiteral("tag_name")).toString();
+                        if (version.startsWith(QLatin1Char('v')))
+                            version.remove(0, 1);
+                        for (const QJsonValue& value :
+                             release.value(QStringLiteral("assets")).toArray()) {
+                            const QJsonObject asset = value.toObject();
+                            if (asset.value(QStringLiteral("name")).toString() != assetName)
+                                continue;
+                            QString digest = asset.value(QStringLiteral("digest")).toString();
+                            if (digest.startsWith(QStringLiteral("sha256:")))
+                                digest.remove(0, 7);
+                            patch.insert(QStringLiteral("version"), version);
+                            patch.insert(
+                                QStringLiteral("url"),
+                                asset.value(QStringLiteral("browser_download_url")).toString());
+                            patch.insert(QStringLiteral("sha256"), digest.toLower());
+                            patch.insert(QStringLiteral("size"),
+                                         asset.value(QStringLiteral("size")).toVariant());
+                            patch.insert(QStringLiteral("repository"),
+                                         QStringLiteral("https://github.com/%1").arg(repo));
+                            break;
+                        }
+                        if (version.isEmpty() || patch.value(QStringLiteral("url")).toString().isEmpty())
+                            problem = QStringLiteral("latest release has no %1").arg(assetName);
+                        else if (patch.value(QStringLiteral("sha256")).toString().size() != 64)
+                            problem = QStringLiteral("latest release has no sha256 digest");
+                    }
+
+                    for (qsizetype i = pending->rows.size() - 1; i >= 0; --i) {
+                        QVariantMap row = pending->rows.at(i).toMap();
+                        if (row.value(QStringLiteral("id")).toString() != pluginId)
+                            continue;
+                        if (!problem.isEmpty()) {
+                            pending->rows.removeAt(i);
+                            continue;
+                        }
+                        for (auto it = patch.cbegin(); it != patch.cend(); ++it)
+                            row.insert(it.key(), it.value());
+                        pending->rows[i] = row;
+                    }
+                    if (problem.isEmpty()) {
+                        qInfo().noquote() << "[plugin-catalog]" << pluginId << "from" << repo
+                                          << patch.value(QStringLiteral("version")).toString();
+                    } else {
+                        qWarning().noquote() << "[plugin-catalog]" << pluginId << "fork" << repo
+                                             << "unavailable (" << problem
+                                             << ") - not offering an update this time";
+                    }
+
+                    if (--pending->remaining == 0)
+                        publish();
+                });
+    }
+
+    if (pending->remaining == 0)
+        publish();
 }
 
 QString PluginCatalogService::downloadUrlForEntry(const QVariantMap& entry) const

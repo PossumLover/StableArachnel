@@ -44,7 +44,10 @@ function(arachnel_plugin_sdk_init ARACHNEL_ROOT)
             ${ARACHNEL_ROOT}/src/core/runtime
             ${ARACHNEL_ROOT}/src/core/util
     )
-    target_link_libraries(arachnel_plugin_sdk PUBLIC Qt6::Core Qt6::Network)
+    # plugin_catalog_json.cpp parses large catalogs with QtConcurrent; plugins that only
+    # find Core and Network would otherwise fail to compile the SDK.
+    find_package(Qt6 REQUIRED COMPONENTS Concurrent)
+    target_link_libraries(arachnel_plugin_sdk PUBLIC Qt6::Core Qt6::Network Qt6::Concurrent)
     if(WIN32)
         target_link_libraries(arachnel_plugin_sdk PUBLIC shell32)
     endif()
