@@ -1,4 +1,5 @@
 #include "core_controller_impl.h"
+#include "launch_resolver.h"
 
 #include <QClipboard>
 #include <QFile>
@@ -51,7 +52,14 @@ void CoreController::refreshGameAchievementsForSession(const QString& gameId, bo
     const auto* game = m_libraryStore.gameById(gameId);
     if (!game || !m_achievements || game->installPath.isEmpty())
         return;
-    const QString appId = entryDetails(gameId).value(QStringLiteral("steamAppId")).toString();
+    // The stored id (or steam-<id>) covers Steam installs. entryDetails() is only the
+    // fallback: it rebuilds the whole details map, probing the install for Online Fix,
+    // Unsteam and Steamless and resolving the executable, and its 4 s probe cache never
+    // survives the 15 s gap between polls - so every poll, and the final refresh when
+    // a game exits, re-walked the install on the GUI thread (a visible freeze from an HDD).
+    QString appId = realSteamAppId(*game);
+    if (appId.isEmpty())
+        appId = entryDetails(gameId).value(QStringLiteral("steamAppId")).toString();
     AchievementLocations locations;
     locations.installPath = game->installPath;
 #ifdef Q_OS_WIN
