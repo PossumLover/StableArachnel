@@ -296,6 +296,15 @@ int main(int argc, char* argv[])
                     arachnel::core::CoreController::instance().updateCatalogEntry(entryId);
                 });
             }
+            // `--verify <gameId>`: same as the game page's "Verify files", for scripted
+            // testing of the download plugin (cold start only, like --update).
+            const int verifyAt = args.indexOf(QStringLiteral("--verify"));
+            if (verifyAt >= 0 && verifyAt + 1 < args.size()) {
+                const QString entryId = args.at(verifyAt + 1);
+                QTimer::singleShot(12000, [entryId]() {
+                    arachnel::core::CoreController::instance().verifyGameFiles(entryId);
+                });
+            }
         }
 
         exitCode = app.exec();
