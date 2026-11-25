@@ -272,7 +272,9 @@ MD.BottomSheet {
 
                     MD.Label {
                         Layout.fillWidth: true
-                        text: qsTr("Runs without a Steam license. Steam may not show you as in-game.")
+                        text: root.info.onlineFixKind === "steamfix"
+                              ? qsTr("Using SteamFix. Runs without a Steam license; Steam shows you in Spacewar.")
+                              : qsTr("Using Online Fix. Runs without a Steam license; Steam shows you in Spacewar.")
                         color: MD.Token.color.on_surface_variant
                         typescale: MD.Token.typescale.body_small
                         wrapMode: Text.WordWrap
@@ -283,6 +285,29 @@ MD.BottomSheet {
                     checked: !!(root.info.onlineFixEnabled)
                     onToggled: {
                         Core.setGameOnlineFixEnabled(root.gameId, checked)
+                        root.detailsRevision++
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: MD.Token.spacing.medium
+                visible: !!(root.info.canSwitchToSteamFix)
+
+                MD.Label {
+                    Layout.fillWidth: true
+                    text: qsTr("If the game won't start, hangs, or Online Fix shows an error, try SteamFix instead. Online Fix is backed up.")
+                    color: MD.Token.color.on_surface_variant
+                    typescale: MD.Token.typescale.body_small
+                    wrapMode: Text.WordWrap
+                }
+
+                MD.Button {
+                    mdState.type: MD.Enum.BtFilledTonal
+                    text: qsTr("Use SteamFix")
+                    onClicked: {
+                        Core.switchGameToSteamFix(root.gameId)
                         root.detailsRevision++
                     }
                 }

@@ -787,6 +787,21 @@ bool installShipsOwnOverlay(const QString& installPath)
 }
 }
 
+QString fixLayerKind(const QString& overlayDir)
+{
+    if (overlayDir.isEmpty())
+        return {};
+    const QDir dir(overlayDir);
+    auto has = [&dir](const QString& name) {
+        return dir.exists(name) || dir.exists(name + QLatin1String(kDisabledSuffix));
+    };
+    if (has(QStringLiteral("SteamFix64.dll")) || has(QStringLiteral("SteamFix32.dll")))
+        return QStringLiteral("steamfix");
+    if (has(QStringLiteral("OnlineFix64.dll")) || has(QStringLiteral("OnlineFix.dll")))
+        return QStringLiteral("onlinefix");
+    return {};
+}
+
 QString steamFixKitDir()
 {
     return QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)
@@ -969,6 +984,11 @@ QVariantMap onlineFixOverlayInfo(const QString& installPath)
         {QStringLiteral("onlineFixCanToggle"), state.present},
         {QStringLiteral("onlineFixLabel"), label},
         {QStringLiteral("onlineFixOverlayDir"), state.overlayDir},
+        // "steamfix" or "onlinefix": which layer sits in the overlay dir, so the
+        // settings sheet can say which one the game uses and offer the switch.
+        {QStringLiteral("onlineFixKind"), fixLayerKind(state.overlayDir)},
+        {QStringLiteral("canSwitchToSteamFix"),
+         fixLayerKind(state.overlayDir) == QStringLiteral("onlinefix") && steamFixKitAvailable()},
         {QStringLiteral("steamOverlayForced"), steamOverlayForced(installPath)},
 #if defined(Q_OS_LINUX)
         {QStringLiteral("steamOverlayCanToggle"), false},

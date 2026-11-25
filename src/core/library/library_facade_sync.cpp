@@ -481,6 +481,12 @@ void CoreController::setGameOnlineFixEnabled(const QString& entryId, bool enable
         m_libraryController->setGameOnlineFixEnabled(entryId, enabled);
 }
 
+void CoreController::switchGameToSteamFix(const QString& entryId)
+{
+    if (m_libraryController)
+        m_libraryController->switchGameToSteamFix(entryId);
+}
+
 void CoreController::setGameSteamOverlayForced(const QString& entryId, bool forced)
 {
     if (m_libraryController)

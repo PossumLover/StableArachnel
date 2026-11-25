@@ -52,6 +52,9 @@ bool steamFixKitAvailable();
  * <AppData>/backups/<gameId>-onlinefix-<time>/ with a RESTORE.txt, never deleted,
  * and never left inside the install where the layout healer would copy them back.
  */
+/** "steamfix", "onlinefix" or empty: the Steam layer installed in an overlay dir. */
+QString fixLayerKind(const QString& overlayDir);
+
 bool convertOnlineFixToSteamFix(const QString& gameId, const QString& installPath,
                                 const QString& executablePath, const QString& realAppId,
                                 QString* summaryOut = nullptr, QString* error = nullptr);

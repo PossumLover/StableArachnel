@@ -450,6 +450,30 @@ void LibraryController::setGameUnsteamEnabled(const QString& entryId, bool enabl
     sync();
 }
 
+void LibraryController::switchGameToSteamFix(const QString& entryId)
+{
+    const LibraryGame* existing = m_store->gameById(entryId);
+    if (!existing || existing->installPath.isEmpty())
+        return;
+    QString summary;
+    QString error;
+    const QString exe = chooseLaunchExecutable(LaunchInfo{}, *existing);
+    if (!convertOnlineFixToSteamFix(existing->id, existing->installPath, exe,
+                                    realSteamAppId(*existing), &summary, &error)) {
+        if (m_hooks.notice) {
+            m_hooks.notice(QCoreApplication::translate("Core", "Could not switch to SteamFix: %1")
+                               .arg(error));
+        }
+        return;
+    }
+    qInfo().noquote() << "[steamfix]" << existing->id << summary;
+    if (m_hooks.notice) {
+        m_hooks.notice(QCoreApplication::translate(
+            "Core", "This game now uses SteamFix. Its Online Fix files are backed up."));
+    }
+    sync();
+}
+
 void LibraryController::setGameSteamOverlayForced(const QString& entryId, bool forced)
 {
     const LibraryGame* existing = m_store->gameById(entryId);

@@ -60,6 +60,7 @@
     Q_INVOKABLE void setGameOnlineFixEnabled(const QString&, bool);
     /** Force Valve's shift+tab overlay on for an Online Fix game (SOFL-style). */
     Q_INVOKABLE void setGameSteamOverlayForced(const QString&, bool);
+    Q_INVOKABLE void switchGameToSteamFix(const QString&);
     /** Unsteam: second Steam compatibility layer; installs its payload on first use. */
     Q_INVOKABLE void setGameUnsteamEnabled(const QString&, bool);
     Q_INVOKABLE void setGameAddonEnabled(const QString& entryId, const QString& addonId, bool enabled);

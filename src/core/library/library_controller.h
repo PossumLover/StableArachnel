@@ -62,6 +62,8 @@ public:
     void setGameProtonId(const QString& entryId, const QString& protonId);
     void setGameOnlineFixEnabled(const QString& entryId, bool enabled);
     void setGameSteamOverlayForced(const QString& entryId, bool forced);
+    /// Replace the game's Online Fix with SteamFix (Online Fix files are backed up).
+    void switchGameToSteamFix(const QString& entryId);
     /** Unsteam: the second Steam compatibility layer. Installs the payload on first use. */
     void setGameUnsteamEnabled(const QString& entryId, bool enabled);
     void setGameAddonEnabled(const QString& entryId, const QString& addonId, bool enabled);

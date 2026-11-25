@@ -1053,6 +1053,36 @@ void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
                         .arg(placed));
         }
 
+        // steamidra embeds online-fix.me's generic x64 kit without the winmm.dll that
+        // loads it (its harvest never collects the loader), so OnlineFix64.dll sits there
+        // inert: the game talks to real Steam as Spacewar and either refuses the id
+        // (Valheim) or hangs in its networking (Invokyr). Online Fix cannot work like
+        // this, so switch to SteamFix now, the same way an error-4 refusal does.
+        {
+            const QString exeDir = !watchHints.executablePath.isEmpty()
+                                       ? QFileInfo(watchHints.executablePath).absolutePath()
+                                       : gameCopy.installPath;
+            const QDir dir(exeDir);
+            if (dir.exists(QStringLiteral("OnlineFix64.dll"))
+                && !dir.exists(QStringLiteral("winmm.dll")) && steamFixKitAvailable()) {
+                QString summary;
+                QString error;
+                if (convertOnlineFixToSteamFix(gameCopy.id, gameCopy.installPath,
+                                               watchHints.executablePath,
+                                               realSteamAppId(gameCopy), &summary, &error)) {
+                    logLine(QCoreApplication::translate(
+                                "Core", "Online Fix has no winmm.dll loader here, so it can "
+                                        "never load; switched to SteamFix. %1")
+                                .arg(summary));
+                } else {
+                    logLine(QCoreApplication::translate(
+                                "Core", "Online Fix has no loader; switching to SteamFix "
+                                        "failed: %1")
+                                .arg(error));
+                }
+            }
+        }
+
         applyOnlineFixLaunchInfo(gameCopy.installPath, &info, realSteamAppId(gameCopy));
     }
 
