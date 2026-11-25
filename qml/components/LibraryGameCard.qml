@@ -16,6 +16,11 @@ Item {
     required property double playtimeMs
     property int componentCount: 0
     property int installedComponentCount: 0
+    property var healthIssues: []
+
+    function refreshHealth() {
+        healthIssues = Core.libraryHealth(gameId)
+    }
 
     readonly property bool hasAddons: componentCount > 0
     readonly property string addonLabel: {
@@ -45,12 +50,16 @@ Item {
 
     Component.onCompleted: {
         refreshJob()
+        refreshHealth()
         // Games found on disk have no cover yet: ask the catalog for one (it is saved into the
         // library once it lands).
         if (!root.coverUrl.startsWith("file:"))
             Core.requestCatalogCover(root.gameId)
     }
-    onGameIdChanged: refreshJob()
+    onGameIdChanged: {
+        refreshJob()
+        refreshHealth()
+    }
 
     readonly property bool hasInstallFolder: root.installPath.length > 0
     readonly property bool showJobStatus: !root.hasInstallFolder
@@ -100,6 +109,14 @@ Item {
         function onJobsChanged() { root.refreshJob() }
     }
 
+    Connections {
+        target: Core
+        function onLibraryHealthChanged(gameId) {
+            if (gameId === root.gameId)
+                root.refreshHealth()
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.rightMargin: MD.Token.spacing.small
@@ -116,6 +133,19 @@ Item {
                 fallbackText: root.title.charAt(0)
                 cornerRadius: MD.Token.shape.corner.extra_large
                 fillProgress: root.posterFillProgress
+                onClicked: root.openDetails(root.gameId)
+            }
+
+            MD.AssistChip {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.margins: MD.Token.spacing.small
+                visible: root.hasInstallFolder && root.healthIssues.length > 0
+                text: qsTr("Warning")
+                elevated: true
+                mdState.backgroundColor: MD.Token.color.error_container
+                mdState.textColor: MD.Token.color.on_error_container
+                mdState.outlineColor: MD.Token.color.error_container
                 onClicked: root.openDetails(root.gameId)
             }
 

@@ -652,6 +652,34 @@
 <context>
     <name>Core</name>
     <message>
+        <source>This Windows install contains files for another platform.</source>
+        <translation>Эта установка для Windows содержит файлы другой платформы.</translation>
+    </message>
+    <message>
+        <source>Online Fix has no loader. Sprout switches to SteamFix at launch if the kit is installed.</source>
+        <translation>У Online Fix нет загрузчика. При запуске Sprout переключится на SteamFix, если комплект установлен.</translation>
+    </message>
+    <message>
+        <source>A game file has the wrong size.</source>
+        <translation>Размер одного из файлов игры не совпадает.</translation>
+    </message>
+    <message numerus="yes">
+        <source>At least %n unlisted Unreal package file(s).</source>
+        <translation>
+            <numerusform>Как минимум %n лишний файл пакета Unreal.</numerusform>
+            <numerusform>Как минимум %n лишних файла пакетов Unreal.</numerusform>
+            <numerusform>Как минимум %n лишних файлов пакетов Unreal.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n unlisted Unreal package file(s).</source>
+        <translation>
+            <numerusform>%n лишний файл пакета Unreal.</numerusform>
+            <numerusform>%n лишних файла пакетов Unreal.</numerusform>
+            <numerusform>%n лишних файлов пакетов Unreal.</numerusform>
+        </translation>
+    </message>
+    <message>
         <location filename="../src/core/library/library_facade_ops.cpp" line="+170"/>
         <source>Could not open game folder</source>
         <translation>Не удалось открыть папку игры</translation>
@@ -3748,6 +3776,14 @@
 <context>
     <name>GameDetailsContent</name>
     <message>
+        <source>Verify files</source>
+        <translation>Проверить файлы</translation>
+    </message>
+    <message>
+        <source>This source can&apos;t check game files.</source>
+        <translation>Этот источник не поддерживает проверку файлов игры.</translation>
+    </message>
+    <message>
         <location filename="../qml/app/GameDetailsContent.qml" line="+494"/>
         <location line="+5"/>
         <source>Open game folder</source>
@@ -4794,6 +4830,10 @@
 </context>
 <context>
     <name>LibraryGameCard</name>
+    <message>
+        <source>Warning</source>
+        <translation>Предупреждение</translation>
+    </message>
     <message numerus="yes">
         <location filename="../qml/components/LibraryGameCard.qml" line="+34"/>
         <location line="+3"/>

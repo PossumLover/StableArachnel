@@ -13,6 +13,9 @@
     void onCatalogReady();
     void runAutoInstallUpdates();
     void syncLibraryFromStore();
+    void syncLibraryHealth();
+    void queueLibraryHealthRefresh(const QString& gameId);
+    void startLibraryHealthCheck();
     void repairLibraryTitles();
     void syncProtonCatalog();
     void applyCatalogFilter(const QString&);
@@ -92,6 +95,10 @@
     bool finishClearApplicationData();
 
     LibraryModel m_library;
+    QHash<QString, LibraryHealthResult> m_libraryHealth;
+    QHash<QString, LibraryHealthCheckMode> m_pendingLibraryHealth;
+    bool m_libraryHealthScheduled = false;
+    bool m_libraryHealthRunning = false;
     LibraryViewModel m_libraryView{&m_library, nullptr, true};
     TorBoxCacheService* m_torboxCache = nullptr;
     SourcePluginModel m_sources;

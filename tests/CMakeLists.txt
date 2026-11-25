@@ -59,6 +59,20 @@ add_executable(reliability_tests reliability_tests.cpp
 target_include_directories(reliability_tests PRIVATE ${core}/catalog ${core}/util ${core}/social ${core}/jobs ${core}/runtime)
 target_link_libraries(reliability_tests PRIVATE Qt6::Core Qt6::Network Qt6::Test Qt6::Concurrent)
 add_test(NAME reliability_tests COMMAND reliability_tests)
+
+add_executable(library_health_tests library_health_tests.cpp
+    ${core}/library/library_health.cpp
+    ${core}/install/online_fix_overlay.cpp
+    ${core}/install/install_heuristics.cpp
+    ${core}/install/install_analysis.cpp
+    ${core}/install/install_kind.cpp
+    ${core}/util/file_utils.cpp)
+target_include_directories(library_health_tests PRIVATE
+    ${core}/library ${core}/install ${core}/util
+    ${core}/platform ${core}/plugins ${core}/catalog ${core}/settings)
+target_link_libraries(library_health_tests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME library_health_tests COMMAND library_health_tests)
+
 if(WIN32)
     target_sources(reliability_tests PRIVATE
         ${core}/launch/process_launcher.cpp ${core}/launch/process_tracker.cpp)

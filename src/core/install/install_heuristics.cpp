@@ -81,7 +81,7 @@ bool isExcludedGameExecutable(const QString& fileName)
     return false;
 }
 
-QString findGameExecutableInTree(const QString& rootDir, const QString& gameTitle)
+QString findGameExecutableInTree(const QString& rootDir, const QString& gameTitle, int entryLimit)
 {
     QString bestPath;
     qint64 bestScore = -1;
@@ -94,11 +94,17 @@ QString findGameExecutableInTree(const QString& rootDir, const QString& gameTitl
         }
     }
 
-    QDirIterator it(rootDir, {QStringLiteral("*.exe")}, QDir::Files,
-                    QDirIterator::Subdirectories);
-    while (it.hasNext()) {
-        const QString path = it.next();
-        const QFileInfo info(path);
+    // Bounded callers must count all entries, including directories without executables.
+    const auto filters = entryLimit < 0 ? QDir::Filters(QDir::Files)
+        : QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot | QDir::NoSymLinks;
+    const QStringList names = entryLimit < 0 ? QStringList{QStringLiteral("*.exe")} : QStringList{};
+    QDirIterator it(rootDir, names, filters, QDirIterator::Subdirectories);
+    for (int visited = 0; (entryLimit < 0 || visited < entryLimit) && it.hasNext(); ++visited) {
+        const QFileInfo info(it.next());
+        if (entryLimit >= 0 && (info.suffix().compare(QLatin1String("exe"), Qt::CaseInsensitive)
+                                   != 0 || !info.isFile()))
+            continue;
+        const QString path = info.filePath();
         if (isExcludedGameExecutable(info.fileName()))
             continue;
 

@@ -127,6 +127,7 @@ void CoreController::markCatalogAddonInstalled(const QString& parentEntryId,
 
     m_libraryStore.upsertGame(game);
     syncLibraryFromStore();
+    queueLibraryHealthRefresh(parentEntryId);
     if (!m_catalogCache.isEmpty())
         recalculateLibraryUpdates(false);
 }

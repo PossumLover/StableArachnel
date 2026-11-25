@@ -699,7 +699,7 @@ bool tryStartSteamClient()
 #endif
 }
 
-FixLayoutScan scanFixLayout(const QString& installPath)
+FixLayoutScan scanFixLayout(const QString& installPath, int entryLimit)
 {
     // One walk of the install feeds every check that used to walk it on its own
     // (overlay dirs, Valve steam_api backups, steam_settings). Same limits as before:
@@ -712,7 +712,8 @@ FixLayoutScan scanFixLayout(const QString& installPath)
     LayoutWalker install(scan.install, installPath);
     QDirIterator it(installPath, QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot,
                     QDirIterator::Subdirectories);
-    while (!install.done() && it.hasNext()) {
+    for (int visited = 0; (entryLimit < 0 || visited < entryLimit)
+         && !install.done() && it.hasNext(); ++visited) {
         it.next();
         install.visit(it.fileInfo());
     }

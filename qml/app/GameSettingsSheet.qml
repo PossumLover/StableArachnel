@@ -133,6 +133,12 @@ MD.BottomSheet {
         open()
     }
 
+    function confirmVerify(id, hasUpdate) {
+        verifyDialog.entryId = id
+        verifyDialog.withUpdate = hasUpdate
+        verifyDialog.open()
+    }
+
     Connections {
         target: Core.library
         function onLibraryChanged() { root.detailsRevision++ }
@@ -387,7 +393,7 @@ MD.BottomSheet {
                     text: root.verifyingFiles ? qsTr("Verifying…") : qsTr("Verify files")
                     icon.name: MD.Token.icon.fact_check
                     enabled: root.canVerifyFiles && !root.gameBusy
-                    onClicked: verifyDialog.open()
+                    onClicked: root.confirmVerify(root.gameId, !!root.info.hasUpdate)
                 }
             }
         }
@@ -854,12 +860,12 @@ MD.BottomSheet {
         width: Math.min(440, Overlay.overlay ? Overlay.overlay.width - 48 : 440)
         title: qsTr("Verify game files?")
 
+        property string entryId: ""
         property bool withUpdate: false
         property bool dlcRisk: false
 
         onAboutToShow: {
-            withUpdate = !!(root.info.hasUpdate)
-            dlcRisk = Core.catalogUpdateHasDlcRisk(root.gameId)
+            dlcRisk = Core.catalogUpdateHasDlcRisk(entryId)
         }
 
         contentItem: ColumnLayout {
@@ -907,10 +913,11 @@ MD.BottomSheet {
                     text: qsTr("Verify")
                     DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
                     onClicked: {
-                        const id = root.gameId
+                        const id = verifyDialog.entryId
                         verifyDialog.close()
                         // Close the sheet so the game page shows the progress.
-                        root.close()
+                        if (root.visible)
+                            root.close()
                         Core.verifyGameFiles(id)
                     }
                 }

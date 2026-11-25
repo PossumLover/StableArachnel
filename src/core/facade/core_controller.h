@@ -4,6 +4,7 @@
 #include "job_model.h"
 #include "job_store.h"
 #include "library_store.h"
+#include "library_health.h"
 #include "library_model.h"
 #include "library_view_model.h"
 #include "notification_model.h"
@@ -196,6 +197,7 @@ public:
 #include "core_controller_api.h"
 
 signals:
+    void libraryHealthChanged(const QString& gameId);
     void userNoticeChanged();
     void pendingDeepLinkChanged();
     void deepLinkRequested(const QString& gameId);

@@ -651,6 +651,32 @@
 <context>
     <name>Core</name>
     <message>
+        <source>This Windows install contains files for another platform.</source>
+        <translation>This Windows install contains files for another platform.</translation>
+    </message>
+    <message>
+        <source>Online Fix has no loader. Sprout switches to SteamFix at launch if the kit is installed.</source>
+        <translation>Online Fix has no loader. Sprout switches to SteamFix at launch if the kit is installed.</translation>
+    </message>
+    <message>
+        <source>A game file has the wrong size.</source>
+        <translation>A game file has the wrong size.</translation>
+    </message>
+    <message numerus="yes">
+        <source>At least %n unlisted Unreal package file(s).</source>
+        <translation>
+            <numerusform>At least %n unlisted Unreal package file.</numerusform>
+            <numerusform>At least %n unlisted Unreal package files.</numerusform>
+        </translation>
+    </message>
+    <message numerus="yes">
+        <source>%n unlisted Unreal package file(s).</source>
+        <translation>
+            <numerusform>%n unlisted Unreal package file.</numerusform>
+            <numerusform>%n unlisted Unreal package files.</numerusform>
+        </translation>
+    </message>
+    <message>
         <location filename="../src/core/library/library_facade_ops.cpp" line="+170"/>
         <source>Could not open game folder</source>
         <translation>Could not open game folder</translation>
@@ -3747,6 +3773,14 @@
 <context>
     <name>GameDetailsContent</name>
     <message>
+        <source>Verify files</source>
+        <translation>Verify files</translation>
+    </message>
+    <message>
+        <source>This source can&apos;t check game files.</source>
+        <translation>This source can&apos;t check game files.</translation>
+    </message>
+    <message>
         <location filename="../qml/app/GameDetailsContent.qml" line="+494"/>
         <location line="+5"/>
         <source>Open game folder</source>
@@ -4784,6 +4818,10 @@
 </context>
 <context>
     <name>LibraryGameCard</name>
+    <message>
+        <source>Warning</source>
+        <translation>Warning</translation>
+    </message>
     <message numerus="yes">
         <location filename="../qml/components/LibraryGameCard.qml" line="+34"/>
         <location line="+3"/>

@@ -28,7 +28,7 @@ struct FixLayoutScan {
 };
 
 /** Walk the install once. Reuse the result until something changes the layout. */
-FixLayoutScan scanFixLayout(const QString& installPath);
+FixLayoutScan scanFixLayout(const QString& installPath, int entryLimit = -1);
 OnlineFixOverlayState detectOnlineFixOverlay(const FixLayoutScan& scan);
 OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath);
 

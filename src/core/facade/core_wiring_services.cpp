@@ -222,9 +222,8 @@ void CoreController::initializeServices()
                                               QString* compatClient) {
         fillProtonInstallFields(entryId, protonId, executable, compatData, compatClient);
     };
-    installHooks.gameCommitted = [](const LibraryGame& game) {
-        // Prefix / VC redist setup runs on Play, not after download.
-        Q_UNUSED(game)
+    installHooks.gameCommitted = [this](const LibraryGame& game) {
+        queueLibraryHealthRefresh(game.id);
     };
     m_steamlessService = new SteamlessService(
         [this](const QString& message) { showNotice(message); }, this);
@@ -484,6 +483,8 @@ void CoreController::initializeServices()
         m_libraryStore.recordPlaytime(gameId, deltaMs, sessionMs, ended);
         if (const auto* game = m_libraryStore.gameById(gameId))
             m_library.replaceGame(*game);
+        if (ended)
+            queueLibraryHealthRefresh(gameId);
     };
     launchHooks.setOnlineFixEnabled = [this](const QString& gameId, bool enabled) {
         if (m_libraryController)
@@ -497,6 +498,7 @@ void CoreController::initializeServices()
             m_libraryStore.upsertGame(updated);
             m_libraryStore.save();
             m_library.replaceGame(updated);
+            queueLibraryHealthRefresh(gameId);
         }
     };
     m_launchController =
@@ -808,6 +810,8 @@ void CoreController::initializeServices()
             [this](const QString& jobId, const QString& error) {
                 if (retryAddonWithSiblingVersion(jobId, error))
                     return;
+                if (const JobEntry* job = m_jobStore.jobById(jobId); job && job->pluginDownload)
+                    queueLibraryHealthRefresh(job->entryId);
                 showNotice(QCoreApplication::translate("Core", "Download error: %1").arg(error));
             });
 }

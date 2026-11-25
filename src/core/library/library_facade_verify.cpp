@@ -220,6 +220,7 @@ void CoreController::finishGameFilesVerify(const QString& jobId, const QString& 
     // the catalog has no row for the game, so close it here.
     m_installSessionService->cancelEntry(entryId);
     restoreOnlineFixAfterVerify(jobId, entryId);
+    queueLibraryHealthRefresh(entryId);
     const LibraryGame* game = m_libraryStore.gameById(entryId);
     if (!game)
         return;

@@ -303,6 +303,7 @@ void CoreController::syncLibraryFromStore()
     if (storeDirty)
         m_libraryStore.save();
     m_library.setGamesIncremental(std::move(games));
+    syncLibraryHealth();
 }
 
 void CoreController::enrichLibraryGameCover(LibraryGame& game) const
@@ -471,20 +472,26 @@ void CoreController::setGameProtonId(const QString& entryId, const QString& prot
 
 void CoreController::setGameUnsteamEnabled(const QString& entryId, bool enabled)
 {
-    if (m_libraryController)
+    if (m_libraryController) {
         m_libraryController->setGameUnsteamEnabled(entryId, enabled);
+        queueLibraryHealthRefresh(entryId);
+    }
 }
 
 void CoreController::setGameOnlineFixEnabled(const QString& entryId, bool enabled)
 {
-    if (m_libraryController)
+    if (m_libraryController) {
         m_libraryController->setGameOnlineFixEnabled(entryId, enabled);
+        queueLibraryHealthRefresh(entryId);
+    }
 }
 
 void CoreController::switchGameToSteamFix(const QString& entryId)
 {
-    if (m_libraryController)
+    if (m_libraryController) {
         m_libraryController->switchGameToSteamFix(entryId);
+        queueLibraryHealthRefresh(entryId);
+    }
 }
 
 void CoreController::setGameSteamOverlayForced(const QString& entryId, bool forced)

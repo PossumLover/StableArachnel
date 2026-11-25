@@ -10,6 +10,36 @@ Item {
     id: detailsRoot
     required property var page
 
+    property var healthIssues: []
+    readonly property bool healthNeedsVerify: {
+        for (const issue of healthIssues) {
+            if (issue.verify)
+                return true
+        }
+        return false
+    }
+    readonly property bool healthCanVerify: {
+        const _rev = page.detailsRevision
+        return healthNeedsVerify && Core.canVerifyGameFiles(page.gameId)
+    }
+
+    Connections {
+        target: page
+        function onGameIdChanged() {
+            detailsRoot.healthIssues = Core.libraryHealth(page.gameId)
+        }
+    }
+
+    Connections {
+        target: Core
+        function onLibraryHealthChanged(gameId) {
+            if (gameId === page.gameId)
+                detailsRoot.healthIssues = Core.libraryHealth(gameId)
+        }
+    }
+
+    Component.onCompleted: healthIssues = Core.libraryHealth(page.gameId)
+
     readonly property bool hasLaunchLog: {
         const _rev = page.detailsRevision
         return Core.hasGameLaunchLog(page.gameId)
@@ -580,6 +610,56 @@ Item {
                             Item { Layout.fillWidth: true }
 
                             RevealIn { delay: 200 }
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            visible: page.installed && detailsRoot.healthIssues.length > 0
+                            spacing: MD.Token.spacing.small
+
+                            Repeater {
+                                model: detailsRoot.healthIssues
+
+                                MD.Label {
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    text: {
+                                        switch (modelData.code) {
+                                        case "mixed-os":
+                                            return qsTranslate("Core", "This Windows install contains files for another platform.")
+                                        case "online-fix-no-loader":
+                                            return qsTranslate("Core", "Online Fix has no loader. Sprout switches to SteamFix at launch if the kit is installed.")
+                                        case "wrong-size":
+                                            return qsTranslate("Core", "A game file has the wrong size.")
+                                        case "stale-paks":
+                                            return modelData.minimum
+                                                ? qsTranslate("Core", "At least %n unlisted Unreal package file(s).", "", modelData.count)
+                                                : qsTranslate("Core", "%n unlisted Unreal package file(s).", "", modelData.count)
+                                        }
+                                        return ""
+                                    }
+                                    wrapMode: Text.WordWrap
+                                    color: MD.Token.color.error
+                                    typescale: MD.Token.typescale.body_medium
+                                }
+                            }
+
+                            MD.Button {
+                                visible: detailsRoot.healthNeedsVerify
+                                enabled: detailsRoot.healthCanVerify && !page.downloadJob.inProgress
+                                         && !page.isRunning && !page.runtimeSetupActive
+                                text: qsTr("Verify files")
+                                mdState.type: MD.Enum.BtFilledTonal
+                                onClicked: gameSettingsSheet.confirmVerify(page.gameId, !!page.info.hasUpdate)
+                            }
+
+                            MD.Label {
+                                Layout.fillWidth: true
+                                visible: detailsRoot.healthNeedsVerify && !detailsRoot.healthCanVerify
+                                text: qsTr("This source can't check game files.")
+                                wrapMode: Text.WordWrap
+                                typescale: MD.Token.typescale.body_small
+                            }
                         }
 
                         MD.Label {
