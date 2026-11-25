@@ -3,6 +3,7 @@
 #include "plugin_interface.h"
 
 #include <QString>
+#include <QStringList>
 #include <QVariantMap>
 
 namespace arachnel::core {
@@ -14,6 +15,21 @@ struct OnlineFixOverlayState {
     QString overlayDir;
 };
 
+/** One walk of an install: everything the Online Fix checks used to walk it for. */
+struct FixLayoutScan {
+    struct Layout {
+        QString path;
+        QStringList fixDirs;        // overlay dirs, as findOverlayDirs() returned them
+        bool valveBackup = false;   // steam_api*.dll.arachnel-valve somewhere below
+        bool steamSettings = false; // a steam_settings dir with DLC.txt / steam_interfaces.txt
+    };
+
+    Layout install;
+};
+
+/** Walk the install once. Reuse the result until something changes the layout. */
+FixLayoutScan scanFixLayout(const QString& installPath);
+OnlineFixOverlayState detectOnlineFixOverlay(const FixLayoutScan& scan);
 OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath);
 
 /**
@@ -80,8 +96,11 @@ QVariantMap onlineFixOverlayInfo(const QString& installPath);
  * files were placed.
  */
 int healOnlineFixLayoutForExecutable(const QString& installPath, const QString& executablePath);
+int healOnlineFixLayoutForExecutable(const FixLayoutScan& scan, const QString& executablePath);
 
 void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
+                              const QString& realAppId = {});
+void applyOnlineFixLaunchInfo(const FixLayoutScan& scan, LaunchInfo* info,
                               const QString& realAppId = {});
 
 bool isSteamClientRunning();

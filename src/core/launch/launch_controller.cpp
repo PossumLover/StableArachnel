@@ -1002,7 +1002,8 @@ void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
         logLine(QCoreApplication::translate("Core", "Ubisoft game detected - applied launcher-less Steam mode"));
     }
 
-    const OnlineFixOverlayState overlayBefore = detectOnlineFixOverlay(gameCopy.installPath);
+    FixLayoutScan fixLayout = scanFixLayout(gameCopy.installPath);
+    const OnlineFixOverlayState overlayBefore = detectOnlineFixOverlay(fixLayout);
     const bool watchOnlineFix = overlayBefore.enabled && !m_onlineFixFallbackUsed;
     WineErrorWatchHints watchHints;
     watchHints.installPath = gameCopy.installPath;
@@ -1042,12 +1043,13 @@ void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
     {
         // Put the fix next to the executable before anything reads it, or the loader
         // is never found and the layer does nothing while reporting itself enabled.
-        // The heal walks the whole install; skip it when there is no fix to place.
+        bool layoutChanged = false;
         if (const int placed = overlayBefore.present
-                ? healOnlineFixLayoutForExecutable(gameCopy.installPath,
+                ? healOnlineFixLayoutForExecutable(fixLayout,
                                                    watchHints.executablePath)
                 : 0;
             placed > 0) {
+            layoutChanged = true;
             logLine(QCoreApplication::translate(
                         "Core", "Online Fix: placed %1 file(s) next to the game executable")
                         .arg(placed));
@@ -1067,6 +1069,8 @@ void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
                 && !dir.exists(QStringLiteral("winmm.dll")) && steamFixKitAvailable()) {
                 QString summary;
                 QString error;
+                // Conversion can move files even if a later step fails.
+                layoutChanged = true;
                 if (convertOnlineFixToSteamFix(gameCopy.id, gameCopy.installPath,
                                                watchHints.executablePath,
                                                realSteamAppId(gameCopy), &summary, &error)) {
@@ -1083,11 +1087,13 @@ void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
             }
         }
 
-        applyOnlineFixLaunchInfo(gameCopy.installPath, &info, realSteamAppId(gameCopy));
+        if (layoutChanged)
+            fixLayout = scanFixLayout(gameCopy.installPath);
+        applyOnlineFixLaunchInfo(fixLayout, &info, realSteamAppId(gameCopy));
     }
 
     {
-        const OnlineFixOverlayState overlay = detectOnlineFixOverlay(gameCopy.installPath);
+        const OnlineFixOverlayState overlay = detectOnlineFixOverlay(fixLayout);
 #if defined(Q_OS_LINUX)
         if (overlay.enabled)
             logLine(QCoreApplication::translate("Core", "Online Fix overlay detected"));
@@ -1184,7 +1190,7 @@ void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
             logLine(QStringLiteral("STEAM_COMPAT_DATA_PATH: %1").arg(compat));
     }
     {
-        const OnlineFixOverlayState of = detectOnlineFixOverlay(gameCopy.installPath);
+        const OnlineFixOverlayState of = detectOnlineFixOverlay(fixLayout);
         logLine(QCoreApplication::translate("Core", "Online Fix: %1")
                     .arg(onlineFixStatusLabel(of)));
         if (of.present && !of.overlayDir.isEmpty())

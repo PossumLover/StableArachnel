@@ -384,30 +384,6 @@ bool dirLooksLikeOverlay(const QDir& dir)
     return dirHasActiveOverlay(dir) || dirHasDisabledOverlay(dir);
 }
 
-bool hasValveBackup(const QString& installPath)
-{
-    QDirIterator it(installPath,
-                    {QStringLiteral("steam_api64.dll.arachnel-valve"),
-                     QStringLiteral("steam_api.dll.arachnel-valve")},
-                    QDir::Files, QDirIterator::Subdirectories);
-    return it.hasNext();
-}
-
-bool hasSteamSettings(const QString& installPath)
-{
-    QDirIterator it(installPath, {QStringLiteral("steam_settings")}, QDir::Dirs,
-                    QDirIterator::Subdirectories);
-    int n = 0;
-    while (it.hasNext() && n < 2000) {
-        it.next();
-        ++n;
-        if (QFileInfo::exists(it.filePath() + QStringLiteral("/DLC.txt"))
-            || QFileInfo::exists(it.filePath() + QStringLiteral("/steam_interfaces.txt")))
-            return true;
-    }
-    return false;
-}
-
 QJsonObject readOnlineFixMarker(const QString& installPath)
 {
     QFile file(installPath + QStringLiteral("/.arachnel-steamidra"));
@@ -444,78 +420,102 @@ bool shouldSkipOverlayScanDir(const QString& name)
         || lower == QLatin1String("saved") || lower == QLatin1String("thirdparty");
 }
 
-QStringList findOverlayDirs(const QString& installPath)
+void collectOverlayDir(const QDir& root, const QFileInfo& fi, QStringList& dirs)
 {
-    QStringList out;
-    if (installPath.isEmpty() || !QFileInfo::exists(installPath))
-        return out;
-
-    const QDir root(installPath);
-    if (dirLooksLikeOverlay(root))
-        out.append(root.absolutePath());
-
-    // UE shipping + shallow scan for renamed overlays (depth-limited).
-    QDirIterator it(installPath,
-                    QDir::Dirs | QDir::Files | QDir::NoSymLinks | QDir::NoDotAndDotDot,
-                    QDirIterator::Subdirectories);
-    int seen = 0;
-    // Built once per walk, not once per visited entry (up to 4000 regex constructions).
+    const QString rel = root.relativeFilePath(fi.absoluteFilePath());
+    const int depth = rel.count(QLatin1Char('/')) + rel.count(QLatin1Char('\\'));
+    if (depth > 6)
+        return;
+    // Skip known non-game trees by path segment.
     static const QRegularExpression pathSeparator(QStringLiteral("[/\\\\]"));
-    while (it.hasNext() && seen < 4000) {
-        it.next();
-        ++seen;
-        const QFileInfo fi = it.fileInfo();
-        const QString rel = root.relativeFilePath(fi.absoluteFilePath());
-        const int depth = rel.count(QLatin1Char('/')) + rel.count(QLatin1Char('\\'));
-        if (depth > 6)
-            continue;
-        // Skip known non-game trees by path segment.
-        static const QRegularExpression pathSeparator(QStringLiteral("[/\\\\]"));
-        const QStringList parts = rel.split(pathSeparator, Qt::SkipEmptyParts);
-        bool skip = false;
-        for (const QString& part : parts) {
-            if (shouldSkipOverlayScanDir(part)) {
-                skip = true;
-                break;
-            }
+    const QStringList parts = rel.split(pathSeparator, Qt::SkipEmptyParts);
+    bool skip = false;
+    for (const QString& part : parts) {
+        if (shouldSkipOverlayScanDir(part)) {
+            skip = true;
+            break;
         }
-        if (skip)
-            continue;
-        if (fi.isDir()) {
-            const QString name = fi.fileName();
-            if ((name == QLatin1String("Win64") || name == QLatin1String("Win32"))
-                && fi.dir().dirName() == QLatin1String("Binaries")) {
-                const QDir shipping(fi.absoluteFilePath());
-                if (dirLooksLikeOverlay(shipping)
-                    && !out.contains(shipping.absolutePath(), Qt::CaseInsensitive))
-                    out.append(shipping.absolutePath());
-            }
-            continue;
-        }
-        const QString fileName = fi.fileName();
-        const bool match = fileName == QLatin1String("winmm.dll")
-            || fileName == QLatin1String("SteamFix64.dll")
-            || fileName == QLatin1String("SteamFix32.dll")
-            || fileName == QLatin1String("OnlineFix64.dll")
-            || fileName == QLatin1String("OnlineFix.dll")
-            || fileName == QLatin1String("OnlineFix32.dll")
-            || fileName == QLatin1String("SteamOverlay32.dll")
-            || fileName == QLatin1String("SteamOverlay64.dll")
-            || fileName == QLatin1String("StubDRM32.dll")
-            || fileName == QLatin1String("SteamFix.ini")
-            || fileName == QLatin1String("OnlineFix.ini")
-            || fileName == QLatin1String("dlllist.txt")
-            || fileName == QLatin1String("winmm.txt")
-            || fileName.endsWith(QLatin1String(kDisabledSuffix));
-        if (!match)
-            continue;
-        const QDir parent = fi.dir();
-        if (dirLooksLikeOverlay(parent)
-            && !out.contains(parent.absolutePath(), Qt::CaseInsensitive))
-            out.append(parent.absolutePath());
     }
-    return out;
+    if (skip)
+        return;
+    if (fi.isDir()) {
+        const QString name = fi.fileName();
+        if ((name == QLatin1String("Win64") || name == QLatin1String("Win32"))
+            && fi.dir().dirName() == QLatin1String("Binaries")) {
+            const QDir shipping(fi.absoluteFilePath());
+            if (dirLooksLikeOverlay(shipping)
+                && !dirs.contains(shipping.absolutePath(), Qt::CaseInsensitive))
+                dirs.append(shipping.absolutePath());
+        }
+        return;
+    }
+    const QString fileName = fi.fileName();
+    const bool match = fileName == QLatin1String("winmm.dll")
+        || fileName == QLatin1String("SteamFix64.dll")
+        || fileName == QLatin1String("SteamFix32.dll")
+        || fileName == QLatin1String("OnlineFix64.dll")
+        || fileName == QLatin1String("OnlineFix.dll")
+        || fileName == QLatin1String("OnlineFix32.dll")
+        || fileName == QLatin1String("SteamOverlay32.dll")
+        || fileName == QLatin1String("SteamOverlay64.dll")
+        || fileName == QLatin1String("StubDRM32.dll")
+        || fileName == QLatin1String("SteamFix.ini")
+        || fileName == QLatin1String("OnlineFix.ini")
+        || fileName == QLatin1String("dlllist.txt")
+        || fileName == QLatin1String("winmm.txt")
+        || fileName.endsWith(QLatin1String(kDisabledSuffix));
+    if (!match)
+        return;
+    const QDir parent = fi.dir();
+    if (dirLooksLikeOverlay(parent)
+        && !dirs.contains(parent.absolutePath(), Qt::CaseInsensitive))
+        dirs.append(parent.absolutePath());
 }
+
+struct LayoutWalker {
+    FixLayoutScan::Layout& layout;
+    QDir root;
+    int seen = 0;
+    int settingsSeen = 0;
+
+    explicit LayoutWalker(FixLayoutScan::Layout& result, const QString& path)
+        : layout(result), root(path)
+    {
+        layout.path = path;
+        if (!path.isEmpty() && dirLooksLikeOverlay(root))
+            layout.fixDirs.append(root.absolutePath());
+    }
+
+    bool done() const
+    {
+        return seen >= 4000 && (!layout.fixDirs.isEmpty()
+            || (layout.valveBackup && (layout.steamSettings || settingsSeen >= 2000)));
+    }
+
+    void visit(const QFileInfo& fi)
+    {
+        if (seen < 4000 && !fi.isSymLink()) {
+            ++seen;
+            collectOverlayDir(root, fi, layout.fixDirs);
+        }
+        // Legacy name-filtered searches include symlinks and have independent limits.
+        if (!layout.fixDirs.isEmpty())
+            return;
+        const QString name = fi.fileName();
+        if (!layout.valveBackup
+            && (name.compare(QLatin1String("steam_api64.dll.arachnel-valve"), Qt::CaseInsensitive) == 0
+                || name.compare(QLatin1String("steam_api.dll.arachnel-valve"), Qt::CaseInsensitive) == 0)
+            && fi.isFile())
+            layout.valveBackup = true;
+        if (!layout.steamSettings && settingsSeen < 2000
+            && name.compare(QLatin1String("steam_settings"), Qt::CaseInsensitive) == 0 && fi.isDir()) {
+            ++settingsSeen;
+            const QDir settings(fi.absoluteFilePath());
+            layout.steamSettings = settings.exists(QStringLiteral("DLC.txt"))
+                || settings.exists(QStringLiteral("steam_interfaces.txt"));
+        }
+    }
+};
 
 bool renameOverlayInDir(const QDir& dir, bool enable, QString* error)
 {
@@ -695,14 +695,35 @@ bool tryStartSteamClient()
 #endif
 }
 
-OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath)
+FixLayoutScan scanFixLayout(const QString& installPath)
 {
+    // One walk of the install feeds every check that used to walk it on its own
+    // (overlay dirs, Valve steam_api backups, steam_settings). Same limits as before:
+    // overlay discovery stops counting at 4000 entries; the legacy name searches keep
+    // their own budgets and only matter while no overlay dir has been found.
+    FixLayoutScan scan;
+    scan.install.path = installPath;
+    if (installPath.isEmpty() || !QFileInfo::exists(installPath))
+        return scan;
+    LayoutWalker install(scan.install, installPath);
+    QDirIterator it(installPath, QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot,
+                    QDirIterator::Subdirectories);
+    while (!install.done() && it.hasNext()) {
+        it.next();
+        install.visit(it.fileInfo());
+    }
+    return scan;
+}
+
+static OnlineFixOverlayState detectLayout(const FixLayoutScan::Layout& layout)
+{
+    const QString& installPath = layout.path;
     OnlineFixOverlayState state;
     if (installPath.isEmpty() || !QFileInfo::exists(installPath))
         return state;
 
     // Prefer SteamFix / winmm overlay dirs over older valve-backup heuristics.
-    const QStringList dirs = findOverlayDirs(installPath);
+    const QStringList& dirs = layout.fixDirs;
     if (!dirs.isEmpty()) {
         state.present = true;
         state.overlayDir = dirs.first();
@@ -735,16 +756,26 @@ OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath)
 
     // Old embeds: valve steam_api backups and/or marker only.
     const QJsonObject of = readOnlineFixMarker(installPath);
-    if (hasValveBackup(installPath) || of.value(QStringLiteral("embedded")).toBool(false)
+    if (layout.valveBackup || of.value(QStringLiteral("embedded")).toBool(false)
         || of.contains(QStringLiteral("enabled"))) {
         state.present = true;
         state.overlayDir = installPath;
         if (of.contains(QStringLiteral("enabled")))
             state.enabled = of.value(QStringLiteral("enabled")).toBool(false);
         else
-            state.enabled = hasSteamSettings(installPath) && hasValveBackup(installPath);
+            state.enabled = layout.steamSettings && layout.valveBackup;
     }
     return state;
+}
+
+OnlineFixOverlayState detectOnlineFixOverlay(const FixLayoutScan& scan)
+{
+    return detectLayout(scan.install);
+}
+
+OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath)
+{
+    return detectOnlineFixOverlay(scanFixLayout(installPath));
 }
 
 bool setOnlineFixOverlayEnabled(const QString& installPath, bool enabled, QString* error)
@@ -755,7 +786,7 @@ bool setOnlineFixOverlayEnabled(const QString& installPath, bool enabled, QStrin
         return false;
     }
 
-    const QStringList dirs = findOverlayDirs(installPath);
+    const QStringList dirs = scanFixLayout(installPath).install.fixDirs;
     if (!dirs.isEmpty()) {
         for (const QString& path : dirs) {
             if (!renameOverlayInDir(QDir(path), enabled, error))
@@ -775,9 +806,8 @@ bool setOnlineFixOverlayEnabled(const QString& installPath, bool enabled, QStrin
 namespace {
 
 /** The install ships its own overlay DLL, so Valve's overlay is stood down unless forced. */
-bool installShipsOwnOverlay(const QString& installPath)
+bool installShipsOwnOverlay(const QString& dir)
 {
-    const QString dir = detectOnlineFixOverlay(installPath).overlayDir;
     if (dir.isEmpty())
         return false;
     const QDir d(dir);
@@ -958,7 +988,7 @@ bool steamOverlayForced(const QString& installPath)
     // a plain preload next to those failed with error 126 - so this answers "force the
     // runtime route". Everything else already gets the overlay under plain Proton.
     // The old per-game marker (.arachnel-steam-overlay) is no longer read.
-    return !installPath.isEmpty() && installShipsOwnOverlay(installPath);
+    return !installPath.isEmpty() && installShipsOwnOverlay(detectOnlineFixOverlay(installPath).overlayDir);
 }
 
 bool setSteamOverlayForced(const QString& installPath, bool /*forced*/)
@@ -1000,6 +1030,12 @@ QVariantMap onlineFixOverlayInfo(const QString& installPath)
 
 int healOnlineFixLayoutForExecutable(const QString& installPath, const QString& executablePath)
 {
+    return healOnlineFixLayoutForExecutable(scanFixLayout(installPath), executablePath);
+}
+
+int healOnlineFixLayoutForExecutable(const FixLayoutScan& scan, const QString& executablePath)
+{
+    const QString& installPath = scan.install.path;
     if (installPath.isEmpty() || executablePath.isEmpty())
         return 0;
     const QString exeDir = QFileInfo(executablePath).absolutePath();
@@ -1020,7 +1056,7 @@ int healOnlineFixLayoutForExecutable(const QString& installPath, const QString& 
     // Find the directory that actually holds the fix, and stop if it is already the
     // executable's own.
     QString sourceDir;
-    for (const QString& dir : findOverlayDirs(installPath)) {
+    for (const QString& dir : scan.install.fixDirs) {
         if (QFileInfo::exists(QDir(dir).filePath(QStringLiteral("dlllist.txt")))
             && QFileInfo::exists(QDir(dir).filePath(QStringLiteral("winmm.dll")))) {
             sourceDir = dir;
@@ -1068,7 +1104,17 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
     if (!info || installPath.isEmpty())
         return;
 
-    OnlineFixOverlayState state = detectOnlineFixOverlay(installPath);
+    applyOnlineFixLaunchInfo(scanFixLayout(installPath), info, realAppId);
+}
+
+void applyOnlineFixLaunchInfo(const FixLayoutScan& scan, LaunchInfo* info, const QString& realAppId)
+{
+    const QString& installPath = scan.install.path;
+    if (!info || installPath.isEmpty())
+        return;
+
+    const OnlineFixOverlayState installState = detectOnlineFixOverlay(scan);
+    OnlineFixOverlayState state = installState;
     if (!state.enabled && !info->workingDirectory.isEmpty()
         && info->workingDirectory != installPath) {
         const OnlineFixOverlayState wd = detectOnlineFixOverlay(info->workingDirectory);
@@ -1109,7 +1155,7 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
         }
     }
 
-    const bool forceOverlay = steamOverlayForced(installPath);
+    const bool forceOverlay = installShipsOwnOverlay(installState.overlayDir);
 
     // Plain Proton is enough for Online Fix. The Valve overlay, when forced, needs the
     // modern Steam Linux Runtime ("1"): pressure-vessel copies gameoverlayrenderer.so
@@ -1164,7 +1210,7 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
     // executable, which is never overwritten afterwards.
     if (const QString id = realAppId.trimmed(); !id.isEmpty()) {
         ensureRealAppIdInIni(overlayDir, id);
-        for (const QString& dir : findOverlayDirs(installPath))
+        for (const QString& dir : scan.install.fixDirs)
             ensureRealAppIdInIni(dir, id);
         if (!info->workingDirectory.isEmpty())
             ensureRealAppIdInIni(info->workingDirectory, id);
