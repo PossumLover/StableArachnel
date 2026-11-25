@@ -275,22 +275,13 @@ bool dirHasBundledSteamOverlayDll(const QString& dir)
 }
 
 void appendSteamOverlayEnvironment(LaunchInfo* info, const QString& fakeSteamId,
-                                   const QString& overlayDir, bool forceValveOverlay,
-                                   bool userDisabled)
+                                   const QString& overlayDir, bool forceValveOverlay)
 {
     const QString overlayId = fakeSteamId.isEmpty() ? QStringLiteral("480") : fakeSteamId;
     // SpaceWar AppId is still required for SteamFix / OF.me IPC.
     info->environmentExtras.insert(QStringLiteral("SteamAppId"), overlayId);
     info->environmentExtras.insert(QStringLiteral("SteamGameId"), overlayId);
     info->environmentExtras.insert(QStringLiteral("SteamOverlayGameId"), overlayId);
-
-    // Switched off in game settings: no Valve overlay at all, whatever the install ships.
-    if (userDisabled) {
-        info->environmentExtras.insert(QStringLiteral("LD_PRELOAD"), QString());
-        info->environmentExtras.insert(QStringLiteral("ENABLE_VK_LAYER_VALVE_steam_overlay_1"),
-                                       QStringLiteral("0"));
-        return;
-    }
 
     // By default stand Valve's overlay down for installs that ship their own overlay
     // DLL. Forcing it works only inside the Steam Linux Runtime (see
@@ -782,8 +773,6 @@ bool setOnlineFixOverlayEnabled(const QString& installPath, bool enabled, QStrin
 }
 
 namespace {
-constexpr auto kSteamOverlayMarker = ".arachnel-steam-overlay";
-constexpr auto kSteamOverlayOffMarker = ".arachnel-steam-overlay-off";
 
 /** The install ships its own overlay DLL, so Valve's overlay is stood down unless forced. */
 bool installShipsOwnOverlay(const QString& installPath)
@@ -796,20 +785,6 @@ bool installShipsOwnOverlay(const QString& installPath)
            || d.exists(QStringLiteral("SteamOverlay64.dll"))
            || d.exists(QStringLiteral("OnlineFix.dll")) || d.exists(QStringLiteral("OnlineFix64.dll"));
 }
-}
-
-bool steamOverlayDisabled(const QString& installPath)
-{
-    if (installPath.isEmpty())
-        return false;
-    return QFileInfo::exists(QDir(installPath).filePath(QLatin1String(kSteamOverlayOffMarker)));
-}
-
-bool steamOverlayOn(const QString& installPath)
-{
-    if (steamOverlayDisabled(installPath))
-        return false;
-    return steamOverlayForced(installPath) || !installShipsOwnOverlay(installPath);
 }
 
 QString steamFixKitDir()
@@ -963,37 +938,18 @@ bool convertOnlineFixToSteamFix(const QString& gameId, const QString& installPat
 
 bool steamOverlayForced(const QString& installPath)
 {
-    if (installPath.isEmpty())
-        return false;
-    return QFileInfo::exists(QDir(installPath).filePath(QLatin1String(kSteamOverlayMarker)));
+    // Valve's shift+tab overlay is always on (Sprout has no switch for it any more).
+    // Installs that ship their own overlay DLL need the Steam Linux Runtime for it -
+    // a plain preload next to those failed with error 126 - so this answers "force the
+    // runtime route". Everything else already gets the overlay under plain Proton.
+    // The old per-game marker (.arachnel-steam-overlay) is no longer read.
+    return !installPath.isEmpty() && installShipsOwnOverlay(installPath);
 }
 
-bool setSteamOverlayForced(const QString& installPath, bool on)
+bool setSteamOverlayForced(const QString& installPath, bool /*forced*/)
 {
-    // The game-settings switch. "On" means Valve's overlay loads: forced through the
-    // Steam Linux Runtime only when the install ships its own overlay DLL (that is
-    // where the plain preload failed); otherwise it already loads under plain Proton.
-    // "Off" now really means off - before, it only removed the force marker, so games
-    // without a bundled overlay DLL (SteamFix installs, e.g. Valheim) kept shift+tab.
-    if (installPath.isEmpty())
-        return false;
-    const QString marker = QDir(installPath).filePath(QLatin1String(kSteamOverlayMarker));
-    const QString offMarker = QDir(installPath).filePath(QLatin1String(kSteamOverlayOffMarker));
-    if (!on) {
-        if (QFile::exists(marker) && !QFile::remove(marker))
-            return false;
-        return QFileInfo::exists(offMarker)
-               || writeTextFile(offMarker,
-                                QStringLiteral("Valve shift+tab overlay switched off for this game (Sprout).\n"));
-    }
-    if (QFile::exists(offMarker) && !QFile::remove(offMarker))
-        return false;
-    if (!installShipsOwnOverlay(installPath))
-        return QFile::exists(marker) ? QFile::remove(marker) : true;
-    if (QFileInfo::exists(marker))
-        return true;
-    return writeTextFile(marker,
-                         QStringLiteral("Valve shift+tab overlay forced on for this game (Arachnel).\n"));
+    // The overlay is always on; see steamOverlayForced().
+    return !installPath.isEmpty();
 }
 
 QVariantMap onlineFixOverlayInfo(const QString& installPath)
@@ -1014,10 +970,8 @@ QVariantMap onlineFixOverlayInfo(const QString& installPath)
         {QStringLiteral("onlineFixLabel"), label},
         {QStringLiteral("onlineFixOverlayDir"), state.overlayDir},
         {QStringLiteral("steamOverlayForced"), steamOverlayForced(installPath)},
-        {QStringLiteral("steamOverlayOn"), steamOverlayOn(installPath)},
-        {QStringLiteral("steamOverlayNeedsRuntime"), installShipsOwnOverlay(installPath)},
 #if defined(Q_OS_LINUX)
-        {QStringLiteral("steamOverlayCanToggle"), state.present},
+        {QStringLiteral("steamOverlayCanToggle"), false},
 #else
         {QStringLiteral("steamOverlayCanToggle"), false},
 #endif
@@ -1263,8 +1217,7 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
 #if defined(Q_OS_LINUX)
     // Valve LD_PRELOAD only when the install does not already ship OF.me overlay
     // DLLs - unless this game is opted in to the overlay, SOFL-style.
-    appendSteamOverlayEnvironment(info, fakeAppId, overlayDir, forceOverlay,
-                                  steamOverlayDisabled(installPath));
+    appendSteamOverlayEnvironment(info, fakeAppId, overlayDir, forceOverlay);
 
     // SOFL refuses to launch at all without the Steam client ("STEAMNOTSTARTED"):
     // the preloaded overlay has nothing to attach to otherwise.
