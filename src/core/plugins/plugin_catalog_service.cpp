@@ -14,6 +14,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QRegularExpression>
 #include <QScopeGuard>
 #include <QStandardPaths>
 #include <QUrl>
@@ -47,10 +48,49 @@ struct PluginSourceOverride {
     const char* pluginId;
     const char* githubRepo;
     const char* assetName;
+    const char* feedName;
 };
 constexpr PluginSourceOverride kPluginSourceOverrides[] = {
-    {"steamidra", "PossumLover/steamidra_linux_fix", "steam.arach"},
+    {"steamidra", "PossumLover/steamidra_linux_fix", "steam.arach", "steamidra-feed.json"},
 };
+
+QVariantMap releaseFeedPatch(const QJsonObject& feed, const QString& pluginId,
+                            const QString& repository, const QString& assetName)
+{
+    // Match the release workflow's tag format without the leading v.
+    static const QRegularExpression versionPattern(
+        QStringLiteral("\\A[0-9]+\\.[0-9]+\\.[0-9]+(?:\\.[0-9]+)?(?:-[A-Za-z0-9._]+)?\\z"));
+    static const QRegularExpression digestPattern(QStringLiteral("\\A[0-9a-fA-F]{64}\\z"));
+
+    const QString version = feed.value(QStringLiteral("version")).toString();
+    const QString url = feed.value(QStringLiteral("url")).toString();
+    const QString digest = feed.value(QStringLiteral("sha256")).toString();
+    const qint64 size = feed.value(QStringLiteral("size")).toInteger();
+    if (feed.value(QStringLiteral("schemaVersion")).toInt() != 1
+        || feed.value(QStringLiteral("id")).toString() != pluginId
+        || feed.value(QStringLiteral("apiVersion")).toInt() != 4
+        || feed.value(QStringLiteral("abiToken")).toString() != QStringLiteral("api=4")
+        || !versionPattern.match(version).hasMatch()
+        || url != QStringLiteral("%1/releases/download/v%2/%3").arg(repository, version, assetName)
+        || !digestPattern.match(digest).hasMatch() || size <= 0)
+        return {};
+
+    return {{QStringLiteral("version"), version},
+            {QStringLiteral("url"), url},
+            {QStringLiteral("sha256"), digest.toLower()},
+            {QStringLiteral("size"), size}};
+}
+
+QNetworkRequest releaseRequest(const QString& url)
+{
+    QNetworkRequest request{QUrl(url)};
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+                         QNetworkRequest::NoLessSafeRedirectPolicy);
+    request.setRawHeader("Accept", "application/vnd.github+json");
+    request.setHeader(QNetworkRequest::UserAgentHeader,
+                      QStringLiteral("Arachnel/%1").arg(QCoreApplication::applicationVersion()));
+    return request;
+}
 
 QStringList platformsFromJson(const QJsonValue& value)
 {
@@ -347,79 +387,112 @@ void PluginCatalogService::applySourceOverrides(const QVariantList& rows, int ge
             continue;
 
         const QString repo = QString::fromLatin1(source.githubRepo);
+        const QString repository = QStringLiteral("https://github.com/%1").arg(repo);
         const QString assetName = QString::fromLatin1(source.assetName);
-        QNetworkRequest request{
-            QUrl(QStringLiteral("https://api.github.com/repos/%1/releases/latest").arg(repo))};
-        request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
-                             QNetworkRequest::NoLessSafeRedirectPolicy);
-        request.setRawHeader("Accept", "application/vnd.github+json");
-        request.setHeader(QNetworkRequest::UserAgentHeader,
-                          QStringLiteral("Arachnel/%1").arg(QCoreApplication::applicationVersion()));
+        const auto finish = [pending, publish, pluginId, repo, repository](
+                                QVariantMap patch, const QString& problem) {
+            if (problem.isEmpty())
+                patch.insert(QStringLiteral("repository"), repository);
+            for (qsizetype i = pending->rows.size() - 1; i >= 0; --i) {
+                QVariantMap row = pending->rows.at(i).toMap();
+                if (row.value(QStringLiteral("id")).toString() != pluginId)
+                    continue;
+                if (!problem.isEmpty()) {
+                    pending->rows.removeAt(i);
+                    continue;
+                }
+                for (auto it = patch.cbegin(); it != patch.cend(); ++it)
+                    row.insert(it.key(), it.value());
+                pending->rows[i] = row;
+            }
+            if (problem.isEmpty()) {
+                qInfo().noquote() << "[plugin-catalog]" << pluginId << "from" << repo
+                                  << patch.value(QStringLiteral("version")).toString();
+            } else {
+                qWarning().noquote() << "[plugin-catalog]" << pluginId << "fork" << repo
+                                     << "unavailable (" << problem
+                                     << ") - not offering an update this time";
+            }
+
+            if (--pending->remaining == 0)
+                publish();
+        };
+
+        const auto fetchLegacyRelease = [this, generation, finish, repo, assetName]() {
+            QNetworkReply* reply = m_network->get(releaseRequest(
+                QStringLiteral("https://api.github.com/repos/%1/releases/latest").arg(repo)));
+            connect(reply, &QNetworkReply::finished, this, [this, reply, generation, finish, assetName]() {
+                reply->deleteLater();
+                if (generation != m_catalogGeneration)
+                    return;
+
+                QVariantMap patch;
+                QString problem;
+                if (reply->error() != QNetworkReply::NoError) {
+                    problem = reply->errorString();
+                } else {
+                    const QJsonObject release =
+                        QJsonDocument::fromJson(reply->readAll()).object();
+                    QString version = release.value(QStringLiteral("tag_name")).toString();
+                    if (version.startsWith(QLatin1Char('v')))
+                        version.remove(0, 1);
+                    for (const QJsonValue& value :
+                         release.value(QStringLiteral("assets")).toArray()) {
+                        const QJsonObject asset = value.toObject();
+                        if (asset.value(QStringLiteral("name")).toString() != assetName)
+                            continue;
+                        QString digest = asset.value(QStringLiteral("digest")).toString();
+                        if (digest.startsWith(QStringLiteral("sha256:")))
+                            digest.remove(0, 7);
+                        patch.insert(QStringLiteral("version"), version);
+                        patch.insert(
+                            QStringLiteral("url"),
+                            asset.value(QStringLiteral("browser_download_url")).toString());
+                        patch.insert(QStringLiteral("sha256"), digest.toLower());
+                        patch.insert(QStringLiteral("size"),
+                                     asset.value(QStringLiteral("size")).toVariant());
+                        break;
+                    }
+                    if (version.isEmpty()
+                        || patch.value(QStringLiteral("url")).toString().isEmpty())
+                        problem = QStringLiteral("latest release has no %1").arg(assetName);
+                    else if (patch.value(QStringLiteral("sha256")).toString().size() != 64)
+                        problem = QStringLiteral("latest release has no sha256 digest");
+                }
+                finish(patch, problem);
+            });
+        };
 
         ++pending->remaining;
-        QNetworkReply* reply = m_network->get(request);
+        const QString feedName = QString::fromLatin1(source.feedName);
+        QNetworkReply* reply = m_network->get(releaseRequest(
+            QStringLiteral("%1/releases/latest/download/%2").arg(repository, feedName)));
         connect(reply, &QNetworkReply::finished, this,
-                [reply, pending, publish, pluginId, repo, assetName]() {
+                [this, reply, generation, finish, fetchLegacyRelease, pluginId, repository,
+                 assetName]() {
                     reply->deleteLater();
+                    if (generation != m_catalogGeneration)
+                        return;
 
-                    QVariantMap patch;
-                    QString problem;
+                    const int status =
+                        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+                    if (status == 404) {
+                        fetchLegacyRelease();
+                        return;
+                    }
                     if (reply->error() != QNetworkReply::NoError) {
-                        problem = reply->errorString();
-                    } else {
-                        const QJsonObject release =
-                            QJsonDocument::fromJson(reply->readAll()).object();
-                        QString version = release.value(QStringLiteral("tag_name")).toString();
-                        if (version.startsWith(QLatin1Char('v')))
-                            version.remove(0, 1);
-                        for (const QJsonValue& value :
-                             release.value(QStringLiteral("assets")).toArray()) {
-                            const QJsonObject asset = value.toObject();
-                            if (asset.value(QStringLiteral("name")).toString() != assetName)
-                                continue;
-                            QString digest = asset.value(QStringLiteral("digest")).toString();
-                            if (digest.startsWith(QStringLiteral("sha256:")))
-                                digest.remove(0, 7);
-                            patch.insert(QStringLiteral("version"), version);
-                            patch.insert(
-                                QStringLiteral("url"),
-                                asset.value(QStringLiteral("browser_download_url")).toString());
-                            patch.insert(QStringLiteral("sha256"), digest.toLower());
-                            patch.insert(QStringLiteral("size"),
-                                         asset.value(QStringLiteral("size")).toVariant());
-                            patch.insert(QStringLiteral("repository"),
-                                         QStringLiteral("https://github.com/%1").arg(repo));
-                            break;
-                        }
-                        if (version.isEmpty() || patch.value(QStringLiteral("url")).toString().isEmpty())
-                            problem = QStringLiteral("latest release has no %1").arg(assetName);
-                        else if (patch.value(QStringLiteral("sha256")).toString().size() != 64)
-                            problem = QStringLiteral("latest release has no sha256 digest");
+                        finish({}, reply->errorString());
+                        return;
                     }
 
-                    for (qsizetype i = pending->rows.size() - 1; i >= 0; --i) {
-                        QVariantMap row = pending->rows.at(i).toMap();
-                        if (row.value(QStringLiteral("id")).toString() != pluginId)
-                            continue;
-                        if (!problem.isEmpty()) {
-                            pending->rows.removeAt(i);
-                            continue;
-                        }
-                        for (auto it = patch.cbegin(); it != patch.cend(); ++it)
-                            row.insert(it.key(), it.value());
-                        pending->rows[i] = row;
-                    }
-                    if (problem.isEmpty()) {
-                        qInfo().noquote() << "[plugin-catalog]" << pluginId << "from" << repo
-                                          << patch.value(QStringLiteral("version")).toString();
-                    } else {
-                        qWarning().noquote() << "[plugin-catalog]" << pluginId << "fork" << repo
-                                             << "unavailable (" << problem
-                                             << ") - not offering an update this time";
-                    }
-
-                    if (--pending->remaining == 0)
-                        publish();
+                    const QVariantMap patch = releaseFeedPatch(
+                        QJsonDocument::fromJson(reply->readAll()).object(), pluginId, repository,
+                        assetName);
+                    // Older releases have no usable feed. Keep the API lookup for those releases.
+                    if (patch.isEmpty())
+                        fetchLegacyRelease();
+                    else
+                        finish(patch, {});
                 });
     }
 
