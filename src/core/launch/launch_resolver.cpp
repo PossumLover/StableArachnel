@@ -185,7 +185,15 @@ void applyUserLaunchOptions(ResolvedLaunch* resolved, const LaunchOptions& globa
     // with "File not found: <name>".
     QString program = wrapper.first();
     if (!program.contains(QLatin1Char('/'))) {
-        const QString onPath = QStandardPaths::findExecutable(program);
+        // Search the PATH this launch will run with (launch options may set it), then
+        // Sprout's own.
+        QStringList searchPaths;
+        const QString launchPath = resolved->environment.value(QStringLiteral("PATH"));
+        if (!launchPath.isEmpty())
+            searchPaths = launchPath.split(QLatin1Char(':'), Qt::SkipEmptyParts);
+        QString onPath = QStandardPaths::findExecutable(program, searchPaths);
+        if (onPath.isEmpty() && !searchPaths.isEmpty())
+            onPath = QStandardPaths::findExecutable(program);
         if (!onPath.isEmpty())
             program = onPath;
     }

@@ -3,6 +3,7 @@
 
 #include <QClipboard>
 #include <QFile>
+#include <QHash>
 #include <QFileInfo>
 #include <QGuiApplication>
 #include <QStandardPaths>
@@ -58,8 +59,19 @@ void CoreController::refreshGameAchievementsForSession(const QString& gameId, bo
     // survives the 15 s gap between polls - so every poll, and the final refresh when
     // a game exits, re-walked the install on the GUI thread (a visible freeze from an HDD).
     QString appId = realSteamAppId(*game);
-    if (appId.isEmpty())
-        appId = entryDetails(gameId).value(QStringLiteral("steamAppId")).toString();
+    if (appId.isEmpty()) {
+        // Games without a stored id (FreeTP and other non-Steam sources) would still pay
+        // for entryDetails() on every poll. Their id comes from the catalog and does not
+        // change while Sprout runs, so look it up once per game.
+        static QHash<QString, QString> fallbackIds;
+        const auto cached = fallbackIds.constFind(gameId);
+        if (cached != fallbackIds.constEnd()) {
+            appId = cached.value();
+        } else {
+            appId = entryDetails(gameId).value(QStringLiteral("steamAppId")).toString();
+            fallbackIds.insert(gameId, appId);
+        }
+    }
     AchievementLocations locations;
     locations.installPath = game->installPath;
 #ifdef Q_OS_WIN

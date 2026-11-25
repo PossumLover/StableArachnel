@@ -230,13 +230,16 @@ void PluginCatalogService::refresh()
     connect(reply, &QNetworkReply::finished, this, [this, reply, generation]() {
         if (m_catalogReply == reply)
             m_catalogReply = nullptr;
-        setLoading(false);
         reply->deleteLater();
+        // `loading` stays on until the list is published (after the fork lookups in
+        // applySourceOverrides) or this refresh fails; an aborted reply belongs to a
+        // refresh that was superseded, and the newer one owns the flag.
 
         if (reply->error() != QNetworkReply::NoError) {
             // Superseded/aborted refresh — keep current list, don't wipe UI.
             if (reply->error() == QNetworkReply::OperationCanceledError)
                 return;
+            setLoading(false);
             setError(QCoreApplication::translate("Core", "Could not load plugin list: %1")
                          .arg(reply->errorString()));
             m_plugins.clear();
@@ -246,6 +249,7 @@ void PluginCatalogService::refresh()
 
         const QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
         if (!doc.isObject()) {
+            setLoading(false);
             setError(QCoreApplication::translate("Core", "Plugin list is invalid"));
             m_plugins.clear();
             emit pluginsChanged();
@@ -330,6 +334,7 @@ void PluginCatalogService::applySourceOverrides(const QVariantList& rows, int ge
         if (generation != m_catalogGeneration)
             return; // a newer refresh() owns the list now
         m_plugins = pending->rows;
+        setLoading(false);
         emit pluginsChanged();
     };
 
