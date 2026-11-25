@@ -58,6 +58,10 @@ bool convertOnlineFixToSteamFix(const QString& gameId, const QString& installPat
 
 bool steamOverlayForced(const QString& installPath);
 bool setSteamOverlayForced(const QString& installPath, bool forced);
+/** The game-settings switch was turned off: load no Valve overlay at all. */
+bool steamOverlayDisabled(const QString& installPath);
+/** Whether Valve's overlay will load for this install (what the switch shows). */
+bool steamOverlayOn(const QString& installPath);
 /** Enable/disable Online Fix (SteamFix rename, or marker + Valve restore for old embeds). */
 bool setOnlineFixOverlayEnabled(const QString& installPath, bool enabled, QString* error = nullptr);
 /** Labels + flags for Game Settings / entryDetails. */

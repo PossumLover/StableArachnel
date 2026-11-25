@@ -305,7 +305,9 @@ MD.BottomSheet {
 
                     MD.Label {
                         Layout.fillWidth: true
-                        text: qsTr("Runs inside the Steam Linux Runtime with Valve's overlay loaded. Needs the Steam client running.")
+                        text: root.info.steamOverlayNeedsRuntime
+                              ? qsTr("Runs inside the Steam Linux Runtime with Valve's overlay loaded. Needs the Steam client running.")
+                              : qsTr("Valve's overlay. Needs the Steam client running.")
                         color: MD.Token.color.on_surface_variant
                         typescale: MD.Token.typescale.body_small
                         wrapMode: Text.WordWrap
@@ -313,7 +315,7 @@ MD.BottomSheet {
                 }
 
                 MD.Switch {
-                    checked: !!(root.info.steamOverlayForced)
+                    checked: !!(root.info.steamOverlayOn)
                     onToggled: {
                         Core.setGameSteamOverlayForced(root.gameId, checked)
                         root.detailsRevision++

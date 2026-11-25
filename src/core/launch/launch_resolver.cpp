@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QRegularExpression>
+#include <QStandardPaths>
 
 namespace arachnel::core {
 
@@ -178,7 +179,17 @@ void applyUserLaunchOptions(ResolvedLaunch* resolved, const LaunchOptions& globa
     QStringList wrapped = wrapper.mid(1);
     wrapped.append(resolved->program);
     wrapped += resolved->arguments;
-    resolved->program = wrapper.first();
+    // Steam resolves a bare wrapper name ("mangohud %command%", "env -u X %command%") on
+    // PATH. ProcessLauncher only checks that the program exists as a file, so look the
+    // name up here; a name that isn't on PATH is left as typed and still fails there
+    // with "File not found: <name>".
+    QString program = wrapper.first();
+    if (!program.contains(QLatin1Char('/'))) {
+        const QString onPath = QStandardPaths::findExecutable(program);
+        if (!onPath.isEmpty())
+            program = onPath;
+    }
+    resolved->program = program;
     resolved->arguments = wrapped;
 }
 
@@ -285,15 +296,18 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
         } else if (runtimeMode == QStringLiteral("1") && !hostBreaksWithLegacySteamRuntime()) {
             const QString steamRuntime = manager.findSteamLinuxRuntime();
             if (!steamRuntime.isEmpty() && manager.steamLinuxRuntimeUsable()) {
+                // "--" ends pressure-vessel's own options. Its option parser permutes, so
+                // without it a game argument like Valheim's -force-vulkan is taken as a
+                // runtime option and the launch dies at once ("Unknown option").
                 resolved.program = steamRuntime;
-                resolved.arguments = QStringList{proton} + protonArgs;
+                resolved.arguments = QStringList{QStringLiteral("--"), proton} + protonArgs;
                 insideSteamRuntime = true;
             } else if (!steamRuntime.isEmpty() && manager.canAaExecSteamProfile()) {
                 insideSteamRuntime = true;
                 resolved.program = QStringLiteral("/usr/bin/aa-exec");
                 resolved.arguments =
                     QStringList{QStringLiteral("-p"), QStringLiteral("steam"), QStringLiteral("--"),
-                                steamRuntime, proton}
+                                steamRuntime, QStringLiteral("--"), proton}
                     + protonArgs;
             } else {
                 resolved.program = proton;
