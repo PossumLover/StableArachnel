@@ -398,7 +398,7 @@ void LaunchController::handleOnlineFixSelfProtection(const QString& gameId)
     QTimer::singleShot(1500, this, [this, gameId, installPath, executable, appId]() {
         QString summary;
         QString error;
-        if (!convertOnlineFixToSteamFix(gameId, installPath, executable, appId, &summary,
+        if (!convertOnlineFixToSteamFix(gameId, scanFixLayout(installPath), executable, appId, &summary,
                                         &error)) {
             logLine(QCoreApplication::translate("Core", "Could not switch to SteamFix: %1")
                         .arg(error));
@@ -1061,19 +1061,13 @@ void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
         // (Valheim) or hangs in its networking (Invokyr). Online Fix cannot work like
         // this, so switch to SteamFix now, the same way an error-4 refusal does.
         {
-            const QString exeDir = !watchHints.executablePath.isEmpty()
-                                       ? QFileInfo(watchHints.executablePath).absolutePath()
-                                       : gameCopy.installPath;
-            const QDir dir(exeDir);
-            if (dir.exists(QStringLiteral("OnlineFix64.dll"))
-                && !dir.exists(QStringLiteral("winmm.dll")) && steamFixKitAvailable()) {
+            if (onlineFixMissingLoader(fixLayout, watchHints.executablePath) && steamFixKitAvailable()) {
                 QString summary;
                 QString error;
-                // Conversion can move files even if a later step fails.
-                layoutChanged = true;
-                if (convertOnlineFixToSteamFix(gameCopy.id, gameCopy.installPath,
+                if (convertOnlineFixToSteamFix(gameCopy.id, fixLayout,
                                                watchHints.executablePath,
                                                realSteamAppId(gameCopy), &summary, &error)) {
+                    layoutChanged = true;
                     logLine(QCoreApplication::translate(
                                 "Core", "Online Fix has no winmm.dll loader here, so it can "
                                         "never load; switched to SteamFix. %1")

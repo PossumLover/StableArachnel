@@ -458,7 +458,7 @@ void LibraryController::switchGameToSteamFix(const QString& entryId)
     QString summary;
     QString error;
     const QString exe = chooseLaunchExecutable(LaunchInfo{}, *existing);
-    if (!convertOnlineFixToSteamFix(existing->id, existing->installPath, exe,
+    if (!convertOnlineFixToSteamFix(existing->id, scanFixLayout(existing->installPath), exe,
                                     realSteamAppId(*existing), &summary, &error)) {
         if (m_hooks.notice) {
             m_hooks.notice(QCoreApplication::translate("Core", "Could not switch to SteamFix: %1")

@@ -273,8 +273,9 @@ MD.BottomSheet {
                     MD.Label {
                         Layout.fillWidth: true
                         text: root.info.onlineFixKind === "steamfix"
-                              ? qsTr("Using SteamFix. Runs without a Steam license; Steam shows you in Spacewar.")
-                              : qsTr("Using Online Fix. Runs without a Steam license; Steam shows you in Spacewar.")
+                              ? qsTr("Using SteamFix.")
+                              : root.info.onlineFixKind === "onlinefix" ? qsTr("Using Online Fix.")
+                              : qsTr("Runs without a Steam license.")
                         color: MD.Token.color.on_surface_variant
                         typescale: MD.Token.typescale.body_small
                         wrapMode: Text.WordWrap

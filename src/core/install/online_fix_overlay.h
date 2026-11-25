@@ -62,16 +62,12 @@ OnlineFixOverlayState detectOnlineFixOverlay(const QString& installPath);
 QString steamFixKitDir();
 /** True when steamFixKitDir() holds a usable 64-bit kit. */
 bool steamFixKitAvailable();
-/**
- * Replace an install's Online Fix layer with SteamFix. Online Fix files beside the
- * executable (and in the install root, if the fix lives there) are MOVED to
- * <AppData>/backups/<gameId>-onlinefix-<time>/ with a RESTORE.txt, never deleted,
- * and never left inside the install where the layout healer would copy them back.
- */
-/** "steamfix", "onlinefix" or empty: the Steam layer installed in an overlay dir. */
+/** "steamfix", "onlinefix" or empty: the active Steam layer in an overlay dir. */
 QString fixLayerKind(const QString& overlayDir);
+bool onlineFixMissingLoader(const FixLayoutScan& scan, const QString& executable);
 
-bool convertOnlineFixToSteamFix(const QString& gameId, const QString& installPath,
+/** Replace active Online Fix layers in place, journaling backups outside the install. */
+bool convertOnlineFixToSteamFix(const QString& gameId, const FixLayoutScan& scan,
                                 const QString& executablePath, const QString& realAppId,
                                 QString* summaryOut = nullptr, QString* error = nullptr);
 
