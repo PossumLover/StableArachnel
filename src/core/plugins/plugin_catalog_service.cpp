@@ -552,6 +552,12 @@ void PluginCatalogService::finishInstallAttempt(const QString& pluginId, bool ok
                                                 const QString& pathOrError)
 {
     emit installFinished(pluginId, ok, pathOrError);
+    if (!ok)
+        completeInstallAttempt();
+}
+
+void PluginCatalogService::completeInstallAttempt()
+{
     setInstalling({});
     processInstallQueue();
 }

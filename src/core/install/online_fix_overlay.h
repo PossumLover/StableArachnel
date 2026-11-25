@@ -97,7 +97,7 @@ int healOnlineFixLayoutForExecutable(const FixLayoutScan& scan, const QString& e
 void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
                               const QString& realAppId = {});
 void applyOnlineFixLaunchInfo(const FixLayoutScan& scan, LaunchInfo* info,
-                              const QString& realAppId = {});
+                              const QString& realAppId = {}, const QString& launchExecutable = {});
 
 bool isSteamClientRunning();
 /** Best-effort: spawn Steam detached. Returns true if the process was started. */

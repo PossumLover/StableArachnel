@@ -86,7 +86,10 @@
     void scheduleOfficialPluginAutoUpdate();
     void runOfficialPluginAutoUpdate();
     void finishOfficialPluginAutoUpdate();
-    bool installPluginArachInternal(const QUrl& fileUrl, bool quiet);
+    bool finishPluginArachInstall(const QString& path, bool official);
+    void installOfficialPluginPackage(const QString& path);
+    void finishPluginRescan();
+    bool finishClearApplicationData();
 
     LibraryModel m_library;
     LibraryViewModel m_libraryView{&m_library, nullptr, true};
@@ -151,9 +154,8 @@
     /** Verify jobs started on a game whose Online Fix the user had turned off. */
     QSet<QString> m_verifyKeepsOnlineFixOff;
     QList<QFuture<void>> m_catalogAddonEnrichFutures;
-    mutable QMutex m_catalogAddonEnrichMutex;
+    bool m_catalogAddonEnrichCallbackActive = false;
     bool m_pluginCallsBlocked = false;
 
-    void waitForCatalogAddonEnrich();
     bool hasInFlightCatalogAddonEnrich() const;
     void reportIncompatiblePlugins();

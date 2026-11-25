@@ -136,12 +136,8 @@ void CoreController::initializeServices()
         m_catalogFilters->setCacheLock(&m_catalogCacheLock);
     if (m_pluginHost) {
         m_pluginHost->setBeforeUnloadHook([this](const QString& pluginId) {
-            m_pluginCallsBlocked = true;
-            waitForCatalogAddonEnrich();
             if (m_catalogController)
                 m_catalogController->waitForInFlightPluginCatalogLoads();
-            // Drain anything queued while catalog loads finished.
-            waitForCatalogAddonEnrich();
             // Install / owned-download workers still hold ISourcePlugin* into the DSO.
             // Scoped to the plugin going away: these run for the whole length of a
             // download, so draining every plugin's workers here froze the UI.
@@ -575,17 +571,15 @@ void CoreController::initializeServices()
                 // detail is temp .arach path on success from catalog service
                 if (detail.endsWith(QStringLiteral(".arach"), Qt::CaseInsensitive)
                     || QFileInfo::exists(detail)) {
-                    if (installPluginArachInternal(QUrl::fromLocalFile(detail),
-                                                   m_autoUpdatingOfficialPlugins)) {
-                        QFile::remove(detail);
-                        if (m_autoUpdatingOfficialPlugins)
-                            ++m_autoUpdatePluginSuccessCount;
-                    }
-                } else if (!m_autoUpdatingOfficialPlugins) {
+                    installOfficialPluginPackage(detail);
+                    return;
+                }
+                if (!m_autoUpdatingOfficialPlugins) {
                     showNotice(QCoreApplication::translate("Core", "Plugin installed: %1").arg(pluginId));
                 } else {
                     ++m_autoUpdatePluginSuccessCount;
                 }
+                m_pluginCatalog->completeInstallAttempt();
             });
     connect(m_pluginCatalog, &PluginCatalogService::installQueueDrained, this, [this]() {
         if (m_autoUpdatingOfficialPlugins)

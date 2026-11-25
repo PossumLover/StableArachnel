@@ -243,7 +243,6 @@ CoreController::CoreController(QObject* parent)
             });
     initializeServices();
     connect(m_pluginHost, &PluginHost::pluginsChanged, this, [this]() {
-        m_pluginCallsBlocked = false;
         syncSourcesFromPlugins();
         pruneDisabledCatalogSources();
         // Don't rematch ~100k rows into a live GridView on every plugin list tweak.

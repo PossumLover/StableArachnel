@@ -19,6 +19,7 @@ struct ResolvedLaunch {
     QProcessEnvironment environment;
     /** The game runs under Proton. The prefix and Wine-only settings exist only then. */
     bool viaProton = false;
+    bool unsetSteamAppId = false;
 };
 
 QStringList splitLaunchArguments(const QString& text);

@@ -257,6 +257,11 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
 
     const LaunchOptions globalOptions = parseLaunchOptions(settings.globalLaunchArgs());
     const LaunchOptions gameOptions = parseLaunchOptions(game.launchArgs);
+    const QString steamAppId = QStringLiteral("SteamAppId");
+    // A null SteamAppId extra requests removal without changing the plugin ABI.
+    const bool unsetSteamAppId = pluginInfo.environmentExtras.contains(steamAppId)
+        && pluginInfo.environmentExtras.value(steamAppId).isNull();
+    resolved.unsetSteamAppId = unsetSteamAppId;
 
     QStringList arguments = pluginInfo.arguments;
     arguments += globalOptions.arguments;
@@ -341,7 +346,8 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
         // Skip internal launch hints when applying env extras.
         for (auto it = pluginInfo.environmentExtras.constBegin();
              it != pluginInfo.environmentExtras.constEnd(); ++it) {
-            if (it.key().isEmpty() || it.key() == QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"))
+            if (it.key().isEmpty() || it.key() == QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME")
+                || (unsetSteamAppId && it.key() == steamAppId))
                 continue;
             if (it.key() == QStringLiteral("LD_PRELOAD")) {
                 const QString existing = resolved.environment.value(QStringLiteral("LD_PRELOAD"));
@@ -370,6 +376,8 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
             }
         }
         applyUserLaunchOptions(&resolved, globalOptions, gameOptions);
+        if (unsetSteamAppId)
+            resolved.environment.remove(steamAppId);
         return resolved;
     }
 
@@ -380,7 +388,8 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
     resolved.environment.remove(QStringLiteral("LD_PRELOAD"));
     for (auto it = pluginInfo.environmentExtras.constBegin();
          it != pluginInfo.environmentExtras.constEnd(); ++it) {
-        if (it.key().isEmpty() || it.key() == QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME"))
+        if (it.key().isEmpty() || it.key() == QStringLiteral("ARACHNEL_USE_STEAM_RUNTIME")
+            || (unsetSteamAppId && it.key() == steamAppId))
             continue;
         if (it.key() == QStringLiteral("LD_PRELOAD")) {
             QString added = it.value().trimmed();
@@ -406,6 +415,8 @@ ResolvedLaunch resolveLaunch(const LaunchInfo& pluginInfo, const LibraryGame& ga
     }
 #endif
     applyUserLaunchOptions(&resolved, globalOptions, gameOptions);
+    if (unsetSteamAppId)
+        resolved.environment.remove(steamAppId);
     return resolved;
 }
 

@@ -10,7 +10,7 @@
 #include <QFuture>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QMutexLocker>
+#include <QScopedValueRollback>
 #include <QStandardPaths>
 #include <QWriteLocker>
 #include <QtConcurrent>
@@ -62,6 +62,32 @@ bool CoreController::clearApplicationData()
         return false;
     }
 
+    if (m_quitRequested || m_prepareShutdownDone)
+        return false;
+    if (m_pluginCallsBlocked) {
+        showNotice(tr("Wait for the plugin operation to finish before clearing application data."));
+        return false;
+    }
+    m_pluginCallsBlocked = true;
+    return finishClearApplicationData();
+}
+
+bool CoreController::finishClearApplicationData()
+{
+    if (m_quitRequested || m_prepareShutdownDone)
+        return false;
+    if (hasInFlightCatalogAddonEnrich()) {
+        QTimer::singleShot(50, this, [this]() { finishClearApplicationData(); });
+        return true;
+    }
+    if (m_runtimeSetupInProgress) {
+        cancelRuntimeSetup();
+        m_pluginCallsBlocked = false;
+        showNotice(tr("Runtime setup is stopping. Clear application data once it has stopped."));
+        return false;
+    }
+    const QString dataDir = applicationDataPath();
+
     // Stop I/O without rewriting jobs/settings into AppData.
     if (m_launchController)
         m_launchController->stopRunningGame();
@@ -82,12 +108,14 @@ bool CoreController::clearApplicationData()
     appearanceSettings.sync();
 
     if (QDir(dataDir).exists() && !QDir(dataDir).removeRecursively()) {
+        m_pluginCallsBlocked = false;
         showNotice(QCoreApplication::translate("Core", "Failed to delete application data"));
         return false;
     }
 
     // Seed a minimal settings file so the next launch shows first-run onboarding.
     if (!QDir().mkpath(dataDir)) {
+        m_pluginCallsBlocked = false;
         showNotice(QCoreApplication::translate("Core", "Failed to reset application data"));
         return false;
     }
@@ -594,7 +622,10 @@ bool CoreController::ensureCatalogAddons(const QString& entryId)
     }
 
     m_catalogAddonEnrichInFlight.insert(resolved);
-    // Capture sourceId (not idx / raw plugin*) so cache rebuilds and unload waits stay safe.
+    // Resolve the source by ID so cache rebuilds cannot invalidate the worker's lookup.
+    m_catalogAddonEnrichFutures.removeIf([](const QFuture<void>& future) {
+        return future.isFinished();
+    });
     QFuture<void> future = QtConcurrent::run([this, sourceId, resolved]() {
         QVector<CatalogComponent> addons;
         bool hasWorkshop = false;
@@ -610,6 +641,9 @@ bool CoreController::ensureCatalogAddons(const QString& entryId)
         QMetaObject::invokeMethod(
             this,
             [this, resolved, addons, hasWorkshop]() {
+                // A listener can process events before returning to this callback.
+                const QScopedValueRollback<bool> callbackActive(m_catalogAddonEnrichCallbackActive,
+                                                                 true);
                 m_catalogAddonEnrichInFlight.remove(resolved);
                 {
                     QWriteLocker locker(&m_catalogCacheLock);
@@ -635,33 +669,14 @@ bool CoreController::ensureCatalogAddons(const QString& entryId)
             },
             Qt::QueuedConnection);
     });
-    {
-        QMutexLocker lock(&m_catalogAddonEnrichMutex);
-        m_catalogAddonEnrichFutures.append(future);
-    }
+    m_catalogAddonEnrichFutures.append(future);
     return false;
-}
-
-void CoreController::waitForCatalogAddonEnrich()
-{
-    for (;;) {
-        QList<QFuture<void>> futures;
-        {
-            QMutexLocker lock(&m_catalogAddonEnrichMutex);
-            futures.swap(m_catalogAddonEnrichFutures);
-        }
-        if (futures.isEmpty())
-            break;
-        for (QFuture<void>& future : futures)
-            future.waitForFinished();
-    }
 }
 
 bool CoreController::hasInFlightCatalogAddonEnrich() const
 {
-    if (!m_catalogAddonEnrichInFlight.isEmpty())
+    if (m_catalogAddonEnrichCallbackActive || !m_catalogAddonEnrichInFlight.isEmpty())
         return true;
-    QMutexLocker lock(&m_catalogAddonEnrichMutex);
     for (const QFuture<void>& future : m_catalogAddonEnrichFutures) {
         if (!future.isFinished())
             return true;

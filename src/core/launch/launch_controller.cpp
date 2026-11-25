@@ -1083,7 +1083,13 @@ void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
 
         if (layoutChanged)
             fixLayout = scanFixLayout(gameCopy.installPath);
-        applyOnlineFixLaunchInfo(fixLayout, &info, realSteamAppId(gameCopy));
+        applyOnlineFixLaunchInfo(fixLayout, &info, realSteamAppId(gameCopy),
+                                 watchHints.executablePath);
+#if defined(Q_OS_LINUX)
+        if (const QString id = info.environmentExtras.value(QStringLiteral("SteamGameId"));
+            !id.isEmpty())
+            watchHints.fakeSteamAppId = id;
+#endif
     }
 
     {
@@ -1097,9 +1103,16 @@ void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
         // OF.me (OnlineFix.ini) does not - starting Steam next to it often trips
         // Self-protection (error 4) under Proton.
         const QString ov = overlay.overlayDir.isEmpty() ? gameCopy.installPath : overlay.overlayDir;
-        const bool steamFix = QDir(ov).exists(QStringLiteral("SteamFix.ini"))
-                              || QDir(ov).exists(QStringLiteral("SteamFix64.dll"))
-                              || QDir(ov).exists(QStringLiteral("SteamFix32.dll"));
+        bool steamFix = QDir(ov).exists(QStringLiteral("SteamFix.ini"))
+                        || QDir(ov).exists(QStringLiteral("SteamFix64.dll"))
+                        || QDir(ov).exists(QStringLiteral("SteamFix32.dll"));
+#if defined(Q_OS_LINUX)
+        // A SteamFix layer beside the executable can belong to a different fix
+        // than the one found in the initial install scan.
+        const auto appId = info.environmentExtras.constFind(QStringLiteral("SteamAppId"));
+        steamFix = steamFix || (appId != info.environmentExtras.constEnd()
+                               && appId.value().isNull());
+#endif
         if (overlay.enabled && steamFix && !isSteamClientRunning()) {
             tryStartSteamClient();
             if (m_hooks.notice) {
@@ -1215,7 +1228,9 @@ void LaunchController::launchAfterRuntime(const LibraryGame& gameCopy)
             logLine(QStringLiteral("LD_PRELOAD: %1").arg(preload));
         const QString steamAppId = resolved.environment.value(QStringLiteral("SteamAppId"));
         const QString steamGameId = resolved.environment.value(QStringLiteral("SteamGameId"));
-        if (!steamAppId.isEmpty() || !steamGameId.isEmpty()) {
+        if (resolved.unsetSteamAppId) {
+            logLine(QStringLiteral("SteamAppId left unset for SteamFix"));
+        } else if (!steamAppId.isEmpty() || !steamGameId.isEmpty()) {
             logLine(QStringLiteral("SteamAppId=%1 SteamGameId=%2")
                         .arg(steamAppId.isEmpty() ? QStringLiteral("-") : steamAppId,
                              steamGameId.isEmpty() ? QStringLiteral("-") : steamGameId));

@@ -33,6 +33,7 @@ public:
 
     Q_INVOKABLE void refresh();
     Q_INVOKABLE void installPlugin(const QString& pluginId);
+    void completeInstallAttempt();
 
 signals:
     void pluginsChanged();
@@ -40,7 +41,8 @@ signals:
     void installingChanged();
     void downloadProgressChanged();
     void errorChanged();
-    /// On success, pathOrError is the downloaded .arach path; on failure it is an error message.
+    /// On success, pathOrError is the .arach path and the consumer must call completeInstallAttempt().
+    /// On failure, pathOrError is an error message.
     void installFinished(const QString& pluginId, bool ok, const QString& pathOrError);
     /// Fired when the install queue becomes idle (no active download and no pending ids).
     void installQueueDrained();

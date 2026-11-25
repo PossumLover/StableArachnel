@@ -171,9 +171,8 @@ void LibraryStore::recordPlaytime(const QString& id, qint64 deltaMs, qint64 sess
     if (ended && sessionMs > 0)
         updated.lastSessionMs = qMax<qint64>(0, sessionMs);
     upsertGame(updated);
-    // A checkpoint is there to survive a crash mid-session; don't leave it in the
-    // coalescing window. They come every ~30 s, so this is not a write storm.
-    flush();
+    if (ended)
+        flush();
 }
 
 void LibraryStore::setPlayStatus(const QString& id, const QString& status)

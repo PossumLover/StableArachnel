@@ -277,11 +277,13 @@ bool dirHasBundledSteamOverlayDll(const QString& dir)
 }
 
 void appendSteamOverlayEnvironment(LaunchInfo* info, const QString& fakeSteamId,
-                                   const QString& overlayDir, bool forceValveOverlay)
+                                   const QString& overlayDir, bool forceValveOverlay,
+                                   bool unsetSteamAppId)
 {
     const QString overlayId = fakeSteamId.isEmpty() ? QStringLiteral("480") : fakeSteamId;
-    // SpaceWar AppId is still required for SteamFix / OF.me IPC.
-    info->environmentExtras.insert(QStringLiteral("SteamAppId"), overlayId);
+    // Proton falls back to steam_appid.txt, leaving SteamFix to supply the real game ID.
+    info->environmentExtras.insert(QStringLiteral("SteamAppId"),
+                                   unsetSteamAppId ? QString() : overlayId);
     info->environmentExtras.insert(QStringLiteral("SteamGameId"), overlayId);
     info->environmentExtras.insert(QStringLiteral("SteamOverlayGameId"), overlayId);
 
@@ -1182,7 +1184,8 @@ void applyOnlineFixLaunchInfo(const QString& installPath, LaunchInfo* info,
     applyOnlineFixLaunchInfo(scanFixLayout(installPath), info, realAppId);
 }
 
-void applyOnlineFixLaunchInfo(const FixLayoutScan& scan, LaunchInfo* info, const QString& realAppId)
+void applyOnlineFixLaunchInfo(const FixLayoutScan& scan, LaunchInfo* info, const QString& realAppId,
+                              const QString& launchExecutable)
 {
     const QString& installPath = scan.install.path;
     if (!info || installPath.isEmpty())
@@ -1250,29 +1253,6 @@ void applyOnlineFixLaunchInfo(const FixLayoutScan& scan, LaunchInfo* info, const
     // presentation path, so turning the Wayland backend on is a plausible way to
     // lose the overlay. Setting it to "1" was a misreading of that config.
 
-    QString fakeAppId = QStringLiteral("480");
-    const QString steamFixIni = QDir(overlayDir).filePath(QStringLiteral("SteamFix.ini"));
-    const QString onlineFixIni = QDir(overlayDir).filePath(QStringLiteral("OnlineFix.ini"));
-    if (QFileInfo::exists(steamFixIni)) {
-        const QString fromIni = readIniAppId(steamFixIni, QStringLiteral("FakeAppId"));
-        if (!fromIni.isEmpty())
-            fakeAppId = fromIni;
-    } else if (QFileInfo::exists(onlineFixIni)) {
-        const QString fromIni = readIniAppId(onlineFixIni, QStringLiteral("FakeAppId"));
-        if (!fromIni.isEmpty())
-            fakeAppId = fromIni;
-    }
-
-    // steam_appid.txt is read by steam_api / Steamworks.NET. Write on every OS -
-    // critical for 32-bit Unity installs where only SteamFix64+x64 winmm was embedded
-    // (wrong-arch winmm in the game folder fails LoadLibrary with no SysWOW64 fallback).
-    auto ensureSteamAppIdFile = [&fakeAppId](const QString& dir) {
-        if (dir.isEmpty() || !QDir(dir).exists())
-            return;
-        writeTextFile(QDir(dir).filePath(QStringLiteral("steam_appid.txt")),
-                      fakeAppId.endsWith(QLatin1Char('\n')) ? fakeAppId
-                                                          : fakeAppId + QLatin1Char('\n'));
-    };
     // Let the fix layer do the translating rather than doing it from outside. A SteamFix
     // repack ships RealAppId alongside FakeAppId and presents the real id to the game
     // while Steam only ever sees the fake one; an OnlineFix repack ships FakeAppId alone,
@@ -1290,16 +1270,71 @@ void applyOnlineFixLaunchInfo(const FixLayoutScan& scan, LaunchInfo* info, const
         if (!info->workingDirectory.isEmpty())
             ensureRealAppIdInIni(info->workingDirectory, id);
     }
+    const QString& executable = launchExecutable.isEmpty() ? info->executable : launchExecutable;
+    const QString exeDir = executable.isEmpty() ? QString() : QFileInfo(executable).absolutePath();
+    const auto hasOnlineFixDll = [](const QDir& dir) {
+        return dir.exists(QStringLiteral("OnlineFix.dll"))
+            || dir.exists(QStringLiteral("OnlineFix32.dll"))
+            || dir.exists(QStringLiteral("OnlineFix64.dll"));
+    };
+
+    // A repack can ship a different fix for its launcher and its game executable.
+    QDir layerDir(overlayDir);
+    if (!exeDir.isEmpty()) {
+        const QDir exeLayer(exeDir);
+        if (hasOnlineFixDll(exeLayer)
+            || (!unsteamIsLiveIn(exeLayer)
+                && !readIniAppId(exeLayer.filePath(QStringLiteral("SteamFix.ini")),
+                                 QStringLiteral("RealAppId")).isEmpty())) {
+            layerDir = exeLayer;
+        }
+    }
+    const QString steamFixIni = layerDir.filePath(QStringLiteral("SteamFix.ini"));
+    const bool onlineFix = hasOnlineFixDll(layerDir);
+    // Repacks keep SteamFix.ini beside a live Unsteam (unsteam.dll + winmm.dll); that
+    // folder is Unsteam's, and Unsteam needs SteamAppId like Online Fix does.
+    const bool steamFix = !onlineFix && !unsteamIsLiveIn(layerDir)
+        && !readIniAppId(steamFixIni, QStringLiteral("RealAppId")).isEmpty();
+    const QString appIdIni = !onlineFix && QFileInfo::exists(steamFixIni)
+        ? steamFixIni : layerDir.filePath(QStringLiteral("OnlineFix.ini"));
+    QString fakeAppId = readIniAppId(appIdIni, QStringLiteral("FakeAppId"));
+    if (fakeAppId.isEmpty())
+        fakeAppId = QStringLiteral("480");
+
+    const QString canonicalInstall = QFileInfo(installPath).canonicalFilePath();
+    const auto insideInstall = [&canonicalInstall](const QString& path) {
+        if (canonicalInstall.isEmpty() || path.isEmpty())
+            return false;
+        const QString relative = QDir(canonicalInstall).relativeFilePath(path);
+        return !QDir::isAbsolutePath(relative) && relative != QStringLiteral("..")
+            && !relative.startsWith(QStringLiteral("../"));
+    };
+
+    // An executable override or a symlink can point into another game's install.
+    // Keep the fallback ID local, including for 32-bit games that cannot load the fix DLL.
+    const auto ensureSteamAppIdFile = [&](const QString& dir) {
+        if (dir.isEmpty())
+            return;
+        const QString parent = QFileInfo(dir).canonicalFilePath();
+        if (!insideInstall(parent))
+            return;
+        const QString path = QDir(parent).filePath(QStringLiteral("steam_appid.txt"));
+        const QFileInfo destination(path);
+        const QString target = destination.exists() || destination.isSymLink()
+            ? destination.canonicalFilePath() : path;
+        if (insideInstall(target))
+            writeTextFile(target, fakeAppId + QLatin1Char('\n'));
+    };
     ensureSteamAppIdFile(overlayDir);
     if (!info->workingDirectory.isEmpty()
         && QFileInfo(info->workingDirectory).absoluteFilePath()
             != QFileInfo(overlayDir).absoluteFilePath())
         ensureSteamAppIdFile(info->workingDirectory);
-    if (!info->executable.isEmpty()) {
-        const QString exeDir = QFileInfo(info->executable).absolutePath();
-        if (QFileInfo(exeDir).absoluteFilePath() != QFileInfo(overlayDir).absoluteFilePath())
-            ensureSteamAppIdFile(exeDir);
-    }
+    const QString appIdExeDir = steamFix ? exeDir
+        : (info->executable.isEmpty() ? QString() : QFileInfo(info->executable).absolutePath());
+    if (!appIdExeDir.isEmpty()
+        && QFileInfo(appIdExeDir).absoluteFilePath() != QFileInfo(overlayDir).absoluteFilePath())
+        ensureSteamAppIdFile(appIdExeDir);
 
     // Windows + Proton: block FreeTP promo browser (path-local .hash / noop cmd.exe).
     plantFreetpPromoBlock(overlayDir);
@@ -1358,7 +1393,7 @@ void applyOnlineFixLaunchInfo(const FixLayoutScan& scan, LaunchInfo* info, const
 #if defined(Q_OS_LINUX)
     // Valve LD_PRELOAD only when the install does not already ship OF.me overlay
     // DLLs - unless this game is opted in to the overlay, SOFL-style.
-    appendSteamOverlayEnvironment(info, fakeAppId, overlayDir, forceOverlay);
+    appendSteamOverlayEnvironment(info, fakeAppId, overlayDir, forceOverlay, steamFix);
 
     // SOFL refuses to launch at all without the Steam client ("STEAMNOTSTARTED"):
     // the preloaded overlay has nothing to attach to otherwise.

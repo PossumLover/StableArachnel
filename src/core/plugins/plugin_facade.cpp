@@ -141,21 +141,51 @@ bool CoreController::installPluginArach(const QUrl& fileUrl)
         showNotice(QCoreApplication::translate("Core", "Wait for the plugin update to finish."));
         return false;
     }
-    return installPluginArachInternal(fileUrl, false);
-}
-
-bool CoreController::installPluginArachInternal(const QUrl& fileUrl, bool quiet)
-{
-    if (!m_pluginHost || m_pluginInstallBusy || m_pluginRemoveBusy)
+    if (!m_pluginHost || m_pluginCallsBlocked)
         return false;
 
     const QString path = fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString();
+    m_pluginCallsBlocked = true;
     m_pluginInstallBusy = true;
     emit pluginInstallBusyChanged();
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
-    const bool ok = m_pluginHost->installFromArach(path);
-    m_pluginInstallBusy = false;
+    return finishPluginArachInstall(path, false);
+}
+
+void CoreController::installOfficialPluginPackage(const QString& path)
+{
+    if (m_quitRequested || m_prepareShutdownDone || m_applicationDataCleared)
+        return;
+    if (m_pluginCallsBlocked) {
+        QTimer::singleShot(50, this, [this, path]() { installOfficialPluginPackage(path); });
+        return;
+    }
+    m_pluginCallsBlocked = true;
+    m_pluginInstallBusy = true;
     emit pluginInstallBusyChanged();
+    finishPluginArachInstall(path, true);
+}
+
+bool CoreController::finishPluginArachInstall(const QString& path, bool official)
+{
+    if (m_quitRequested || m_prepareShutdownDone)
+        return false;
+    // The plugin can still be serving DLC metadata after the package is ready.
+    if (hasInFlightCatalogAddonEnrich()) {
+        QTimer::singleShot(50, this, [this, path, official]() {
+            finishPluginArachInstall(path, official);
+        });
+        return true;
+    }
+    const bool quiet = official && m_autoUpdatingOfficialPlugins;
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+    if (m_quitRequested || m_prepareShutdownDone)
+        return false;
+    const bool ok = m_pluginHost->installFromArach(path);
+    if (official && ok) {
+        QFile::remove(path);
+        if (quiet)
+            ++m_autoUpdatePluginSuccessCount;
+    }
     m_lastPluginError = ok ? QString() : m_pluginHost->lastError();
     emit lastPluginErrorChanged();
     if (ok) {
@@ -167,6 +197,11 @@ bool CoreController::installPluginArachInternal(const QUrl& fileUrl, bool quiet)
     } else if (!m_lastPluginError.isEmpty()) {
         showNotice(QCoreApplication::translate("Core", "Plugin install failed: %1").arg(m_lastPluginError));
     }
+    m_pluginCallsBlocked = m_quitRequested || m_prepareShutdownDone;
+    m_pluginInstallBusy = false;
+    emit pluginInstallBusyChanged();
+    if (official)
+        m_pluginCatalog->completeInstallAttempt();
     return ok;
 }
 
@@ -176,7 +211,7 @@ bool CoreController::uninstallPlugin(const QString& pluginId)
         showNotice(QCoreApplication::translate("Core", "Wait for the plugin update to finish."));
         return false;
     }
-    if (!m_pluginHost || m_pluginRemoveBusy || m_pluginInstallBusy)
+    if (!m_pluginHost || m_pluginCallsBlocked)
         return false;
 
     // Unloading the library must wait for every catalog load / install worker that is still
@@ -184,28 +219,33 @@ bool CoreController::uninstallPlugin(const QString& pluginId)
     // through its before-unload hook) froze the whole window for as long as a catalog parse
     // or download lasted - several seconds on a fresh start. So: stop new work, let the
     // running work drain while the event loop keeps running, then do the removal.
+    m_pluginCallsBlocked = true;
     m_pluginRemoveBusy = true;
     emit pluginRemoveBusyChanged();
-    m_pluginCallsBlocked = true;
     if (m_catalogController)
         m_catalogController->detachInFlightPluginCatalogLoads();
 
     auto* poll = new QTimer(this);
     poll->setInterval(50);
-    auto* waited = new QElapsedTimer;
-    waited->start();
+    QElapsedTimer waited;
+    waited.start();
     connect(poll, &QTimer::timeout, this, [this, poll, waited, pluginId]() {
+        if (m_quitRequested || m_prepareShutdownDone) {
+            poll->stop();
+            poll->deleteLater();
+            return;
+        }
         // Only this plugin's workers matter: another plugin's owned download can run for hours,
         // and PluginHost refuses the removal if this plugin's own work is still going.
-        const bool busy = hasInFlightCatalogAddonEnrich()
-                          || m_pluginHost->hasInFlightPluginWorkers(pluginId)
+        if (hasInFlightCatalogAddonEnrich())
+            return;
+        const bool busy = m_pluginHost->hasInFlightPluginWorkers(pluginId)
                           || (m_catalogController && m_catalogController->hasDrainingPluginCatalogLoads());
         // A deadline is a reason to abandon removal, never permission to unload.
-        if (busy && waited->elapsed() < 30000)
+        if (busy && waited.elapsed() < 30000)
             return;
         poll->stop();
         poll->deleteLater();
-        delete waited;
 
         const bool ok = !busy && m_pluginHost->uninstallPlugin(pluginId);
         m_lastPluginError = busy ? tr("Plugin is still busy. Try removing it again later.")
@@ -215,10 +255,10 @@ bool CoreController::uninstallPlugin(const QString& pluginId)
             showNotice(QCoreApplication::translate("Core", "Plugin removed"));
             // pluginsChanged already emitted from PluginHost::uninstallPlugin.
         } else {
-            m_pluginCallsBlocked = false;
             showNotice(QCoreApplication::translate("Core", "Could not remove plugin: %1")
                            .arg(m_lastPluginError));
         }
+        m_pluginCallsBlocked = m_quitRequested || m_prepareShutdownDone;
         m_pluginRemoveBusy = false;
         emit pluginRemoveBusyChanged();
     });
@@ -258,13 +298,15 @@ void CoreController::scheduleOfficialPluginAutoUpdate()
 
 void CoreController::runOfficialPluginAutoUpdate()
 {
-    if (!m_pluginCatalog || !m_pluginHost || m_autoUpdatingOfficialPlugins)
+    if (!m_pluginCatalog || !m_pluginHost || m_autoUpdatingOfficialPlugins || m_quitRequested
+        || m_prepareShutdownDone || m_applicationDataCleared)
         return;
 
     // Don't unload plugin DLLs while QtConcurrent is still inside plugin code.
-    if ((m_catalogController
-         && (m_catalogController->catalogLoading()
-             || m_catalogController->hasInFlightPluginCatalogLoads()))
+    if (m_pluginCallsBlocked || m_pluginCatalog->installing()
+        || (m_catalogController
+            && (m_catalogController->catalogLoading()
+                || m_catalogController->hasInFlightPluginCatalogLoads()))
         || hasInFlightCatalogAddonEnrich()
         || (m_pluginHost && m_pluginHost->hasInFlightPluginWorkers())) {
         QTimer::singleShot(1500, this, &CoreController::runOfficialPluginAutoUpdate);
@@ -392,9 +434,22 @@ void CoreController::openPluginsFolder()
 
 void CoreController::rescanPlugins()
 {
-    if (!m_pluginHost)
+    if (!m_pluginHost || m_pluginCallsBlocked)
         return;
+    m_pluginCallsBlocked = true;
+    finishPluginRescan();
+}
+
+void CoreController::finishPluginRescan()
+{
+    if (m_quitRequested || m_prepareShutdownDone)
+        return;
+    if (hasInFlightCatalogAddonEnrich()) {
+        QTimer::singleShot(50, this, &CoreController::finishPluginRescan);
+        return;
+    }
     m_pluginHost->scan();
+    m_pluginCallsBlocked = m_quitRequested || m_prepareShutdownDone;
 }
 
 } // namespace arachnel::core
