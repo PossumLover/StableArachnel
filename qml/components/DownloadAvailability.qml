@@ -36,13 +36,14 @@ ColumnLayout {
             required property var modelData
             Layout.fillWidth: true
             MD.Label {
-                Layout.fillWidth: true
+                Layout.maximumWidth: Math.max(0, root.width - badge.implicitWidth - parent.spacing)
                 text: modelData.sourceName || modelData.sourceId
                 typescale: MD.Token.typescale.body_small
                 color: MD.Token.color.on_surface_variant
                 elide: Text.ElideRight
             }
-            TorBoxCacheBadge { cacheHash: modelData.cacheHash }
+            TorBoxCacheBadge { id: badge; cacheHash: modelData.cacheHash }
+            Item { Layout.fillWidth: true }
         }
     }
 }

@@ -4,6 +4,7 @@ import Arachnel.Core 1.0
 import Qcm.Material as MD
 
 Item {
+    id: libraryContent
     required property var page
 
     // ── Populated library ────────────────────────────────────────────────────
@@ -383,12 +384,35 @@ Item {
 
                 LibraryToolbar { Layout.fillWidth: true }
 
-                MD.Label {
+                ColumnLayout {
+                    readonly property bool emptyList: !Core.libraryView.search.length
+                                                      && Core.libraryView.playStatus.length > 0
                     Layout.fillWidth: true
+                    Layout.topMargin: MD.Token.spacing.medium
+                    Layout.bottomMargin: MD.Token.spacing.large
                     visible: Core.libraryView.count === 0
-                    text: qsTr("No games match your search or list.")
-                    typescale: MD.Token.typescale.body_medium
-                    color: MD.Token.color.on_surface_variant
+                    spacing: MD.Token.spacing.small
+
+                    MD.Label {
+                        text: parent.emptyList ? qsTr("Nothing in this list yet")
+                                               : qsTr("No games match your search.")
+                        typescale: MD.Token.typescale.title_medium
+                    }
+
+                    MD.Label {
+                        visible: parent.emptyList
+                        text: qsTr("Right-click a game, or use List on its page.")
+                        typescale: MD.Token.typescale.body_medium
+                        color: MD.Token.color.on_surface_variant
+                    }
+
+                    MD.Button {
+                        Layout.topMargin: MD.Token.spacing.extra_small
+                        visible: parent.emptyList
+                        text: qsTr("Show all games")
+                        mdState.type: MD.Enum.BtFilledTonal
+                        onClicked: Core.libraryView.playStatus = ""
+                    }
                 }
 
                 Item {
@@ -431,9 +455,17 @@ Item {
                         populate: StaggerEnterTransition {}
                         add: StaggerEnterTransition { staggered: false }
                         delegate: LibraryGameCard {
+                            id: gameCard
+                            listName: cardMenu.nameForStatus(playStatus)
                             width: gridHost.cardWidth
                             height: gridHost.cardHeight
                             onOpenDetails: function (id) { page.openGame(id) }
+                            onContextMenuRequested: function (position) {
+                                cardMenu.gameId = gameCard.gameId
+                                cardMenu.playStatus = gameCard.playStatus
+                                const p = gameCard.mapToItem(libraryContent, position.x, position.y)
+                                cardMenu.popup(p.x, p.y)
+                            }
                             onRequestUpdate: function (id) {
                                 if (Core.catalogUpdateHasDlcRisk(id))
                                     dlcUpdateRiskDialog.openForGame(id)
@@ -445,6 +477,28 @@ Item {
                 }
             }
         }
+    }
+
+    GameListMenu {
+        id: cardMenu
+        gameId: ""
+        playStatus: ""
+        MD.MenuSeparator {}
+        MD.MenuItem {
+            text: qsTr("Game settings")
+            icon.name: MD.Token.icon.settings
+            onTriggered: {
+                settingsLoader.active = true
+                settingsLoader.item.openForGame(cardMenu.gameId)
+            }
+        }
+    }
+
+    Loader {
+        id: settingsLoader
+        anchors.fill: parent
+        active: false
+        sourceComponent: GameSettingsSheet {}
     }
 
     DlcUpdateRiskDialog {

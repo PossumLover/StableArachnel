@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import Arachnel.Core 1.0
 import Qcm.Material as MD
 
-MD.ElevationRectangle {
+ColumnLayout {
     id: root
 
     required property var page
@@ -11,14 +11,11 @@ MD.ElevationRectangle {
     readonly property bool showPanel: page.onLinux && page.installed && page.gameId.length > 0
 
     property var containerInfo: ({})
+    property alias expanded: disclosure.checked
 
     Layout.fillWidth: true
     visible: showPanel
-    Layout.preferredHeight: showPanel ? (runtimeCol.implicitHeight + 2 * MD.Token.spacing.medium) : 0
-    radius: MD.Token.shape.corner.large
-    color: MD.Token.color.surface_container_low
-    elevation: MD.Token.elevation.level0
-    clip: true
+    spacing: MD.Token.spacing.small
 
     function refreshContainerInfo() {
         if (!page || !page.gameId || page.gameId.length === 0) {
@@ -45,28 +42,32 @@ MD.ElevationRectangle {
         }
     }
 
+    MD.Button {
+        id: disclosure
+        text: qsTr("Runtime details")
+        mdState.type: MD.Enum.BtText
+        checkable: true
+        icon.name: checked ? MD.Token.icon.expand_less : MD.Token.icon.expand_more
+    }
+
+    MD.Label {
+        Layout.fillWidth: true
+        text: {
+            const total = root.containerInfo.totalCount ?? 0
+            const done = root.containerInfo.installedCount ?? 0
+            if (total <= 0)
+                return qsTr("No runtime dependencies detected for this game.")
+            return qsTr("Dependencies: %1 / %2 installed").arg(done).arg(total)
+        }
+        typescale: MD.Token.typescale.body_small
+        color: MD.Token.color.on_surface_variant
+        wrapMode: Text.WordWrap
+    }
+
     ColumnLayout {
-        id: runtimeCol
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.margins: MD.Token.spacing.medium
+        Layout.fillWidth: true
+        visible: root.expanded
         spacing: MD.Token.spacing.small
-
-        MD.Label {
-            Layout.fillWidth: true
-            text: qsTr("Runtime container")
-            typescale: MD.Token.typescale.title_small
-        }
-
-        MD.Label {
-            Layout.fillWidth: true
-            text: qsTr("Proton prefix and redistributables for this game (Linux only).")
-            color: MD.Token.color.on_surface_variant
-            typescale: MD.Token.typescale.body_small
-            wrapMode: Text.WordWrap
-        }
-
         RowLayout {
             Layout.fillWidth: true
             spacing: MD.Token.spacing.small
@@ -84,14 +85,13 @@ MD.ElevationRectangle {
                 text: root.containerInfo.containerPath || "-"
                 typescale: MD.Token.typescale.body_medium
                 wrapMode: Text.WrapAnywhere
-                maximumLineCount: 3
-                elide: Text.ElideRight
             }
 
             MD.IconButton {
                 Layout.alignment: Qt.AlignTop
                 mdState.type: MD.Enum.IBtStandard
                 icon.name: MD.Token.icon.folder_open
+                Accessible.name: qsTr("Open container folder")
                 enabled: !!(root.containerInfo.containerPath)
                 onClicked: Core.openGameRuntimeContainer(page.gameId)
             }
@@ -120,8 +120,6 @@ MD.ElevationRectangle {
                 }
                 typescale: MD.Token.typescale.body_medium
                 wrapMode: Text.WrapAnywhere
-                maximumLineCount: 3
-                elide: Text.ElideRight
             }
         }
 
@@ -142,20 +140,6 @@ MD.ElevationRectangle {
                 text: root.containerInfo.steamAppId || "-"
                 typescale: MD.Token.typescale.body_medium
             }
-        }
-
-        MD.Label {
-            Layout.fillWidth: true
-            Layout.topMargin: MD.Token.spacing.extra_small
-            text: {
-                const total = root.containerInfo.totalCount ?? 0
-                const done = root.containerInfo.installedCount ?? 0
-                if (total <= 0)
-                    return qsTr("No runtime dependencies detected for this game.")
-                return qsTr("Dependencies: %1 / %2 installed").arg(done).arg(total)
-            }
-            typescale: MD.Token.typescale.body_medium
-            wrapMode: Text.WordWrap
         }
 
         Repeater {

@@ -3776,6 +3776,10 @@
 <context>
     <name>GameDetailsContent</name>
     <message>
+        <source>Game folder unavailable · Check again</source>
+        <translation>Папка игры недоступна · Проверить снова</translation>
+    </message>
+    <message>
         <source>Verify files</source>
         <translation>Проверить файлы</translation>
     </message>
@@ -4079,13 +4083,14 @@
 <context>
     <name>GameOrganizationControl</name>
     <message>
-        <location filename="../qml/components/GameOrganizationControl.qml" line="+13"/>
-        <location line="+10"/>
-        <source>Library list</source>
-        <translation>Список библиотеки</translation>
+        <source>List: %1</source>
+        <translation>Список: %1</translation>
     </message>
+</context>
+<context>
+    <name>GameListMenu</name>
     <message>
-        <location line="-4"/>
+        <location filename="../qml/components/GameListMenu.qml" line="28"/>
         <source>Unorganized</source>
         <translation>Без списка</translation>
     </message>
@@ -4107,6 +4112,14 @@
 </context>
 <context>
     <name>GameSettingsRuntimePanel</name>
+    <message>
+        <source>Runtime details</source>
+        <translation>Сведения о среде запуска</translation>
+    </message>
+    <message>
+        <source>Open container folder</source>
+        <translation>Открыть папку контейнера</translation>
+    </message>
     <message>
         <location filename="../qml/app/GameSettingsRuntimePanel.qml" line="+58"/>
         <source>Runtime container</source>
@@ -4160,6 +4173,146 @@
 </context>
 <context>
     <name>GameSettingsSheet</name>
+    <message>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+    <message>
+        <source>Launch</source>
+        <translation>Запуск</translation>
+    </message>
+    <message>
+        <source>Ask each time</source>
+        <translation>Спрашивать каждый раз</translation>
+    </message>
+    <message>
+        <source>Launch arguments</source>
+        <translation>Аргументы запуска</translation>
+    </message>
+    <message>
+        <source>Executable</source>
+        <translation>Исполняемый файл</translation>
+    </message>
+    <message>
+        <source>Browse</source>
+        <translation>Выбрать файл</translation>
+    </message>
+    <message>
+        <source>Compatibility</source>
+        <translation>Совместимость</translation>
+    </message>
+    <message>
+        <source>Using SteamFix.</source>
+        <translation>Используется SteamFix.</translation>
+    </message>
+    <message>
+        <source>Using Online Fix.</source>
+        <translation>Используется Online Fix.</translation>
+    </message>
+    <message>
+        <source>Runs without a Steam license.</source>
+        <translation>Запуск без лицензии Steam.</translation>
+    </message>
+    <message>
+        <source>If the game won't start, hangs, or Online Fix shows an error, try SteamFix instead. Online Fix is backed up.</source>
+        <translation>Если игра не запускается, зависает или Online Fix выдаёт ошибку, попробуйте SteamFix. Копия Online Fix будет сохранена.</translation>
+    </message>
+    <message>
+        <source>Use SteamFix</source>
+        <translation>Перейти на SteamFix</translation>
+    </message>
+    <message>
+        <source>Restore pre-import files</source>
+        <translation>Вернуть файлы до импорта</translation>
+    </message>
+    <message>
+        <source>Import Online Fix package</source>
+        <translation>Импортировать пакет Online Fix</translation>
+    </message>
+    <message>
+        <source>Files and updates</source>
+        <translation>Файлы и обновления</translation>
+    </message>
+    <message>
+        <source>Automatic updates</source>
+        <translation>Автоматические обновления</translation>
+    </message>
+    <message>
+        <source>Updates start after the catalog loads.</source>
+        <translation>Обновления запускаются после загрузки каталога.</translation>
+    </message>
+    <message>
+        <source>Verifying files</source>
+        <translation>Идёт проверка файлов</translation>
+    </message>
+    <message>
+        <source>Stop the game to verify its files.</source>
+        <translation>Закройте игру, чтобы проверить её файлы.</translation>
+    </message>
+    <message>
+        <source>Wait for setup to finish.</source>
+        <translation>Дождитесь окончания настройки.</translation>
+    </message>
+    <message>
+        <source>Wait for the current task to finish.</source>
+        <translation>Дождитесь завершения текущей задачи.</translation>
+    </message>
+    <message>
+        <source>Game folder unavailable.</source>
+        <translation>Папка игры недоступна.</translation>
+    </message>
+    <message>
+        <source>Verification is unavailable for this installation.</source>
+        <translation>Проверка недоступна для этой установки.</translation>
+    </message>
+    <message>
+        <source>Repair missing or damaged files.</source>
+        <translation>Восстановить отсутствующие или повреждённые файлы.</translation>
+    </message>
+    <message>
+        <source>Installation details</source>
+        <translation>Сведения об установке</translation>
+    </message>
+    <message>
+        <source>Shortcuts</source>
+        <translation>Ярлыки</translation>
+    </message>
+    <message>
+        <source>Create shortcut</source>
+        <translation>Создать ярлык</translation>
+    </message>
+    <message>
+        <source>Choose the extracted Online Fix package folder</source>
+        <translation>Выберите папку с распакованным пакетом Online Fix</translation>
+    </message>
+    <message>
+        <source>Restore pre-import files?</source>
+        <translation>Вернуть файлы до импорта?</translation>
+    </message>
+    <message>
+        <source>Import package for %1?</source>
+        <translation>Импортировать пакет для %1?</translation>
+    </message>
+    <message>
+        <source>Restore the previous files for %1 and remove files added by the import. This replaces later edits to those files.</source>
+        <translation>Прежние файлы %1 будут восстановлены, а добавленные при импорте удалены. Изменения, внесённые в эти файлы после импорта, будут потеряны.</translation>
+    </message>
+    <message>
+        <source>Sprout will copy the contents of this folder into %1 and back up files it replaces.
+
+%2</source>
+        <translation>Sprout скопирует содержимое этой папки в %1 и сохранит копии заменяемых файлов.
+
+%2</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Восстановить</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation>Импортировать</translation>
+    </message>
     <message>
         <location filename="../qml/app/GameSettingsSheet.qml" line="+195"/>
         <source>Open game folder</source>
@@ -4660,6 +4813,26 @@
 </context>
 <context>
     <name>LibraryContent</name>
+    <message>
+        <source>No games match your search.</source>
+        <translation>По вашему запросу игр не найдено.</translation>
+    </message>
+    <message>
+        <source>Nothing in this list yet</source>
+        <translation>В этом списке пока ничего нет</translation>
+    </message>
+    <message>
+        <source>Right-click a game, or use List on its page.</source>
+        <translation>Нажмите на игру правой кнопкой мыши или выберите «Список» на её странице.</translation>
+    </message>
+    <message>
+        <source>Show all games</source>
+        <translation>Показать все игры</translation>
+    </message>
+    <message>
+        <source>Game settings</source>
+        <translation>Настройки игры</translation>
+    </message>
     <message>
         <location filename="../qml/app/LibraryContent.qml" line="+222"/>
         <source>Running</source>
@@ -5585,6 +5758,10 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 </context>
 <context>
     <name>RunningGameBar</name>
+    <message>
+        <source>Stop %1</source>
+        <translation>Остановить %1</translation>
+    </message>
     <message>
         <location filename="../qml/components/RunningGameBar.qml" line="+49"/>
         <source>Playing now</source>

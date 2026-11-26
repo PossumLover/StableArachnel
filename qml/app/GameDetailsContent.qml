@@ -47,8 +47,6 @@ Item {
 
     // ---------- The page takes its accent from the poster ----------
     property color accent: MD.Token.color.primary
-    readonly property color accentContainer: Qt.rgba(accent.r, accent.g, accent.b, 0.20)
-    readonly property color accentInk: "#121216"
 
     Behavior on accent {
         ColorAnimation { duration: AppMotion.scaled(600) }
@@ -218,6 +216,7 @@ Item {
                 y: flick.contentY * 0.5
                 z: -1
                 source: page.info.coverUrl ?? ""
+                coverOpacity: 0.32
             }
 
             // A wash of the poster's colour over the top of the page.
@@ -286,7 +285,6 @@ Item {
                         Layout.alignment: Qt.AlignTop
                         spacing: MD.Token.spacing.medium
 
-                        // Source · install kind, in the poster's colour.
                         MD.Label {
                             Layout.fillWidth: true
                             text: {
@@ -300,7 +298,7 @@ Item {
                             visible: text.length > 0
                             typescale: MD.Token.typescale.label_large
                             font.letterSpacing: 1.6
-                            color: detailsRoot.accent
+                            color: MD.Token.color.on_surface_variant
                             elide: Text.ElideRight
                             maximumLineCount: 1
                             RevealIn { delay: 40 }
@@ -383,11 +381,6 @@ Item {
                             }
                         }
 
-                        DownloadAvailability {
-                            Layout.fillWidth: true
-                            entryId: page.gameId
-                        }
-
                         // Status badges, only the ones that apply.
                         Flow {
                             id: badgeFlow
@@ -440,16 +433,16 @@ Item {
                                 visible: !!(page.info.hasUpdate)
                                 text: qsTr("Update available")
                                 icon.name: MD.Token.icon.update
-                                mdState.backgroundColor: detailsRoot.accentContainer
-                                mdState.textColor: MD.Token.color.on_surface
-                                mdState.iconColor: detailsRoot.accent
-                                mdState.outlineColor: detailsRoot.accentContainer
+                                mdState.backgroundColor: MD.Token.color.secondary_container
+                                mdState.textColor: MD.Token.color.on_secondary_container
+                                mdState.iconColor: MD.Token.color.on_secondary_container
+                                mdState.outlineColor: MD.Token.color.secondary_container
                             }
                             RevealIn { delay: 160 }
                         }
 
                         // ---------- Actions: right in the hero, no extra card ----------
-                        RowLayout {
+                        Flow {
                             id: actionRow
                             Layout.fillWidth: true
                             Layout.topMargin: MD.Token.spacing.small
@@ -475,8 +468,8 @@ Item {
                                          ? "" : MD.Token.icon.play_arrow
                                 mdState.type: MD.Enum.BtFilled
                                 mdState.size: MD.Enum.M
-                                mdState.backgroundColor: page.isRunning ? MD.Token.color.error : detailsRoot.accent
-                                mdState.textColor: page.isRunning ? MD.Token.color.on_error : detailsRoot.accentInk
+                                mdState.backgroundColor: page.isRunning ? MD.Token.color.error : MD.Token.color.primary
+                                mdState.textColor: page.isRunning ? MD.Token.color.on_error : MD.Token.color.on_primary
                                 onClicked: page.isRunning ? Core.stopRunningGame() : Core.launchGame(page.gameId)
                             }
 
@@ -534,19 +527,6 @@ Item {
                             }
 
                             MD.IconButton {
-                                visible: page.installed && !page.canManualInstall
-                                mdState.type: MD.Enum.IBtFilledTonal
-                                icon.name: MD.Token.icon.folder_open
-                                Accessible.name: qsTr("Open game folder")
-                                onClicked: Core.openGameFolder(page.gameId)
-
-                                MD.ToolTip {
-                                    visible: parent.hovered
-                                    text: qsTr("Open game folder")
-                                }
-                            }
-
-                            MD.IconButton {
                                 visible: page.canManualInstall
                                 mdState.type: MD.Enum.IBtFilledTonal
                                 icon.name: MD.Token.icon.folder_open
@@ -570,12 +550,10 @@ Item {
                                 onClicked: Core.toggleBookmark(page.gameId)
                             }
 
-                            MD.IconButton {
-                                visible: hasLaunchLog
-                                mdState.type: MD.Enum.IBtFilledTonal
-                                icon.name: MD.Token.icon.receipt_long
-                                Accessible.name: qsTr("Launch log")
-                                onClicked: openLaunchLog()
+                            GameOrganizationControl {
+                                visible: !!page.info.installed
+                                gameId: page.gameId
+                                playStatus: page.info.playStatus ?? ""
                             }
 
                             MD.IconButton {
@@ -589,6 +567,7 @@ Item {
                             MD.IconButton {
                                 id: moreActions
                                 visible: page.playable || page.downloadComplete || page.inLibrary
+                                         || hasLaunchLog || (page.installed && !page.canManualInstall)
                                 mdState.type: MD.Enum.IBtFilledTonal
                                 icon.name: MD.Token.icon.more_vert
                                 Accessible.name: qsTr("More actions")
@@ -600,6 +579,27 @@ Item {
                                     autoClose: true
 
                                     MD.MenuItem {
+                                        visible: page.installed && !page.canManualInstall
+                                        height: visible ? implicitHeight : 0
+                                        text: qsTr("Open game folder")
+                                        icon.name: MD.Token.icon.folder_open
+                                        onTriggered: Core.openGameFolder(page.gameId)
+                                    }
+                                    MD.MenuItem {
+                                        visible: hasLaunchLog
+                                        height: visible ? implicitHeight : 0
+                                        text: qsTr("Launch log")
+                                        icon.name: MD.Token.icon.receipt_long
+                                        onTriggered: openLaunchLog()
+                                    }
+                                    MD.MenuSeparator {
+                                        visible: deleteItem.visible && (hasLaunchLog || (page.installed && !page.canManualInstall))
+                                        height: visible ? implicitHeight : 0
+                                    }
+                                    MD.MenuItem {
+                                        id: deleteItem
+                                        visible: page.playable || page.downloadComplete || page.inLibrary
+                                        height: visible ? implicitHeight : 0
                                         text: qsTr("Delete")
                                         icon.name: MD.Token.icon.delete
                                         onTriggered: removeDialog.open()
@@ -607,9 +607,12 @@ Item {
                                 }
                             }
 
-                            Item { Layout.fillWidth: true }
-
                             RevealIn { delay: 200 }
+                        }
+
+                        DownloadAvailability {
+                            Layout.fillWidth: true
+                            entryId: page.gameId
                         }
 
                         ColumnLayout {
@@ -719,9 +722,6 @@ Item {
                     Layout.fillWidth: true
                     Layout.topMargin: open ? MD.Token.spacing.medium : 0
                     page: detailsRoot.page
-                    accent: detailsRoot.accent
-                    accentContainer: detailsRoot.accentContainer
-                    accentInk: detailsRoot.accentInk
                     // While the card grows, keep its top just under the page header.
                     onImplicitHeightChanged: {
                         if (!open || reveal >= 1)

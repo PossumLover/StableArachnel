@@ -665,6 +665,7 @@ MD.ApplicationWindow {
                 currentIndex: root.pageIndex
                 downloadBadge: root.downloadBadge
                 narrowWindow: root.width < 1100
+                showRunningGame: Core.gameRunning && !(root.pageIndex === 0 && !root.detailsOpen)
                 onActivated: function (index) { root.goToPage(index) }
                 onSettingsRequested: settingsSheet.openSettings()
                 onSearchRequested: root.openCatalogSearch()
@@ -765,41 +766,11 @@ MD.ApplicationWindow {
                             smooth: true
                         }
 
-                        ColumnLayout {
+                        PageNavigator {
+                            id: pageStack
                             anchors.fill: parent
-                            spacing: 0
-
-                            Loader {
-                                id: runningGameBarLoader
-                                Layout.fillWidth: true
-                                Layout.fillHeight: false
-                                // ColumnLayout otherwise stretches the Loader and leaves a huge
-                                // empty gap under the running-game chip.
-                                readonly property real barHeight: active && item ? item.implicitHeight : 0
-                                Layout.preferredHeight: barHeight
-                                Layout.maximumHeight: barHeight
-                                Layout.leftMargin: MD.Token.spacing.medium
-                                Layout.rightMargin: MD.Token.spacing.medium
-                                Layout.topMargin: active ? MD.Token.spacing.medium : 0
-                                Layout.bottomMargin: active ? MD.Token.spacing.small : 0
-                                // Library home hero already shows "Playing now" + Stop.
-                                active: Core.gameRunning
-                                        && !(root.pageIndex === 0 && !root.detailsOpen)
-                                visible: active
-                                sourceComponent: RunningGameBar {
-                                    gameId: Core.runningGameId
-                                    title: Core.runningGameTitle
-                                    coverUrl: Core.runningGameCoverUrl
-                                }
-                            }
-
-                            PageNavigator {
-                                id: pageStack
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                clip: true
-                                initialItem: mainPagesComponent
-                            }
+                            clip: true
+                            initialItem: mainPagesComponent
                         }
                     }
                 }

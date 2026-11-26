@@ -127,6 +127,8 @@ MD.BottomSheet {
     }
 
     function openForGame(id) {
+        installationDetails.checked = false
+        runtimePanel.expanded = false
         gameId = id
         if (Core.healInstalledAddons)
             Core.healInstalledAddons(id)
@@ -157,119 +159,175 @@ MD.BottomSheet {
         exeField.text = root.info?.executableOverride ?? ""
     }
 
+    component SectionTitle: MD.Label {
+        Layout.fillWidth: true
+        typescale: MD.Token.typescale.title_medium
+        color: MD.Token.color.on_surface
+    }
+
+    component FieldLabel: MD.Label {
+        Layout.fillWidth: true
+        typescale: MD.Token.typescale.label_large
+    }
+
+    function launchCommand(option) {
+        if (!option)
+            return ""
+        const args = option.arguments
+        return [option.executable, Array.isArray(args) ? args.join(" ") : args].filter(Boolean).join(" ")
+    }
+
     ColumnLayout {
-        width: root.sheetWidth
+        x: MD.Token.spacing.large
+        width: root.sheetWidth - 2 * MD.Token.spacing.large
         spacing: MD.Token.spacing.large
 
-        MD.Label {
+        RowLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            Layout.topMargin: MD.Token.spacing.medium
-            text: qsTr("Game settings")
-            typescale: MD.Token.typescale.headline_medium
-        }
-
-        MD.Label {
-            Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            visible: !!(root.info.title)
-            text: root.info.title ?? ""
-            color: MD.Token.color.on_surface_variant
-            typescale: MD.Token.typescale.title_medium
-            elide: Text.ElideRight
-        }
-
-        GameOrganizationControl {
-            Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            visible: !!root.info.installed
-            gameId: root.gameId
-            playStatus: root.info.playStatus ?? ""
-        }
-
-        Flow {
-            Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            visible: root.installed
-            spacing: MD.Token.spacing.small
-
-            MD.Button {
-                mdState.type: MD.Enum.BtFilledTonal
-                text: qsTr("Open game folder")
-                icon.name: MD.Token.icon.folder_open
-                onClicked: Core.openGameFolder(root.gameId)
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: MD.Token.spacing.extra_small
+                MD.Label {
+                    visible: !!root.info.title
+                    text: qsTr("Game settings")
+                    typescale: MD.Token.typescale.label_medium
+                    color: MD.Token.color.on_surface_variant
+                }
+                MD.Label {
+                    Layout.fillWidth: true
+                    text: root.info.title || qsTr("Game settings")
+                    typescale: MD.Token.typescale.headline_small
+                    wrapMode: Text.WordWrap
+                }
             }
-
-            MD.Button {
-                mdState.type: MD.Enum.BtFilledTonal
-                text: qsTr("Desktop shortcut")
-                icon.name: MD.Token.icon.desktop_windows
-                onClicked: Core.createGameDesktopShortcut(root.gameId)
-            }
-
-            MD.Button {
-                mdState.type: MD.Enum.BtFilledTonal
-                text: qsTr("Start menu shortcut")
-                icon.name: MD.Token.icon.apps
-                onClicked: Core.createGameStartMenuShortcut(root.gameId)
-            }
-
-            MD.Button {
-                mdState.type: MD.Enum.BtFilledTonal
-                text: qsTr("Add to Steam")
-                icon.name: MD.Token.icon.sports_esports
-                onClicked: Core.addGameToSteam(root.gameId)
+            MD.IconButton {
+                icon.name: MD.Token.icon.close
+                Accessible.name: qsTr("Close")
+                MD.ToolTip { visible: parent.hovered; text: qsTr("Close") }
+                onClicked: root.close()
             }
         }
 
         ColumnLayout {
+            visible: root.playable
             Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            visible: root.installed
-            spacing: MD.Token.spacing.medium
-
-            RowLayout {
+            spacing: MD.Token.spacing.small
+            SectionTitle { text: qsTr("Launch") }
+            FieldLabel {
+                visible: root.availableLaunchOptions.length > 0
+                text: qsTr("Launch mode")
+            }
+            MD.Label {
+                visible: !!root.soleLaunchOption
+                text: root.soleLaunchOption?.title || qsTr("Default")
+                typescale: MD.Token.typescale.body_medium
+            }
+            MD.Label {
                 Layout.fillWidth: true
-                spacing: MD.Token.spacing.medium
-
+                visible: !!root.soleLaunchOption && text.length > 0
+                text: root.launchCommand(root.soleLaunchOption)
+                wrapMode: Text.WrapAnywhere
+                color: MD.Token.color.on_surface_variant
+                typescale: MD.Token.typescale.body_small
+            }
+            MD.ButtonGroup { id: modeGroup }
+            MD.RadioButton {
+                Layout.fillWidth: true
+                visible: root.availableLaunchOptions.length > 1
+                MD.ButtonGroup.group: modeGroup
+                text: qsTr("Ask each time")
+                checked: root.currentSelectedLaunchOption === ""
+                onClicked: Core.setGameSelectedLaunchOption(root.gameId, "")
+            }
+            Repeater {
+                model: root.availableLaunchOptions.length > 1 ? root.availableLaunchOptions : []
                 ColumnLayout {
+                    id: launchOption
+                    required property var modelData
                     Layout.fillWidth: true
-                    spacing: 2
-
-                    MD.Label {
+                    spacing: 0
+                    MD.RadioButton {
                         Layout.fillWidth: true
-                        text: qsTr("Auto-update this game")
-                        typescale: MD.Token.typescale.body_large
+                        MD.ButtonGroup.group: modeGroup
+                        text: launchOption.modelData.title || qsTr("Option %1").arg(launchOption.modelData.id)
+                        checked: root.currentSelectedLaunchOption === launchOption.modelData.id
+                        onClicked: Core.setGameSelectedLaunchOption(root.gameId, launchOption.modelData.id)
                     }
-
                     MD.Label {
                         Layout.fillWidth: true
-                        text: qsTr("When enabled, updates start automatically after the catalog loads.")
-                        color: MD.Token.color.on_surface_variant
+                        Layout.leftMargin: MD.Token.spacing.extra_large
+                        visible: text.length > 0
+                        text: root.launchCommand(launchOption.modelData)
                         typescale: MD.Token.typescale.body_small
-                        wrapMode: Text.WordWrap
+                        color: MD.Token.color.on_surface_variant
+                        wrapMode: Text.WrapAnywhere
                     }
                 }
+            }
+            FieldLabel { text: qsTr("Launch arguments") }
+            AppTextField {
+                id: launchArgsField
+                Layout.fillWidth: true
+                Accessible.name: qsTr("Launch arguments")
+                onEditingFinished: Core.setGameLaunchArgs(root.gameId, text)
+            }
 
-                MD.Switch {
-                    checked: root.info.autoUpdate !== false
-                    onToggled: Core.setGameAutoUpdate(root.gameId, checked)
+            FieldLabel { text: qsTr("Executable") }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: MD.Token.spacing.small
+
+                AppTextField {
+                    id: exeField
+                    Accessible.name: qsTr("Executable")
+                    Layout.fillWidth: true
+                    placeholderText: (root.info.defaultExecutableName ?? "").length > 0
+                                     ? qsTr("Default: %1").arg(root.info.defaultExecutableName)
+                                     : qsTr("Custom executable (optional)")
+                    onEditingFinished: Core.setGameExecutableOverride(root.gameId, text)
+                }
+
+                MD.IconButton {
+                    Layout.alignment: Qt.AlignVCenter
+                    mdState.type: MD.Enum.IBtStandard
+                    icon.name: MD.Token.icon.folder_open
+                    Accessible.name: qsTr("Browse")
+                    onClicked: {
+                        const path = Core.browseGameExecutable(
+                            exeField.text, root.info.installPath || "")
+                        if (path.length) {
+                            exeField.text = path
+                            Core.setGameExecutableOverride(root.gameId, path)
+                        }
+                    }
                 }
             }
 
+            MD.Label {
+                Layout.fillWidth: true
+                visible: (root.info.defaultExecutable ?? "").length > 0 && !exeField.text.length
+                text: qsTr("Default executable: %1").arg(root.info.defaultExecutable)
+                color: MD.Token.color.on_surface_variant
+                typescale: MD.Token.typescale.body_small
+                wrapMode: Text.WrapAnywhere
+            }
+        }
+
+        MD.Divider { Layout.fillWidth: true; visible: root.playable && compatibility.visible }
+        ColumnLayout {
+            id: compatibility
+            visible: root.installed || (root.onLinux && root.gameId.length > 0)
+            Layout.fillWidth: true
+            spacing: MD.Token.spacing.small
+            SectionTitle { text: qsTr("Compatibility") }
             RowLayout {
                 Layout.fillWidth: true
                 spacing: MD.Token.spacing.medium
-                visible: !!(root.info.onlineFixCanToggle)
+                visible: root.installed && !!(root.info.onlineFixCanToggle)
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 2
+                    spacing: MD.Token.spacing.extra_small
 
                     MD.Label {
                         Layout.fillWidth: true
@@ -290,6 +348,7 @@ MD.BottomSheet {
                 }
 
                 MD.Switch {
+                    Accessible.name: qsTr("Online Fix for this game")
                     checked: !!(root.info.onlineFixEnabled)
                     onToggled: {
                         Core.setGameOnlineFixEnabled(root.gameId, checked)
@@ -301,7 +360,7 @@ MD.BottomSheet {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: MD.Token.spacing.medium
-                visible: !!(root.info.canSwitchToSteamFix)
+                visible: root.installed && !!(root.info.canSwitchToSteamFix)
 
                 MD.Label {
                     Layout.fillWidth: true
@@ -323,9 +382,10 @@ MD.BottomSheet {
 
             MD.Button {
                 mdState.type: MD.Enum.BtFilledTonal
+                visible: root.installed
                 enabled: !root.gameBusy && !root.verifyingFiles && !root.info.installUnavailable
                 text: root.info.onlineFixPackageBackup ? qsTr("Restore pre-import files")
-                                                       : qsTr("Import Online Fix package…")
+                                                       : qsTr("Import Online Fix package")
                 onClicked: {
                     packageDialog.entryId = root.gameId
                     packageDialog.gameTitle = root.info.title ?? root.gameId
@@ -340,11 +400,11 @@ MD.BottomSheet {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: MD.Token.spacing.medium
-                visible: !!(root.info.steamOverlayCanToggle)
+                visible: root.installed && !!(root.info.steamOverlayCanToggle)
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 2
+                    spacing: MD.Token.spacing.extra_small
 
                     MD.Label {
                         Layout.fillWidth: true
@@ -362,6 +422,7 @@ MD.BottomSheet {
                 }
 
                 MD.Switch {
+                    Accessible.name: qsTr("Steam overlay (shift+tab)")
                     checked: !!(root.info.steamOverlayForced)
                     onToggled: {
                         Core.setGameSteamOverlayForced(root.gameId, checked)
@@ -369,70 +430,11 @@ MD.BottomSheet {
                     }
                 }
             }
-        }
-
-        MD.ElevationRectangle {
-            Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            visible: root.installed
-            implicitHeight: filesCol.implicitHeight + 2 * MD.Token.spacing.medium
-            radius: MD.Token.shape.corner.large
-            color: MD.Token.color.surface_container_low
-            elevation: MD.Token.elevation.level0
 
             ColumnLayout {
-                id: filesCol
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.margins: MD.Token.spacing.medium
+                visible: root.onLinux && root.gameId.length > 0
+                Layout.fillWidth: true
                 spacing: MD.Token.spacing.small
-
-                MD.Label {
-                    Layout.fillWidth: true
-                    text: qsTr("Game files")
-                    typescale: MD.Token.typescale.title_small
-                }
-
-                MD.Label {
-                    Layout.fillWidth: true
-                    text: root.canVerifyFiles
-                          ? qsTr("Check every file against the source and re-download any that are missing or damaged.")
-                          : qsTr("This source can't check game files.")
-                    color: MD.Token.color.on_surface_variant
-                    typescale: MD.Token.typescale.body_small
-                    wrapMode: Text.WordWrap
-                }
-
-                MD.Button {
-                    mdState.type: MD.Enum.BtFilledTonal
-                    text: root.verifyingFiles ? qsTr("Verifying…") : qsTr("Verify files")
-                    icon.name: MD.Token.icon.fact_check
-                    enabled: root.canVerifyFiles && !root.gameBusy
-                    onClicked: root.confirmVerify(root.gameId, !!root.info.hasUpdate)
-                }
-            }
-        }
-
-        MD.ElevationRectangle {
-            Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            visible: root.onLinux && root.gameId.length > 0
-            implicitHeight: protonPickCol.implicitHeight + 2 * MD.Token.spacing.medium
-            radius: MD.Token.shape.corner.large
-            color: MD.Token.color.surface_container_low
-            elevation: MD.Token.elevation.level0
-
-            ColumnLayout {
-                id: protonPickCol
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.margins: MD.Token.spacing.medium
-                spacing: MD.Token.spacing.small
-
                 MD.Label {
                     text: qsTr("Proton")
                     typescale: MD.Token.typescale.title_small
@@ -469,329 +471,88 @@ MD.BottomSheet {
                     }
                 }
             }
-        }
-
-        MD.ElevationRectangle {
-            Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            visible: root.playable
-            implicitHeight: launchCol.implicitHeight + 2 * MD.Token.spacing.medium
-            radius: MD.Token.shape.corner.large
-            color: MD.Token.color.surface_container_low
-            elevation: MD.Token.elevation.level0
-
-            ColumnLayout {
-                id: launchCol
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.margins: MD.Token.spacing.medium
-                spacing: MD.Token.spacing.medium
-
-                MD.Label {
-                    Layout.fillWidth: true
-                    text: qsTr("Launch options")
-                    typescale: MD.Token.typescale.title_small
-                }
-
-                AppTextField {
-                    id: launchArgsField
-                    Layout.fillWidth: true
-                    placeholderText: qsTr("Extra launch arguments for this game")
-                    onEditingFinished: Core.setGameLaunchArgs(root.gameId, text)
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: MD.Token.spacing.small
-
-                    AppTextField {
-                        id: exeField
-                        Layout.fillWidth: true
-                        placeholderText: (root.info.defaultExecutableName ?? "").length > 0
-                                         ? qsTr("Default: %1").arg(root.info.defaultExecutableName)
-                                         : qsTr("Custom executable (optional)")
-                        onEditingFinished: Core.setGameExecutableOverride(root.gameId, text)
-                    }
-
-                    MD.IconButton {
-                        Layout.alignment: Qt.AlignVCenter
-                        mdState.type: MD.Enum.IBtStandard
-                        icon.name: MD.Token.icon.folder_open
-                        onClicked: {
-                            const path = Core.browseGameExecutable(
-                                exeField.text, root.info.installPath || "")
-                            if (path.length) {
-                                exeField.text = path
-                                Core.setGameExecutableOverride(root.gameId, path)
-                            }
-                        }
-                    }
-                }
-
-                MD.Label {
-                    Layout.fillWidth: true
-                    visible: (root.info.defaultExecutable ?? "").length > 0 && !exeField.text.length
-                    text: qsTr("Default executable: %1").arg(root.info.defaultExecutable)
-                    color: MD.Token.color.on_surface_variant
-                    typescale: MD.Token.typescale.body_small
-                    elide: Text.ElideMiddle
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: MD.Token.spacing.extra_small
-                    visible: !!root.soleLaunchOption
-
-                    MD.Label {
-                        Layout.fillWidth: true
-                        text: qsTr("Launch mode")
-                        typescale: MD.Token.typescale.label_large
-                        color: MD.Token.color.on_surface_variant
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: singleOptRow.implicitHeight + MD.Token.spacing.small * 2
-                        radius: MD.Token.shape.corner.small
-                        color: MD.Token.color.surface_container
-                        border.width: 1
-                        border.color: MD.Token.color.outline_variant
-
-                        RowLayout {
-                            id: singleOptRow
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.margins: MD.Token.spacing.small
-                            spacing: MD.Token.spacing.small
-
-                            MD.Icon {
-                                name: MD.Token.icon.play_circle
-                                size: 20
-                                color: MD.Token.color.primary
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                MD.Label {
-                                    Layout.fillWidth: true
-                                    text: root.soleLaunchOption?.title || qsTr("Default")
-                                    typescale: MD.Token.typescale.body_medium
-                                    color: MD.Token.color.on_surface
-                                }
-
-                                MD.Label {
-                                    Layout.fillWidth: true
-                                    text: {
-                                        const opt = root.soleLaunchOption
-                                        if (!opt)
-                                            return ""
-                                        let desc = opt.executable || ""
-                                        const args = opt.arguments
-                                        if (args && args.length > 0)
-                                            desc += " " + (Array.isArray(args) ? args.join(" ") : args)
-                                        return desc
-                                    }
-                                    typescale: MD.Token.typescale.body_small
-                                    color: MD.Token.color.on_surface_variant
-                                    elide: Text.ElideMiddle
-                                    visible: text.length > 0
-                                }
-                            }
-                        }
-                    }
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: MD.Token.spacing.small
-                    visible: (root.availableLaunchOptions?.length ?? 0) > 1
-
-                    MD.Label {
-                        Layout.fillWidth: true
-                        text: qsTr("Default launch mode")
-                        typescale: MD.Token.typescale.label_large
-                        color: MD.Token.color.on_surface_variant
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: MD.Token.spacing.extra_small
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            implicitHeight: askRow.implicitHeight + MD.Token.spacing.small * 2
-                            radius: MD.Token.shape.corner.small
-                            readonly property bool isSelected: root.currentSelectedLaunchOption === ""
-                            color: isSelected ? MD.Token.color.secondary_container : (askMouse.containsMouse ? MD.Token.color.surface_container_high : MD.Token.color.surface_container)
-                            border.width: isSelected ? 2 : 1
-                            border.color: isSelected ? MD.Token.color.primary : MD.Token.color.outline_variant
-
-                            MouseArea {
-                                id: askMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: Core.setGameSelectedLaunchOption(root.gameId, "")
-                            }
-
-                            RowLayout {
-                                id: askRow
-                                anchors.left: parent.left
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                anchors.margins: MD.Token.spacing.small
-                                spacing: MD.Token.spacing.small
-
-                                Rectangle {
-                                    width: 16
-                                    height: 16
-                                    radius: 8
-                                    border.width: 2
-                                    border.color: parent.parent.isSelected ? MD.Token.color.primary : MD.Token.color.outline
-                                    color: "transparent"
-                                    Layout.alignment: Qt.AlignVCenter
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 8
-                                        height: 8
-                                        radius: 4
-                                        color: MD.Token.color.primary
-                                        visible: parent.parent.parent.isSelected
-                                    }
-                                }
-
-                                MD.Label {
-                                    Layout.fillWidth: true
-                                    text: qsTr("Always ask before launch")
-                                    typescale: MD.Token.typescale.body_medium
-                                    color: parent.parent.isSelected ? MD.Token.color.on_secondary_container : MD.Token.color.on_surface
-                                }
-                            }
-                        }
-
-                        Repeater {
-                            model: root.availableLaunchOptions
-
-                            delegate: Rectangle {
-                                Layout.fillWidth: true
-                                implicitHeight: optSetRow.implicitHeight + MD.Token.spacing.small * 2
-                                radius: MD.Token.shape.corner.small
-                                readonly property bool isSelected: root.currentSelectedLaunchOption === (modelData?.id ?? "")
-                                color: isSelected ? MD.Token.color.secondary_container : (optSetMouse.containsMouse ? MD.Token.color.surface_container_high : MD.Token.color.surface_container)
-                                border.width: isSelected ? 2 : 1
-                                border.color: isSelected ? MD.Token.color.primary : MD.Token.color.outline_variant
-
-                                MouseArea {
-                                    id: optSetMouse
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        if (modelData)
-                                            Core.setGameSelectedLaunchOption(root.gameId, modelData.id || "")
-                                    }
-                                }
-
-                                RowLayout {
-                                    id: optSetRow
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    anchors.margins: MD.Token.spacing.small
-                                    spacing: MD.Token.spacing.small
-
-                                    Rectangle {
-                                        width: 16
-                                        height: 16
-                                        radius: 8
-                                        border.width: 2
-                                        border.color: parent.parent.isSelected ? MD.Token.color.primary : MD.Token.color.outline
-                                        color: "transparent"
-                                        Layout.alignment: Qt.AlignVCenter
-                                        Rectangle {
-                                            anchors.centerIn: parent
-                                            width: 8
-                                            height: 8
-                                            radius: 4
-                                            color: MD.Token.color.primary
-                                            visible: parent.parent.parent.isSelected
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 1
-
-                                        MD.Label {
-                                            Layout.fillWidth: true
-                                            text: modelData?.title || qsTr("Option %1").arg(modelData?.id ?? "")
-                                            typescale: MD.Token.typescale.body_medium
-                                            color: parent.parent.parent.isSelected ? MD.Token.color.on_secondary_container : MD.Token.color.on_surface
-                                            font.bold: parent.parent.parent.isSelected
-                                        }
-
-                                        MD.Label {
-                                            Layout.fillWidth: true
-                                            text: {
-                                                const opt = modelData
-                                                if (!opt)
-                                                    return ""
-                                                const args = opt.arguments
-                                                const argText = (args && args.length > 0)
-                                                    ? " " + (Array.isArray(args) ? args.join(" ") : args)
-                                                    : ""
-                                                const exeName = String(opt.executable || "").split("/").pop().split("\\").pop()
-                                                return exeName + argText
-                                            }
-                                            typescale: MD.Token.typescale.body_small
-                                            color: MD.Token.color.on_surface_variant
-                                            visible: text.length > 0
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            GameSettingsRuntimePanel {
+                id: runtimePanel
+                Layout.fillWidth: true
+                page: root
             }
         }
 
-
-        GameSettingsRuntimePanel {
+        MD.Divider { Layout.fillWidth: true }
+        ColumnLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            page: root
-        }
-
-        MD.ElevationRectangle {
-            Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            implicitHeight: metaCol.implicitHeight + 2 * MD.Token.spacing.medium
-            radius: MD.Token.shape.corner.large
-            color: MD.Token.color.surface_container_low
-            elevation: MD.Token.elevation.level0
-
-            ColumnLayout {
-                id: metaCol
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: parent.top
-                anchors.margins: MD.Token.spacing.medium
-                spacing: MD.Token.spacing.small
-
-                MD.Label {
-                    text: qsTr("Information")
-                    typescale: MD.Token.typescale.title_small
+            spacing: MD.Token.spacing.small
+            SectionTitle { text: qsTr("Files and updates") }
+            RowLayout {
+                Layout.fillWidth: true
+                visible: root.installed
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: MD.Token.spacing.extra_small
+                    MD.Label {
+                        text: qsTr("Automatic updates")
+                        typescale: MD.Token.typescale.body_large
+                    }
+                    MD.Label {
+                        Layout.fillWidth: true
+                        text: qsTr("Updates start after the catalog loads.")
+                        color: MD.Token.color.on_surface_variant
+                        typescale: MD.Token.typescale.body_small
+                        wrapMode: Text.WordWrap
+                    }
                 }
-
+                MD.Switch {
+                    Accessible.name: qsTr("Automatic updates")
+                    checked: root.info.autoUpdate !== false
+                    onToggled: Core.setGameAutoUpdate(root.gameId, checked)
+                }
+            }
+            MD.Label {
+                Layout.fillWidth: true
+                Layout.topMargin: MD.Token.spacing.small
+                visible: root.installed
+                text: {
+                    if (root.verifyingFiles) return qsTr("Verifying files")
+                    if (Core.gameRunning && Core.runningGameId === root.gameId) return qsTr("Stop the game to verify its files.")
+                    if (Core.runtimeSetupInProgress && Core.runtimeSetupGameId === root.gameId) return qsTr("Wait for setup to finish.")
+                    if (root.gameBusy) return qsTr("Wait for the current task to finish.")
+                    if (root.info.installUnavailable) return qsTr("Game folder unavailable.")
+                    if (!root.canVerifyFiles) return qsTr("Verification is unavailable for this installation.")
+                    return qsTr("Repair missing or damaged files.")
+                }
+                color: MD.Token.color.on_surface_variant
+                typescale: MD.Token.typescale.body_small
+                wrapMode: Text.WordWrap
+            }
+            Flow {
+                Layout.fillWidth: true
+                visible: root.installed
+                spacing: MD.Token.spacing.small
+                MD.Button {
+                    mdState.type: MD.Enum.BtFilledTonal
+                    text: qsTr("Verify files")
+                    icon.name: MD.Token.icon.fact_check
+                    enabled: root.canVerifyFiles && !root.gameBusy && !root.verifyingFiles
+                    onClicked: root.confirmVerify(root.gameId, !!root.info.hasUpdate)
+                }
+                MD.Button {
+                    mdState.type: MD.Enum.BtText
+                    text: qsTr("Open game folder")
+                    icon.name: MD.Token.icon.folder_open
+                    onClicked: Core.openGameFolder(root.gameId)
+                }
+            }
+            MD.Button {
+                id: installationDetails
+                mdState.type: MD.Enum.BtText
+                text: qsTr("Installation details")
+                icon.name: checked ? MD.Token.icon.expand_less : MD.Token.icon.expand_more
+                checkable: true
+            }
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: installationDetails.checked
+                spacing: MD.Token.spacing.small
                 Repeater {
                     model: [
                         { label: qsTr("Source"), value: root.sourceLabel },
@@ -835,12 +596,14 @@ MD.BottomSheet {
 
                     RowLayout {
                         required property var modelData
+                        visible: !!modelData.value && modelData.value !== "-"
                         Layout.fillWidth: true
                         spacing: MD.Token.spacing.small
 
                         MD.Label {
-                            Layout.preferredWidth: 120
+                            Layout.preferredWidth: parent.width / 3
                             Layout.alignment: Qt.AlignTop
+                            wrapMode: Text.WordWrap
                             text: modelData.label
                             color: MD.Token.color.on_surface_variant
                             typescale: MD.Token.typescale.body_medium
@@ -851,23 +614,49 @@ MD.BottomSheet {
                             text: modelData.value
                             typescale: MD.Token.typescale.body_medium
                             wrapMode: Text.WrapAnywhere
-                            maximumLineCount: 3
-                            elide: Text.ElideRight
                         }
                     }
                 }
             }
         }
 
-        MD.Button {
+        MD.Divider { Layout.fillWidth: true; visible: root.installed }
+        ColumnLayout {
+            visible: root.installed
             Layout.fillWidth: true
-            Layout.leftMargin: MD.Token.spacing.large
-            Layout.rightMargin: MD.Token.spacing.large
-            Layout.bottomMargin: MD.Token.spacing.medium
-            mdState.type: MD.Enum.BtFilled
-            text: qsTr("Done")
-            onClicked: root.close()
+            spacing: MD.Token.spacing.small
+            SectionTitle { text: qsTr("Shortcuts") }
+            Flow {
+                Layout.fillWidth: true
+                spacing: MD.Token.spacing.small
+                MD.Button {
+                    text: qsTr("Create shortcut")
+                    mdState.type: MD.Enum.BtFilledTonal
+                    icon.name: MD.Token.icon.expand_more
+                    onClicked: shortcuts.open()
+                    MD.Menu {
+                        id: shortcuts
+                        y: parent.height
+                        autoClose: true
+                        MD.MenuItem {
+                            text: qsTr("Desktop shortcut")
+                            onTriggered: Core.createGameDesktopShortcut(root.gameId)
+                        }
+                        MD.MenuItem {
+                            text: qsTr("Start menu shortcut")
+                            onTriggered: Core.createGameStartMenuShortcut(root.gameId)
+                        }
+                    }
+                }
+                MD.Button {
+                    text: qsTr("Add to Steam")
+                    mdState.type: MD.Enum.BtText
+                    icon.name: MD.Token.icon.sports_esports
+                    onClicked: Core.addGameToSteam(root.gameId)
+                }
+            }
         }
+        Item { Layout.preferredHeight: MD.Token.spacing.extra_small }
     }
 
     Dialogs.FolderDialog {

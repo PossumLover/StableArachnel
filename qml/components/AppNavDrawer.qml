@@ -15,6 +15,7 @@ Rectangle {
     property var model: []
     property int downloadBadge: 0
     property bool narrowWindow: false
+    property bool showRunningGame: false
 
     signal activated(int index)
     signal settingsRequested()
@@ -34,6 +35,14 @@ Rectangle {
         NumberAnimation { duration: AppMotion.scaled(420); easing: AppMotion.emphasized }
     }
     clip: true
+
+    component FocusRing: MD.FocusIndicator {
+        corners: MD.Util.corners(MD.Token.shape.corner.full)
+        active: parent.activeFocus
+        outerColor: MD.Token.color.primary
+        innerColor: MD.Token.color.on_primary
+        inset: true
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -93,6 +102,13 @@ Rectangle {
         // ---------- Search pill ----------
         Rectangle {
             id: searchPill
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Search games")
+            Keys.onReturnPressed: root.searchRequested()
+            Keys.onEnterPressed: root.searchRequested()
+            Keys.onSpacePressed: root.searchRequested()
+            FocusRing {}
             Layout.fillWidth: true
             Layout.topMargin: MD.Token.spacing.small
             Layout.bottomMargin: MD.Token.spacing.small
@@ -138,7 +154,14 @@ Rectangle {
         }
 
         // ---------- Destinations ----------
-        Repeater {
+        ListView {
+            id: destinations
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            spacing: MD.Token.spacing.extra_small
+            keyNavigationEnabled: false
             model: root.model
 
             delegate: Item {
@@ -148,8 +171,17 @@ Rectangle {
                 readonly property bool selected: index === root.currentIndex
                 readonly property bool hovered: entryHover.hovered
 
-                Layout.fillWidth: true
-                Layout.preferredHeight: root.expanded ? 56 : 64
+                width: destinations.width
+                height: root.expanded ? 56 : 64
+                activeFocusOnTab: true
+                Keys.onReturnPressed: root.activated(index)
+                Keys.onEnterPressed: root.activated(index)
+                Keys.onSpacePressed: root.activated(index)
+                onActiveFocusChanged: {
+                    if (activeFocus)
+                        destinations.positionViewAtIndex(index, ListView.Contain)
+                }
+                FocusRing {}
 
                 Accessible.role: Accessible.Button
                 Accessible.name: modelData.name
@@ -255,12 +287,25 @@ Rectangle {
             }
         }
 
-        Item { Layout.fillHeight: true }
+        RunningGameBar {
+            Layout.fillWidth: true
+            visible: root.showRunningGame
+            compact: !root.expanded
+            title: Core.runningGameTitle
+            coverUrl: Core.runningGameCoverUrl
+        }
 
         // ---------- Settings ----------
         Item {
             Layout.fillWidth: true
             Layout.preferredHeight: 56
+            activeFocusOnTab: true
+            Accessible.role: Accessible.Button
+            Accessible.name: qsTr("Settings")
+            Keys.onReturnPressed: root.settingsRequested()
+            Keys.onEnterPressed: root.settingsRequested()
+            Keys.onSpacePressed: root.settingsRequested()
+            FocusRing {}
 
             readonly property bool selected: root.currentIndex === 6
 

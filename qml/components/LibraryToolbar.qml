@@ -1,9 +1,10 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Arachnel.Core 1.0
 import Qcm.Material as MD
 
-RowLayout {
+ColumnLayout {
     component LibraryMenu: MD.ComboBox {
         id: menu
         leftPadding: mirrored ? 36 : MD.Token.spacing.medium
@@ -34,26 +35,47 @@ RowLayout {
     }
 
     spacing: MD.Token.spacing.small
-    LauncherSearchField {
-        objectName: "librarySearch"
+    RowLayout {
         Layout.fillWidth: true
-        placeholderText: qsTr("Search library")
-        text: Core.libraryView.search
-        onTextChanged: { if (Core.libraryView.search !== text) Core.libraryView.search = text }
+        spacing: MD.Token.spacing.small
+        LauncherSearchField {
+            objectName: "librarySearch"
+            Layout.fillWidth: true
+            placeholderText: qsTr("Search library")
+            text: Core.libraryView.search
+            onTextChanged: { if (Core.libraryView.search !== text) Core.libraryView.search = text }
+        }
+        LibraryMenu {
+            objectName: "librarySort"
+            model: [qsTr("Title"), qsTr("Recently played"), qsTr("Most played")]
+            currentIndex: Core.libraryView.sortMode
+            onActivated: Core.libraryView.sortMode = currentIndex
+            Accessible.name: qsTr("Sort library")
+        }
     }
-    LibraryMenu {
-        objectName: "libraryStatusFilter"
-        model: [qsTr("All games"), qsTr("Backlog"), qsTr("Playing"), qsTr("Completed"), qsTr("Unorganized")]
-        readonly property var statuses: ["", "backlog", "playing", "completed", "unorganized"]
-        currentIndex: Math.max(0, statuses.indexOf(Core.libraryView.playStatus))
-        onActivated: Core.libraryView.playStatus = statuses[currentIndex]
-        Accessible.name: qsTr("Filter library")
-    }
-    LibraryMenu {
-        objectName: "librarySort"
-        model: [qsTr("Title"), qsTr("Recently played"), qsTr("Most played")]
-        currentIndex: Core.libraryView.sortMode
-        onActivated: Core.libraryView.sortMode = currentIndex
-        Accessible.name: qsTr("Sort library")
+    Flow {
+        Layout.fillWidth: true
+        spacing: MD.Token.spacing.extra_small
+        Repeater {
+            model: [
+                { status: "", label: qsTr("All games") },
+                { status: "backlog", label: qsTr("Backlog") },
+                { status: "playing", label: qsTr("Playing") },
+                { status: "completed", label: qsTr("Completed") },
+                { status: "unorganized", label: qsTr("Unorganized") }
+            ]
+            MD.FilterChip {
+                id: filterChip
+                required property var modelData
+                objectName: "libraryFilter_" + modelData.status
+                text: modelData.label
+                checked: Core.libraryView.playStatus === modelData.status
+                onClicked: {
+                    Core.libraryView.playStatus = modelData.status
+                    // Clicking toggles checked and drops the binding; the filter owns the state.
+                    checked = Qt.binding(() => Core.libraryView.playStatus === filterChip.modelData.status)
+                }
+            }
+        }
     }
 }

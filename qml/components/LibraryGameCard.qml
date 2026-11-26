@@ -14,6 +14,8 @@ Item {
     required property string installPath
     required property bool hasUpdate
     required property double playtimeMs
+    required property string playStatus
+    required property string listName
     property int componentCount: 0
     property int installedComponentCount: 0
     property var healthIssues: []
@@ -103,6 +105,12 @@ Item {
 
     signal openDetails(string gameId)
     signal requestUpdate(string gameId)
+    signal contextMenuRequested(point position)
+
+    TapHandler {
+        acceptedButtons: Qt.RightButton
+        onTapped: (eventPoint) => root.contextMenuRequested(eventPoint.position)
+    }
 
     Connections {
         target: Core.jobs
@@ -150,16 +158,6 @@ Item {
             }
 
             MD.AssistChip {
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.margins: MD.Token.spacing.small
-                visible: root.isRunning
-                text: qsTr("Playing")
-                elevated: true
-                enabled: false
-            }
-
-            MD.AssistChip {
                 anchors.bottom: parent.bottom
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.margins: MD.Token.spacing.medium
@@ -195,10 +193,22 @@ Item {
             maximumLineCount: 2
         }
 
-        PlaytimeLabel {
+        RowLayout {
             Layout.fillWidth: true
-            visible: root.playtimeMs > 0 && !root.showJobStatus
-            durationMs: root.playtimeMs
+            visible: root.playStatus.length > 0 || (root.playtimeMs > 0 && !root.showJobStatus)
+            spacing: MD.Token.spacing.extra_small
+            MD.Label {
+                visible: root.playStatus.length > 0
+                text: root.listName
+                typescale: MD.Token.typescale.label_small
+                color: MD.Token.color.on_surface_variant
+            }
+            PlaytimeLabel {
+                Layout.fillWidth: true
+                visible: root.playtimeMs > 0 && !root.showJobStatus
+                durationMs: root.playtimeMs
+                elide: Text.ElideRight
+            }
         }
 
         RowLayout {
