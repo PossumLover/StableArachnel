@@ -33,6 +33,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/library/storage_library.cpp
     src/core/library/storage_library_model.cpp
     src/core/util/file_utils.cpp
+    src/core/util/process_memory.cpp
     src/core/library/library_store.cpp
     src/core/library/achievement_files.cpp
     src/core/library/achievement_service.cpp
@@ -48,6 +49,7 @@ set(ARACHNEL_APP_SOURCES
     src/core/catalog/catalog_parser.cpp
     src/core/catalog/catalog_controller.cpp
     src/core/catalog/catalog_identity.cpp
+    src/core/catalog/catalog_merge.cpp
     src/core/catalog/catalog_cover_coordinator.cpp
     src/core/catalog/catalog_filter_service.cpp
     src/core/catalog/content_rating_store.cpp

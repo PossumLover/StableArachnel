@@ -4,6 +4,7 @@
 
 #include "catalog_parser.h"
 #include "catalog_identity.h"
+#include "catalog_merge.h"
 #include "catalog_filter_service.h"
 #include "library_store.h"
 #include "library_snapshot.h"
@@ -248,6 +249,138 @@ private slots:
         QCOMPARE(catalogOfferGroupKey(release, keys), QStringLiteral("title:howtofish"));
         QCOMPARE(catalogOfferGroupKey(original, keys), QStringLiteral("steam:1234"));
         QCOMPARE(catalogOfferGroupKey(conflicting, keys), QStringLiteral("steam:5678"));
+    }
+    void catalogMergeMatchesCopyingMerge()
+    {
+        // The merge used to copy every row into per-group vectors; it now groups borrowed
+        // rows. This is the old algorithm, kept as the reference the new one must match.
+        const auto legacyMerge = [](const QHash<QString, QVector<CatalogEntry>>& bySource,
+                                    const QStringList& active, const QSet<QString>& enabled) {
+            CatalogMergeResult out;
+            QHash<QString, QVector<CatalogEntry>> groups;
+            QStringList groupOrder;
+            QVector<CatalogEntry> steamEntries;
+            for (const QString& sourceId : active) {
+                if (!enabled.contains(sourceId) || !bySource.contains(sourceId))
+                    continue;
+                for (const CatalogEntry& entry : bySource.value(sourceId)) {
+                    if (!entry.steamAppId.trimmed().isEmpty())
+                        steamEntries.append(entry);
+                }
+            }
+            const auto titleToSteamKey = catalogSteamTitleKeys(steamEntries);
+            for (const QString& sourceId : active) {
+                if (!enabled.contains(sourceId) || !bySource.contains(sourceId))
+                    continue;
+                for (const CatalogEntry& entry : bySource.value(sourceId)) {
+                    CatalogEntry copy = entry;
+                    copy.id = repairCatalogEntryId(copy.id);
+                    const QString key = catalogOfferGroupKey(copy, titleToSteamKey);
+                    if (!groups.contains(key))
+                        groupOrder.append(key);
+                    groups[key].append(std::move(copy));
+                }
+            }
+            for (const QString& key : groupOrder) {
+                QVector<CatalogEntry> offers = groups.take(key);
+                QVector<CatalogEntry> unique;
+                QHash<QString, int> sourceIndices;
+                for (CatalogEntry& offer : offers) {
+                    const auto existing = sourceIndices.constFind(offer.sourceId);
+                    if (existing != sourceIndices.cend()) {
+                        if (offer.uploadDate > unique.at(existing.value()).uploadDate)
+                            unique[existing.value()] = std::move(offer);
+                        continue;
+                    }
+                    sourceIndices.insert(offer.sourceId, unique.size());
+                    unique.append(std::move(offer));
+                }
+                offers = std::move(unique);
+                int bestIdx = 0;
+                int bestScore = catalogShowcaseScore(offers.first());
+                for (int i = 1; i < offers.size(); ++i) {
+                    const int score = catalogShowcaseScore(offers.at(i));
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestIdx = i;
+                    }
+                }
+                CatalogEntry showcase = offers.at(bestIdx);
+                const QString showcaseTitleKey = catalogTitleKey(showcase.title);
+                for (const CatalogEntry& offer : offers) {
+                    if (catalogTitleKey(offer.title) != showcaseTitleKey)
+                        continue;
+                    if (showcase.remoteCoverUrl.isEmpty() && !offer.remoteCoverUrl.isEmpty())
+                        showcase.remoteCoverUrl = offer.remoteCoverUrl;
+                    if (showcase.coverUrl.isEmpty() && !offer.coverUrl.isEmpty())
+                        showcase.coverUrl = offer.coverUrl;
+                    if (showcase.steamAppId.isEmpty() && !offer.steamAppId.isEmpty())
+                        showcase.steamAppId = offer.steamAppId;
+                }
+                out.entryIdToOfferGroup.insert(showcase.id, key);
+                for (const CatalogEntry& offer : offers)
+                    out.entryIdToOfferGroup.insert(offer.id, key);
+                if (offers.size() > 1)
+                    out.installOffers.insert(key, std::move(offers));
+                out.merged.append(std::move(showcase));
+            }
+            return out;
+        };
+
+        const auto row = [](const char* source, const char* id, const char* title, const char* appId,
+                            const char* uploaded, const char* cover = "", const char* remote = "") {
+            CatalogEntry e;
+            e.sourceId = QString::fromLatin1(source);
+            e.id = QString::fromLatin1(id);
+            e.title = QString::fromUtf8(title);
+            e.steamAppId = QString::fromLatin1(appId);
+            e.uploadDate = QString::fromLatin1(uploaded);
+            e.coverUrl = QString::fromLatin1(cover);
+            e.remoteCoverUrl = QString::fromLatin1(remote);
+            return e;
+        };
+        QHash<QString, QVector<CatalogEntry>> bySource;
+        bySource.insert(QStringLiteral("steamidra"), {
+            row("steamidra", "steam-1621690", "Core Keeper", "1621690", "2026-01-02", "c1"),
+            row("steamidra", "steam-1621690-old", "Core Keeper", "1621690", "2025-01-01"),
+            row("steamidra", "count:steam-42", "Repaired Id", "42", "2026-03-01"),
+            row("steamidra", "steam-7", "How to Fish", "1234", "2026-02-02", "", "r7"),
+            row("steamidra", "steam-8", "Lonely Game", "", "2026-02-03"),
+            row("steamidra", "steam-9", "", "", "2026-02-04"),
+        });
+        bySource.insert(QStringLiteral("freetp"), {
+            row("freetp", "freetp-core", "Core Keeper (Build 25625027)", "", "2026-04-01", "", "fr1"),
+            row("freetp", "freetp-core-new", "Core Keeper [v10.2.1]", "", "2026-05-01"),
+            row("freetp", "freetp-fish", "How to Fish - V 1.0.8 / Build 24902533", "", "2026-01-01", "fc"),
+            row("freetp", "freetp-lonely", "Lonely Game", "", "2026-01-05", "lc"),
+            row("freetp", "freetp-only", "Only Here", "", "2026-01-06"),
+            row("freetp", "freetp-empty", "", "", "2026-01-07"),
+        });
+        bySource.insert(QStringLiteral("disabled"), {row("disabled", "x", "Core Keeper", "1621690", "2027-01-01")});
+        const QStringList active{QStringLiteral("steamidra"), QStringLiteral("freetp"), QStringLiteral("disabled")};
+        const QSet<QString> enabled{QStringLiteral("steamidra"), QStringLiteral("freetp")};
+
+        const CatalogMergeResult expected = legacyMerge(bySource, active, enabled);
+        const CatalogMergeResult actual = mergeCatalogSources(bySource, active, enabled);
+
+        const auto describe = [](const CatalogEntry& e) {
+            return QStringList{e.id, e.sourceId, e.title, e.steamAppId, e.uploadDate, e.coverUrl,
+                               e.remoteCoverUrl}.join(QLatin1Char('|'));
+        };
+        const auto describeAll = [&](const QVector<CatalogEntry>& rows) {
+            QStringList out;
+            for (const CatalogEntry& e : rows)
+                out.append(describe(e));
+            return out;
+        };
+        QVERIFY(expected.merged.size() > 4);
+        QVERIFY(!expected.installOffers.isEmpty());
+        QCOMPARE(describeAll(actual.merged), describeAll(expected.merged));
+        QCOMPARE(actual.entryIdToOfferGroup, expected.entryIdToOfferGroup);
+        QCOMPARE(QSet<QString>(actual.installOffers.keyBegin(), actual.installOffers.keyEnd()),
+                 QSet<QString>(expected.installOffers.keyBegin(), expected.installOffers.keyEnd()));
+        for (auto it = expected.installOffers.cbegin(); it != expected.installOffers.cend(); ++it)
+            QCOMPARE(describeAll(actual.installOffers.value(it.key())), describeAll(it.value()));
     }
     void catalogGroupsAdditionalReleaseFormats()
     {

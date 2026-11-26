@@ -6,6 +6,7 @@
 #include "catalog_model.h"
 #include "catalog_parser.h"
 #include "catalog_identity.h"
+#include "catalog_merge.h"
 #include "catalog_search_utils.h"
 #include "catalog_snapshot.h"
 #include "crash_log.h"
@@ -27,6 +28,8 @@
 #include <QUrl>
 #include <QWriteLocker>
 #include <QtConcurrent>
+
+#include "process_memory.h"
 
 #include <functional>
 #include <optional>
@@ -50,6 +53,38 @@ void prepareCatalogRows(QVector<CatalogEntry>& entries, const QString& sourceId,
             prepareCatalogEntry(entry);
     }
 }
+
+// ARACHNEL_MEMLOG only: what the entries themselves hold (struct + string payloads + headers).
+qint64 estimateCatalogBytes(const QVector<CatalogEntry>& entries)
+{
+    constexpr qint64 kStrHeader = 32; // QArrayData header + allocator overhead, roughly
+    auto str = [](const QString& v) -> qint64 {
+        return v.isEmpty() ? 0 : kStrHeader + v.capacity() * 2;
+    };
+    auto list = [&](const QStringList& l) -> qint64 {
+        qint64 n = l.isEmpty() ? 0 : kStrHeader + l.capacity() * qint64(sizeof(QString));
+        for (const QString& v : l)
+            n += str(v);
+        return n;
+    };
+    qint64 total = entries.capacity() * qint64(sizeof(CatalogEntry));
+    for (const CatalogEntry& e : entries) {
+        total += str(e.id) + str(e.title) + str(e.coverUrl) + str(e.remoteCoverUrl) + str(e.sourceId)
+            + str(e.sourcePageUrl) + str(e.version) + str(e.sizeLabel) + str(e.description)
+            + str(e.genres) + str(e.steamAppId) + str(e.trailerUrl) + str(e.trailerThumbnailUrl)
+            + list(e.screenshotUrls) + list(e.magnetUris) + str(e.uploadDate) + str(e.parentEntryId)
+            + str(e.titleLower);
+        if (!e.addons.isEmpty())
+            total += kStrHeader + e.addons.capacity() * qint64(sizeof(CatalogComponent));
+        for (const CatalogComponent& c : e.addons) {
+            total += str(c.id) + str(c.title) + list(c.magnetUris) + str(c.downloadUrl) + str(c.referer)
+                + str(c.getfileUrl) + str(c.fileSize) + str(c.uploadDate) + str(c.coverUrl)
+                + list(c.screenshotUrls);
+        }
+    }
+    return total;
+}
+
 struct PluginCatalogLoad {
     QVector<CatalogEntry> entries;
     QByteArray payloadSha;
@@ -66,8 +101,10 @@ PluginCatalogLoad loadPluginCatalogEntries(PluginHost* host, const QString& sour
                                            const PluginSourcePreview& onPreview = {})
 {
     PluginCatalogLoad out;
+    logMemoryStage(QStringLiteral("plugin load start %1").arg(sourceId));
     if (pluginCatalogSourceEnabled() && host->pluginHasCatalogSource(sourceId)) {
         PluginSourceSyncResult synced = syncPluginCatalogSource(*host, sourceId, expectedSha, false, onPreview);
+        logMemoryStage(QStringLiteral("plugin source synced %1 n=%2").arg(sourceId).arg(synced.entries.size()));
         if (synced.status == PluginSourceSyncResult::Status::Unchanged) {
             out.payloadSha = synced.payloadKey;
             return out;
@@ -91,6 +128,7 @@ PluginCatalogLoad loadPluginCatalogEntries(PluginHost* host, const QString& sour
         return out;
     }
     out.entries = parsePluginCatalogJson(payload, sourceId);
+    logMemoryStage(QStringLiteral("plugin json parsed %1 n=%2").arg(sourceId).arg(out.entries.size()));
     // Snapshot first, then the payload/.meta key: the two never disagree, so the next
     // launch can use the snapshot.
     if (!out.entries.isEmpty() && !out.payloadSha.isEmpty())
@@ -250,20 +288,7 @@ QString CatalogController::normalizeTitleKey(const QString& title)
 
 int CatalogController::showcaseScore(const CatalogEntry& entry)
 {
-    int score = 0;
-    if (!entry.coverUrl.isEmpty() || !entry.remoteCoverUrl.isEmpty())
-        score += 100;
-    if (!entry.steamAppId.isEmpty())
-        score += 50;
-    if (!entry.description.isEmpty())
-        score += 20;
-    if (entry.sourceId.contains(QStringLiteral("steam"), Qt::CaseInsensitive))
-        score += 10;
-    if (entry.releaseDay > 0)
-        score += qMin(30, int(entry.releaseDay / 30));
-    if (entry.sizeBytes > 0)
-        score += 5;
-    return score;
+    return catalogShowcaseScore(entry);
 }
 
 bool CatalogController::isSourceCacheFresh(const QString& sourceId) const
@@ -317,6 +342,8 @@ void CatalogController::storeCatalogForSource(const QString& sourceId, QVector<C
         }
     }
     m_catalogBySource.insert(sourceId, std::move(entries));
+    logMemoryStage(QStringLiteral("catalog stored %1 entries~%2 MiB").arg(sourceId).arg(
+        memoryStageLogEnabled() ? estimateCatalogBytes(m_catalogBySource.value(sourceId)) / (1024 * 1024) : 0));
     m_sourceLoadedAtMs.insert(sourceId, QDateTime::currentMSecsSinceEpoch());
     m_catalogCounts.insert(sourceId, m_catalogBySource.value(sourceId).size());
     m_catalogErrors.remove(sourceId);
@@ -428,11 +455,7 @@ void CatalogController::rebuildMergedCatalog()
     if (loadedSourceIds.isEmpty())
         return;
 
-    struct MergeResult {
-        QVector<CatalogEntry> merged;
-        QHash<QString, QVector<CatalogEntry>> installOffers;
-        QHash<QString, QString> entryIdToOfferGroup;
-    };
+    using MergeResult = CatalogMergeResult;
 
     const quint64 generation = ++m_mergeGeneration;
     const QStringList activeSourceIds = m_activeSourceIds;
@@ -454,100 +477,7 @@ void CatalogController::rebuildMergedCatalog()
             });
     watcher->setFuture(QtConcurrent::run(
         [bySource = std::move(bySource), activeSourceIds, enabledIds]() -> MergeResult {
-            MergeResult out;
-            QHash<QString, QVector<CatalogEntry>> groups;
-            QStringList groupOrder;
-
-            // Steam rows key by app id; FreeTP often has no steamAppId yet and keys by title.
-            // Map title → steam:* so "The Forest" from both sources becomes one card.
-            QVector<CatalogEntry> steamEntries;
-            for (const QString& sourceId : activeSourceIds) {
-                if (!enabledIds.contains(sourceId))
-                    continue;
-                const auto it = bySource.constFind(sourceId);
-                if (it == bySource.cend())
-                    continue;
-                for (const CatalogEntry& entry : it.value()) {
-                    const QString appId = entry.steamAppId.trimmed();
-                    if (appId.isEmpty())
-                        continue;
-                    steamEntries.append(entry);
-                }
-            }
-            const auto titleToSteamKey = catalogSteamTitleKeys(steamEntries);
-
-            for (const QString& sourceId : activeSourceIds) {
-                if (!enabledIds.contains(sourceId))
-                    continue;
-                const auto it = bySource.constFind(sourceId);
-                if (it == bySource.cend())
-                    continue;
-                for (const CatalogEntry& entry : it.value()) {
-                    CatalogEntry copy = entry;
-                    copy.id = repairCatalogEntryId(copy.id);
-                    const QString key = catalogOfferGroupKey(copy, titleToSteamKey);
-                    if (!groups.contains(key))
-                        groupOrder.append(key);
-                    groups[key].append(std::move(copy));
-                }
-            }
-
-            out.merged.reserve(groups.size());
-            for (const QString& key : groupOrder) {
-                QVector<CatalogEntry> offers = groups.take(key);
-                if (offers.isEmpty())
-                    continue;
-
-                QVector<CatalogEntry> uniqueOffers;
-                QHash<QString, int> sourceIndices;
-                for (CatalogEntry& offer : offers) {
-                    const auto existing = sourceIndices.constFind(offer.sourceId);
-                    if (existing != sourceIndices.cend()) {
-                        if (offer.uploadDate > uniqueOffers.at(existing.value()).uploadDate)
-                            uniqueOffers[existing.value()] = std::move(offer);
-                        continue;
-                    }
-                    sourceIndices.insert(offer.sourceId, uniqueOffers.size());
-                    uniqueOffers.append(std::move(offer));
-                }
-                offers = std::move(uniqueOffers);
-
-                int bestIdx = 0;
-                int bestScore = showcaseScore(offers.first());
-                for (int i = 1; i < offers.size(); ++i) {
-                    const int score = showcaseScore(offers.at(i));
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestIdx = i;
-                    }
-                }
-                CatalogEntry showcase = offers.at(bestIdx);
-                // Keep showcase.id from the winning offer. Never swap in another offer's id -
-                // that produced Frankenstein cards (Car Mechanic art + Undying Flower entryId).
-                // Only fill missing fields from peers with the same normalized title.
-                const QString showcaseTitleKey = normalizeTitleKey(showcase.title);
-                for (const CatalogEntry& offer : offers) {
-                    if (normalizeTitleKey(offer.title) != showcaseTitleKey)
-                        continue;
-                    if (showcase.remoteCoverUrl.isEmpty() && !offer.remoteCoverUrl.isEmpty())
-                        showcase.remoteCoverUrl = offer.remoteCoverUrl;
-                    if (showcase.coverUrl.isEmpty() && !offer.coverUrl.isEmpty())
-                        showcase.coverUrl = offer.coverUrl;
-                    if (showcase.steamAppId.isEmpty() && !offer.steamAppId.isEmpty())
-                        showcase.steamAppId = offer.steamAppId;
-                }
-
-                out.entryIdToOfferGroup.insert(showcase.id, key);
-                for (const CatalogEntry& offer : offers)
-                    out.entryIdToOfferGroup.insert(offer.id, key);
-
-                // Multi-source only — single-offer groups use the showcase row.
-                if (offers.size() > 1)
-                    out.installOffers.insert(key, std::move(offers));
-
-                out.merged.append(std::move(showcase));
-            }
-            return out;
+            return mergeCatalogSources(bySource, activeSourceIds, enabledIds);
         }));
 }
 
@@ -624,6 +554,7 @@ void CatalogController::applyMergedCatalogResult(
         m_hooks.rebuildGenres();
     if (m_hooks.applyFilter)
         m_hooks.applyFilter(m_activeQuery);
+    logMemoryStage(QStringLiteral("merged catalog applied"));
     if (m_hooks.warmCovers)
         m_hooks.warmCovers();
 
@@ -930,6 +861,7 @@ void CatalogController::loadCatalogSourceNow(const QString& sourceId)
             const QByteArray storedKey = CatalogDiskCache::storedPayloadKey(sourceId);
             if (!storedKey.isEmpty()
                 && CatalogSnapshot::load(sourceId, storedKey, &entries)) {
+                logMemoryStage(QStringLiteral("snapshot loaded %1 n=%2").arg(sourceId).arg(entries.size()));
                 CatalogDiskCache::loadPayload(sourceId, nullptr, &etag, &out.savedAtMs);
                 out.hadDiskPayload = true;
                 out.etag = etag;

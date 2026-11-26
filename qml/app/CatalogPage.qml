@@ -131,6 +131,8 @@ Item {
     }
 
     function resetScroll() { catalogContent.resetScroll() }
+    // Dev (--memtour): step the Discover feed like the mouse wheel does.
+    function discoverGo(delta) { catalogContent.discoverGo(delta) }
 
     function focusSearch() { catalogContent.focusSearch() }
 

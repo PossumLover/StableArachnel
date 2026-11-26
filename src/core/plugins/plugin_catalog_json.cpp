@@ -2,6 +2,8 @@
 
 #include "json_row_scanner.h"
 
+#include <QThread>
+#include <QThreadPool>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -299,8 +301,12 @@ bool parseRowsStreaming(const QByteArray& json, const QString& defaultSourceId,
         }
         return rows;
     };
+    // At most 4 DOMs alive at once (see syncPluginCatalogSource): the transient, not the rows,
+    // set the peak, and the heap kept that peak committed.
+    QThreadPool pool;
+    pool.setMaxThreadCount(qBound(1, QThread::idealThreadCount() / 2, 4));
     QVector<QVector<CatalogEntry>> parts =
-        QtConcurrent::blockingMapped<QVector<QVector<CatalogEntry>>>(batches, parseBatch);
+        QtConcurrent::blockingMapped<QVector<QVector<CatalogEntry>>>(&pool, batches, parseBatch);
 
     qsizetype total = 0;
     for (const auto& part : std::as_const(parts))

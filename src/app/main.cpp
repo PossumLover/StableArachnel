@@ -4,6 +4,7 @@
 #include <QFontDatabase>
 #include <QIcon>
 #include <QPixmapCache>
+#include <QStandardPaths>
 #include <QQmlApplicationEngine>
 
 #include <cstdio>
@@ -28,6 +29,7 @@
 #endif
 
 #include "core/facade/core_controller.h"
+#include "core/util/process_memory.h"
 #include "core/settings/settings_store.h"
 #include "core/i18n/translation_service.h"
 #include "crash_log.h"
@@ -145,6 +147,11 @@ int main(int argc, char* argv[])
     QGuiApplication app(argc, argv);
 #endif
 
+    // Dev/test only: keep every data and config file under Qt's test-mode locations, so a probe
+    // run never touches the real library, settings or caches.
+    if (qEnvironmentVariableIntValue("ARACHNEL_SANDBOX") > 0)
+        QStandardPaths::setTestModeEnabled(true);
+
     arachnel::configureApplicationIdentity();
 
     const bool crashDialogMode = arachnel::isCrashDialogMode(argc, argv);
@@ -180,7 +187,15 @@ int main(int argc, char* argv[])
         }
     }
 
+    arachnel::core::logMemoryStage(QStringLiteral("startup"));
     arachnel::core::registerCoreTypes();
+    if (arachnel::core::memoryStageLogEnabled()) {
+        auto* memTimer = new QTimer(&app);
+        memTimer->setInterval(2500);
+        QObject::connect(memTimer, &QTimer::timeout, &app,
+                         []() { arachnel::core::logMemoryStage(QStringLiteral("tick")); });
+        memTimer->start();
+    }
     QPixmapCache::setCacheLimit(24 * 1024);
 
     arachnel::SingleInstanceGuard* singleInstance = nullptr;
@@ -267,6 +282,7 @@ int main(int argc, char* argv[])
             engine.loadFromModule(QStringLiteral("arachnel"), QStringLiteral("CrashReportWindow"));
         else
             engine.loadFromModule(QStringLiteral("arachnel"), QStringLiteral("Main"));
+        arachnel::core::logMemoryStage(QStringLiteral("qml loaded"));
 
         if (!crashDialogMode) {
             if (!engine.rootObjects().isEmpty()) {

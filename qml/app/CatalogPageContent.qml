@@ -12,6 +12,7 @@ Item {
 
     property alias searchText: catalogStickyToolbar.searchText
 
+    function discoverGo(delta) { discoverFeed.go(delta) }
     function focusSearch() {
         catalogStickyToolbar.focusSearch()
     }

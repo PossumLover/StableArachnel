@@ -162,12 +162,21 @@ if(WIN32)
     set_target_properties(arachnel_app PROPERTIES WIN32_EXECUTABLE TRUE)
 
     set(_arachnel_icon_ico "${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/arachnel.ico")
+    set(_arachnel_manifest "${CMAKE_CURRENT_SOURCE_DIR}/resources/windows/SproutLauncher.manifest")
+    set(_arachnel_icon_rc "${CMAKE_CURRENT_BINARY_DIR}/arachnel_app_icon.rc")
+    set(_arachnel_rc_text "")
+    set(_arachnel_rc_depends "")
     if(EXISTS "${_arachnel_icon_ico}")
-        set(_arachnel_icon_rc "${CMAKE_CURRENT_BINARY_DIR}/arachnel_app_icon.rc")
-        file(WRITE "${_arachnel_icon_rc}" "IDI_ICON1 ICON \"${_arachnel_icon_ico}\"\n")
-        set_source_files_properties("${_arachnel_icon_rc}" PROPERTIES OBJECT_DEPENDS "${_arachnel_icon_ico}")
-        target_sources(arachnel_app PRIVATE "${_arachnel_icon_rc}")
+        string(APPEND _arachnel_rc_text "IDI_ICON1 ICON \"${_arachnel_icon_ico}\"\n")
+        list(APPEND _arachnel_rc_depends "${_arachnel_icon_ico}")
     endif()
+    # 1 = CREATEPROCESS_MANIFEST_RESOURCE_ID, 24 = RT_MANIFEST. The manifest opts into the
+    # segment heap, which hands freed memory back to Windows (see the manifest).
+    string(APPEND _arachnel_rc_text "1 24 \"${_arachnel_manifest}\"\n")
+    list(APPEND _arachnel_rc_depends "${_arachnel_manifest}")
+    file(WRITE "${_arachnel_icon_rc}" "${_arachnel_rc_text}")
+    set_source_files_properties("${_arachnel_icon_rc}" PROPERTIES OBJECT_DEPENDS "${_arachnel_rc_depends}")
+    target_sources(arachnel_app PRIVATE "${_arachnel_icon_rc}")
 endif()
 
 qt_add_resources(arachnel_app "arachnel_app_icons"

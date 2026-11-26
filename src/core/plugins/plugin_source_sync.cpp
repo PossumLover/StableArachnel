@@ -7,6 +7,7 @@
 #include "json_row_scanner.h"
 #include "plugin_host.h"
 #include "crash_log.h"
+#include "process_memory.h"
 
 #include <QDateTime>
 #include <QDir>
@@ -21,6 +22,8 @@
 #include <QNetworkRequest>
 #include <QSet>
 #include <QUrl>
+#include <QThread>
+#include <QThreadPool>
 #include <QtConcurrent>
 
 #include <algorithm>
@@ -436,8 +439,13 @@ PluginSourceSyncResult syncPluginCatalogSource(const PluginHost& host, const QSt
 
     QVector<BatchOut> outs;
     if (desc.parallel && batches.size() > 1) {
+        // At most 4 batches in flight. Each holds its input rows, the plugin's output and a
+        // QJsonDocument at once; on every core that was ~250 MB of transient memory for a
+        // 64k-row feed (56 MB of rows), for under a second saved.
+        QThreadPool pool;
+        pool.setMaxThreadCount(qBound(1, QThread::idealThreadCount() / 2, 4));
         outs = QtConcurrent::blockingMapped<QVector<BatchOut>>(
-            batches, [&](const Batch& b) { return runBatch(b); });
+            &pool, batches, [&](const Batch& b) { return runBatch(b); });
     } else {
         outs.reserve(batches.size());
         for (const Batch& b : batches)
@@ -446,6 +454,7 @@ PluginSourceSyncResult syncPluginCatalogSource(const PluginHost& host, const QSt
     if (mapped)
         raw.unmap(mapped);
     raw.close();
+    logMemoryStage(QStringLiteral("source batches normalized %1 batches=%2").arg(sourceId).arg(outs.size()));
 
     QSet<QString> superseded;
     qsizetype total = 0;

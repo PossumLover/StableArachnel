@@ -13,6 +13,7 @@ add_executable(network_tests
     ${core}/catalog/hydra_catalog_client.cpp
     ${core}/catalog/catalog_parser.cpp
     ${core}/catalog/catalog_identity.cpp
+    ${core}/catalog/catalog_merge.cpp
     ${core}/catalog/catalog_search_utils.cpp
     ${core}/catalog/catalog_model.cpp
     ${core}/catalog/catalog_filter_service.cpp

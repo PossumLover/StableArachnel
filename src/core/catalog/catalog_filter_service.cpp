@@ -197,7 +197,10 @@ FilterSoA buildFilterSoA(const QVector<CatalogEntry>* cachePtr, const QSet<quint
     if (!cachePtr)
         return out;
     const int n = cachePtr->size();
+    // reserve() first: resize() alone over-allocates geometrically (see CatalogSnapshot::load).
+    out.rows.reserve(n);
     out.rows.resize(n);
+    out.searchEntries.reserve(n);
     out.searchEntries.resize(n);
     out.sourceIdsBySlot.reserve(8);
 

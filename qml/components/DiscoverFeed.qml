@@ -349,7 +349,11 @@ FocusScope {
                                 Image {
                                     required property int index
                                     anchors.fill: parent
-                                    source: Math.abs(index - parent.shot) <= 1 || index === 0 ? card.shots[index] : ""
+                                    // The shot on screen and the next one (decoded ahead of the
+                                    // crossfade); the one fading out keeps its texture while its
+                                    // opacity animates, then is dropped.
+                                    readonly property int ahead: (parent.shot + 1) % Math.max(1, Math.min(card.shots.length, 6))
+                                    source: index === parent.shot || index === ahead || opacity > 0 ? card.shots[index] : ""
                                     sourceSize: Qt.size(1280, 720)
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true

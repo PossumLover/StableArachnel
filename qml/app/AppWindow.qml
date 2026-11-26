@@ -96,6 +96,57 @@ MD.ApplicationWindow {
         }
     }
 
+    // Dev: `--memtour <rounds>` walks the pages and runs catalog searches (each loads a fresh
+    // set of covers), logging "[memtour] <step>" so a run with ARACHNEL_MEMLOG=1 shows what
+    // browsing costs and whether it is ever given back. Quits when done.
+    Timer {
+        id: memTourTimer
+        property var steps: []
+        property int at: 0
+        interval: 2500
+        repeat: true
+        onTriggered: {
+            if (at >= steps.length) {
+                stop()
+                console.info("[memtour] done")
+                Qt.quit()
+                return
+            }
+            const step = steps[at++]
+            console.info("[memtour] " + step)
+            if (step.indexOf("search:") === 0)
+                root.openCatalogWithQuery(step.slice(7))
+            else if (step.indexOf("page:") === 0)
+                root.goToPage(parseInt(step.slice(5)))
+            else if (step === "feed:next") {
+                const pages = pageStack.currentItem
+                if (pages && pages.discoverPage)
+                    pages.discoverPage.discoverGo(1)
+            }
+        }
+        Component.onCompleted: {
+            const args = Qt.application.arguments
+            const at = args.indexOf("--memtour")
+            if (at < 0)
+                return
+            const rounds = at + 1 < args.length ? Math.max(1, parseInt(args[at + 1]) || 1) : 1
+            const queries = ["a", "e", "dark", "space", "war", "sim", "the", "of", "and", "s",
+                             "re", "ma", "co", "pro", "fa"]
+            let plan = ["wait", "wait", "wait", "wait"]
+            for (let r = 0; r < rounds; ++r) {
+                plan.push("page:1", "wait", "wait")
+                for (let c = 0; c < 6; ++c)
+                    plan.push("feed:next", "wait")
+                plan.push("page:2", "wait")
+                for (let q = 0; q < queries.length; ++q)
+                    plan.push("search:" + queries[(q + r * 3) % queries.length])
+                plan.push("page:0", "wait", "page:5", "wait", "page:0", "idle", "idle", "idle", "idle")
+            }
+            steps = plan
+            start()
+        }
+    }
+
     property int pageIndex: 0
     property bool detailsOpen: pageStack.depth > 1
     property string detailsGameId: ""

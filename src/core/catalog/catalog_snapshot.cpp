@@ -388,6 +388,9 @@ bool load(const QString& sourceId, const QByteArray& payloadKey, QVector<Catalog
         return false;
 
     QVector<CatalogEntry> entries;
+    // reserve() first: resize() on an empty QList grows geometrically and would commit ~2x
+    // the rows (64 MB of structs for a 35 MB catalog) for as long as the catalog lives.
+    entries.reserve(static_cast<qsizetype>(count));
     entries.resize(static_cast<qsizetype>(count));
     CatalogEntry* dst = entries.data();
     QtConcurrent::blockingMap(blocks, [dst](Block& b) {

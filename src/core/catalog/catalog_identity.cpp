@@ -71,24 +71,39 @@ QString catalogTitleKey(const QString& title)
     return compactSearchText(cleanCatalogTitle(title));
 }
 
+namespace {
+void addSteamTitleKey(const CatalogEntry& entry, QHash<QString, QString>& keys, QSet<QString>& ambiguous)
+{
+    if (entry.steamAppId.trimmed().isEmpty())
+        return;
+    const QString title = catalogTitleKey(entry.title);
+    if (title.isEmpty() || ambiguous.contains(title))
+        return;
+    const QString key = QStringLiteral("steam:") + entry.steamAppId.trimmed();
+    if (keys.contains(title) && keys.value(title) != key) {
+        keys.insert(title, {});
+        ambiguous.insert(title);
+    } else {
+        keys.insert(title, key);
+    }
+}
+} // namespace
+
 QHash<QString, QString> catalogSteamTitleKeys(const QVector<CatalogEntry>& entries)
 {
     QHash<QString, QString> keys;
     QSet<QString> ambiguous;
-    for (const auto& entry : entries) {
-        if (entry.steamAppId.trimmed().isEmpty())
-            continue;
-        const QString title = catalogTitleKey(entry.title);
-        if (title.isEmpty() || ambiguous.contains(title))
-            continue;
-        const QString key = QStringLiteral("steam:") + entry.steamAppId.trimmed();
-        if (keys.contains(title) && keys.value(title) != key) {
-            keys.insert(title, {});
-            ambiguous.insert(title);
-        } else {
-            keys.insert(title, key);
-        }
-    }
+    for (const auto& entry : entries)
+        addSteamTitleKey(entry, keys, ambiguous);
+    return keys;
+}
+
+QHash<QString, QString> catalogSteamTitleKeys(const QVector<const CatalogEntry*>& entries)
+{
+    QHash<QString, QString> keys;
+    QSet<QString> ambiguous;
+    for (const CatalogEntry* entry : entries)
+        addSteamTitleKey(*entry, keys, ambiguous);
     return keys;
 }
 

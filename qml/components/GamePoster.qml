@@ -129,7 +129,9 @@ Item {
         visible: !root.coverReady
         clip: true
 
-        layer.enabled: true
+        // Only while shown: a layer is a poster-sized offscreen texture, and every poster in
+        // every grid kept this one after its cover had loaded.
+        layer.enabled: visible
         layer.effect: MD.RoundClip {
             corners: MD.Util.corners(root.shownRadius)
             size: Qt.vector2d(placeholder.width, placeholder.height)
