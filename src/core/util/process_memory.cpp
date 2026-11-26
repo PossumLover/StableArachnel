@@ -26,8 +26,7 @@ qint64 processPrivateMemoryMiB()
     QFile status(QStringLiteral("/proc/self/status"));
     if (!status.open(QIODevice::ReadOnly))
         return -1;
-    for (const QByteArray& line : status.readAll().split('
-')) {
+    for (const QByteArray& line : status.readAll().split('\n')) {
         if (line.startsWith("RssAnon:")) // private and resident: closest to Windows PrivateUsage
             return line.mid(8).trimmed().split(' ').value(0).toLongLong() / 1024;
     }
