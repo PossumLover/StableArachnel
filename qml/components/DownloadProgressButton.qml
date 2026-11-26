@@ -258,12 +258,12 @@ Item {
 
         Row {
             spacing: MD.Token.spacing.small
-            height: 40
+            height: MD.Token.button.medium.container_height
 
             Item {
                 id: shell
                 width: Math.max(196, labelRow.implicitWidth + 2 * MD.Token.spacing.large)
-                height: 40
+                height: parent.height
                 clip: true
 
                 layer.enabled: true

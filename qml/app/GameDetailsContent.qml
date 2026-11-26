@@ -10,6 +10,16 @@ Item {
     id: detailsRoot
     required property var page
 
+    component GameActionIconButton: MD.IconButton {
+        implicitWidth: implicitHeight
+        implicitHeight: MD.Token.button.medium.container_height
+        leftInset: 0
+        rightInset: 0
+        topInset: 0
+        bottomInset: 0
+        mdState.type: MD.Enum.IBtFilledTonal
+    }
+
     property var healthIssues: []
     readonly property bool healthNeedsVerify: {
         for (const issue of healthIssues) {
@@ -466,6 +476,8 @@ Item {
                                 }
                                 icon.name: page.isRunning || page.runtimeSetupActive
                                          ? "" : MD.Token.icon.play_arrow
+                                typescale: MD.Token.typescale.title_medium
+                                font.weight: Font.DemiBold
                                 mdState.type: MD.Enum.BtFilled
                                 mdState.size: MD.Enum.M
                                 mdState.backgroundColor: page.isRunning ? MD.Token.color.error : MD.Token.color.primary
@@ -474,12 +486,14 @@ Item {
                             }
 
                             MD.Button {
+                                mdState.size: MD.Enum.M
                                 visible: page.runtimeSetupActive
                                 text: qsTr("Cancel")
                                 onClicked: Core.cancelRuntimeSetup()
                             }
 
                             MD.Button {
+                                mdState.size: MD.Enum.M
                                 visible: !!page.info.installUnavailable
                                 text: qsTr("Game folder unavailable · Check again")
                                 onClicked: page.detailsRevision++
@@ -514,6 +528,7 @@ Item {
                             }
 
                             MD.Button {
+                                mdState.size: MD.Enum.M
                                 visible: page.installed && !!(page.info.hasUpdate) && !page.downloadJob.inProgress
                                 text: qsTr("Update")
                                 icon.name: MD.Token.icon.update
@@ -526,9 +541,8 @@ Item {
                                 }
                             }
 
-                            MD.IconButton {
+                            GameActionIconButton {
                                 visible: page.canManualInstall
-                                mdState.type: MD.Enum.IBtFilledTonal
                                 icon.name: MD.Token.icon.folder_open
                                 onClicked: Core.confirmManualInstall(page.downloadJob.jobId)
 
@@ -538,37 +552,35 @@ Item {
                                 }
                             }
 
-                            MD.IconButton {
+                            GameActionIconButton {
                                 readonly property bool favorited: {
                                     const ids = Core.settings.bookmarkedEntryIds
                                     return ids.indexOf(page.gameId) >= 0
                                 }
                                 checked: favorited
-                                mdState.type: MD.Enum.IBtFilledTonal
                                 icon.name: MD.Token.icon.favorite
                                 Accessible.name: favorited ? qsTr("Remove from favorites") : qsTr("Add to favorites")
                                 onClicked: Core.toggleBookmark(page.gameId)
                             }
 
                             GameOrganizationControl {
+                                mdState.size: MD.Enum.M
                                 visible: !!page.info.installed
                                 gameId: page.gameId
                                 playStatus: page.info.playStatus ?? ""
                             }
 
-                            MD.IconButton {
+                            GameActionIconButton {
                                 visible: page.playable || page.downloadComplete || page.inLibrary
-                                mdState.type: MD.Enum.IBtFilledTonal
                                 icon.name: MD.Token.icon.settings
                                 Accessible.name: qsTr("Game settings")
                                 onClicked: gameSettingsSheet.openForGame(page.gameId)
                             }
 
-                            MD.IconButton {
+                            GameActionIconButton {
                                 id: moreActions
                                 visible: page.playable || page.downloadComplete || page.inLibrary
                                          || hasLaunchLog || (page.installed && !page.canManualInstall)
-                                mdState.type: MD.Enum.IBtFilledTonal
                                 icon.name: MD.Token.icon.more_vert
                                 Accessible.name: qsTr("More actions")
                                 onClicked: moreMenu.open()

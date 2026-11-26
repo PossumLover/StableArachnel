@@ -436,7 +436,7 @@ Item {
                         : page.minCardWidth + gap
                     readonly property int cardWidth: Math.max(1, cellW - gap)
                     readonly property int cardHeight: Math.ceil(cardWidth * 4 / 3) + page.metaHeight
-                    readonly property int cellH: cardHeight + gap
+                    readonly property int cellH: cardHeight + MD.Token.spacing.small
                     readonly property int rows: Math.max(
                         1, Math.ceil(Core.libraryView.count / Math.max(1, columns)))
                     // Full cell rows so GridView never clips the next line.

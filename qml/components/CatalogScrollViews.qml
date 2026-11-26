@@ -235,7 +235,6 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: pageMargin
         anchors.rightMargin: pageMargin + root.scrubberWidth
-        anchors.bottomMargin: MD.Token.spacing.medium
         visible: !page.listViewMode
         clip: true
         // Unbind off-tab / discovery only. Do NOT key off root.visible - StackView
@@ -305,7 +304,6 @@ Item {
         anchors.fill: parent
         anchors.leftMargin: pageMargin
         anchors.rightMargin: pageMargin + root.scrubberWidth
-        anchors.bottomMargin: MD.Token.spacing.medium
         visible: page.listViewMode
         clip: true
         model: (root.catalogBound && page.listViewMode) ? Core.catalog : null
