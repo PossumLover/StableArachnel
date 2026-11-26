@@ -392,7 +392,6 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.rightMargin: MD.Token.spacing.small
         visible: !root.compactRow
         spacing: MD.Token.spacing.extra_small
 

@@ -127,7 +127,6 @@ Item {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.rightMargin: MD.Token.spacing.small
         spacing: MD.Token.spacing.small
 
         Item {

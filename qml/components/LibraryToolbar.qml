@@ -34,7 +34,7 @@ ColumnLayout {
         }
     }
 
-    spacing: MD.Token.spacing.small
+    spacing: MD.Token.spacing.medium
     RowLayout {
         Layout.fillWidth: true
         spacing: MD.Token.spacing.small

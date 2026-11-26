@@ -9,8 +9,6 @@ import Qcm.Material as MD
 Item {
     id: root
 
-    readonly property int cellWidth: 176
-    readonly property int cellHeight: 284
     readonly property int cardWidth: 160
     readonly property int cardHeight: 268
     readonly property int listRowHeight: 80

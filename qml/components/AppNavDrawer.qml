@@ -30,7 +30,9 @@ Rectangle {
     readonly property bool expanded: !prefs.collapsed && !narrowWindow
 
     color: MD.Token.color.surface_container_low
-    implicitWidth: expanded ? 256 : 88
+    readonly property int expandedWidth: 256
+    readonly property int railWidth: 88
+    implicitWidth: expanded ? expandedWidth : railWidth
     Behavior on implicitWidth {
         NumberAnimation { duration: AppMotion.scaled(420); easing: AppMotion.emphasized }
     }
@@ -45,11 +47,14 @@ Rectangle {
     }
 
     ColumnLayout {
-        anchors.fill: parent
+        // Lay out each mode at its final width while the drawer reveals it.
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
+        width: (root.expanded ? root.expandedWidth : root.railWidth) - 2 * anchors.leftMargin
         anchors.topMargin: MD.Token.spacing.medium
         anchors.bottomMargin: MD.Token.spacing.medium
         anchors.leftMargin: 12
-        anchors.rightMargin: 12
         spacing: 4
 
         // ---------- Brand ----------
@@ -75,6 +80,7 @@ Rectangle {
                 Layout.fillWidth: true
                 visible: root.expanded
                 opacity: root.expanded ? 1 : 0
+                wrapMode: Text.NoWrap
                 text: Qt.application.displayName.length ? Qt.application.displayName : "Sprout"
                 typescale: MD.Token.typescale.title_large
                 font.weight: Font.Bold
@@ -135,6 +141,7 @@ Rectangle {
                 MD.Label {
                     Layout.fillWidth: true
                     visible: root.expanded
+                    wrapMode: Text.NoWrap
                     text: qsTr("Search games")
                     typescale: MD.Token.typescale.body_large
                     color: MD.Token.color.on_surface_variant
@@ -202,6 +209,7 @@ Rectangle {
                     scale: entryTap.pressed ? 0.96 : 1
 
                     Behavior on width {
+                        enabled: root.width === (root.expanded ? root.expandedWidth : root.railWidth)
                         NumberAnimation { duration: AppMotion.scaled(420); easing.type: Easing.OutBack; easing.overshoot: 1.4 }
                     }
                     Behavior on color { ColorAnimation { duration: AppMotion.short } }
@@ -224,6 +232,7 @@ Rectangle {
                     }
                     MD.Label {
                         Layout.fillWidth: true
+                        wrapMode: Text.NoWrap
                         text: entry.modelData.name
                         typescale: MD.Token.typescale.label_large
                         font.pixelSize: 15
