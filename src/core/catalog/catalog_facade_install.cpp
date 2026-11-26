@@ -736,7 +736,11 @@ void CoreController::requestQuit()
             return;
         timer->stop();
         timer->deleteLater();
-        QCoreApplication::quit();
+        // Not quit(): in Qt 6 a GUI app's quit() first asks every visible window to close,
+        // and AppWindow refuses its close event. A window shown again during this wait
+        // (a second launch raising it) vetoed the quit and left the process alive with
+        // plugin calls blocked for good. exit() cannot be refused.
+        QCoreApplication::exit(0);
     });
     timer->start(50);
 }

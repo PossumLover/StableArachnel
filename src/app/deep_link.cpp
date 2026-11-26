@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -10,6 +11,7 @@
 #include <QLocalSocket>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QThread>
 #include <QUrl>
 #include <QWindow>
 
@@ -274,12 +276,12 @@ bool SingleInstanceGuard::tryBecomePrimary()
     return true;
 }
 
-void SingleInstanceGuard::forwardToPrimary(const QString& payload)
+bool SingleInstanceGuard::forwardToPrimary(const QString& payload)
 {
     QLocalSocket socket;
     socket.connectToServer(m_serverName);
     if (!socket.waitForConnected(1500))
-        return;
+        return true;
 
 #if defined(Q_OS_WIN)
     // Secondary was launched by the user (browser / shell) and briefly owns
@@ -291,9 +293,27 @@ void SingleInstanceGuard::forwardToPrimary(const QString& payload)
     socket.write(payload.toUtf8() + '\n');
     socket.flush();
     socket.waitForBytesWritten(1500);
+    // A primary that is shutting down answers "quitting" instead of raising its window.
+    // Older primaries close the connection without answering.
+    bool primaryQuitting = false;
+    if (socket.waitForReadyRead(1500))
+        primaryQuitting = socket.readAll().trimmed() == "quitting";
     socket.disconnectFromServer();
     if (socket.state() != QLocalSocket::UnconnectedState)
         socket.waitForDisconnected(1500);
+    return !primaryQuitting;
+}
+
+bool SingleInstanceGuard::waitToBecomePrimary(int timeoutMs)
+{
+    QElapsedTimer waited;
+    waited.start();
+    while (waited.elapsed() < timeoutMs) {
+        if (tryBecomePrimary())
+            return true;
+        QThread::msleep(250);
+    }
+    return false;
 }
 
 void SingleInstanceGuard::onNewConnection()
@@ -319,6 +339,16 @@ void SingleInstanceGuard::readSocket(QLocalSocket* socket)
     const QByteArray data = socket->readAll();
     // One shot: readyRead + disconnected can both fire for the same payload.
     socket->disconnect(this);
+    if (m_shuttingDown && m_shuttingDown()) {
+        // Raising a window that is about to disappear helps no one: tell the new
+        // launch to wait for this process to exit and start fresh instead.
+        socket->write("quitting\n");
+        socket->flush();
+        return;
+    }
+    // Answer so the sender can leave at once instead of waiting out its read timeout.
+    socket->write("ok\n");
+    socket->flush();
     const QString payload = QString::fromUtf8(data).trimmed();
     emit messageReceived(payload);
 }

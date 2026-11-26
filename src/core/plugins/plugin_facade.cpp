@@ -141,8 +141,13 @@ bool CoreController::installPluginArach(const QUrl& fileUrl)
         showNotice(QCoreApplication::translate("Core", "Wait for the plugin update to finish."));
         return false;
     }
-    if (!m_pluginHost || m_pluginCallsBlocked)
+    if (!m_pluginHost || m_quitRequested || m_prepareShutdownDone)
         return false;
+    if (m_pluginCallsBlocked) {
+        showNotice(QCoreApplication::translate(
+            "Core", "Wait for the current plugin operation to finish, then install the plugin again."));
+        return false;
+    }
 
     const QString path = fileUrl.isLocalFile() ? fileUrl.toLocalFile() : fileUrl.toString();
     m_pluginCallsBlocked = true;
@@ -211,8 +216,14 @@ bool CoreController::uninstallPlugin(const QString& pluginId)
         showNotice(QCoreApplication::translate("Core", "Wait for the plugin update to finish."));
         return false;
     }
-    if (!m_pluginHost || m_pluginCallsBlocked)
+    if (!m_pluginHost || m_quitRequested || m_prepareShutdownDone)
         return false;
+    if (m_pluginCallsBlocked) {
+        // Never refuse silently: the Delete button would look broken.
+        showNotice(QCoreApplication::translate(
+            "Core", "Wait for the current plugin operation to finish, then remove the plugin again."));
+        return false;
+    }
 
     // Unloading the library must wait for every catalog load / install worker that is still
     // running code from it. Waiting on the GUI thread (what PluginHost::uninstallPlugin does

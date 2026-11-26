@@ -206,10 +206,16 @@ int main(int argc, char* argv[])
         }
 
         if (!singleInstance->tryBecomePrimary()) {
-            singleInstance->forwardToPrimary(cliLaunchId.isEmpty() ? launchLink
-                                                                   : kCliLaunchPrefix + cliLaunchId);
-            return 0;
+            const bool handedOff = singleInstance->forwardToPrimary(
+                cliLaunchId.isEmpty() ? launchLink : kCliLaunchPrefix + cliLaunchId);
+            // The running copy is closing (it waits up to 5 s for plugin work, then saves).
+            // Start once it is gone rather than leave the user with no window.
+            if (handedOff || !singleInstance->waitToBecomePrimary(30000))
+                return 0;
         }
+        singleInstance->setShuttingDownCheck([]() {
+            return arachnel::core::CoreController::instance().quitRequested();
+        });
 
         QObject::connect(singleInstance, &arachnel::SingleInstanceGuard::messageReceived, &app,
                          [](const QString& url) {

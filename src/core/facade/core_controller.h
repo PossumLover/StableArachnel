@@ -159,6 +159,8 @@ public:
     bool pluginInstallBusy() const { return m_pluginInstallBusy; }
     bool pluginRemoveBusy() const { return m_pluginRemoveBusy; }
     bool pluginAutoUpdating() const { return m_autoUpdatingOfficialPlugins; }
+    /** True once the window was closed and the process is on its way out. */
+    bool quitRequested() const { return m_quitRequested; }
     bool gameRunning() const;
     QString runningGameId() const;
     QString runningGameTitle() const;
