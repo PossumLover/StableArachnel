@@ -8,7 +8,6 @@ Item {
     id: root
 
     readonly property int minCardWidth: 160
-    readonly property int gridSpacing: MD.Token.spacing.medium
     readonly property int metaHeight: 76
     readonly property bool libraryEmpty: Core.library.count === 0
     readonly property int pageMargin: Appearance.pageMargin

@@ -18,7 +18,8 @@ Item {
     property alias gridHeight: grid.height
     property alias listHeight: list.height
 
-    readonly property int scrubberWidth: catalogNavigator.visible ? catalogNavigator.width : 0
+    readonly property int scrubberWidth: catalogNavigator.visible
+        ? Math.max(0, catalogNavigator.width + catalogNavigator.anchors.rightMargin + MD.Token.spacing.extra_small - pageMargin) : 0
     readonly property real compactBarHeight: 56
     readonly property bool catalogBound: page.catalogModelReady && page.enabled
                                          && !page.discoveryMode && !Core.catalog.bulkUpdating
@@ -230,27 +231,29 @@ Item {
         onTriggered: root.syncNavigatorPosition()
     }
 
-    GridView {
+    PosterGridView {
         id: grid
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        anchors.left: parent.left
         anchors.leftMargin: pageMargin
-        anchors.rightMargin: pageMargin + root.scrubberWidth
+        availableWidth: root.width - 2 * pageMargin - root.scrubberWidth
+        minimumPosterWidth: page.cardWidth
         visible: !page.listViewMode
         clip: true
         // Unbind off-tab / discovery only. Do NOT key off root.visible - StackView
         // covering the page must not drop the 132k model (that zeros contentY and
         // cancels every visible cover).
         model: (root.catalogBound && !page.listViewMode) ? Core.catalog : null
-        cellWidth: page.cellWidth
-        cellHeight: page.cellHeight
-        cacheBuffer: page.cellHeight * 2
+        cellHeight: page.cardHeight + Math.round((posterWidth - page.cardWidth) * 4 / 3) + gap
+        cacheBuffer: cellHeight * 2
         reuseItems: true
         boundsBehavior: Flickable.StopAtBounds
         pixelAligned: true
         interactive: true
 
         header: Column {
-            width: grid.width
+            width: grid.availableWidth
             spacing: MD.Token.spacing.small
 
             CatalogIntroHeader {
@@ -259,7 +262,7 @@ Item {
             }
 
             CatalogScrollHeader {
-                contentWidth: grid.width
+                contentWidth: grid.availableWidth
                 hasSelection: Core.activeCatalogSourceIds.length > 0
                 listViewMode: page.listViewMode
                 collapseProgress: page.compactBarOpacity
@@ -292,8 +295,8 @@ Item {
         }
 
         delegate: CatalogGameCard {
-            width: page.cardWidth
-            height: page.cardHeight
+            width: grid.posterWidth
+            height: grid.cellHeight - grid.gap
             peekLeftEdge: page.peekLeftEdge ?? 0
             onOpenDetails: function (id) { page.openGame(id) }
         }

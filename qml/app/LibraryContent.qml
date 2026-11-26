@@ -380,7 +380,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.leftMargin: page.pageMargin
                 Layout.rightMargin: page.pageMargin
-                spacing: MD.Token.spacing.small
+                spacing: MD.Token.spacing.medium
 
                 LibraryToolbar { Layout.fillWidth: true }
 
@@ -420,44 +420,24 @@ Item {
                     visible: Core.libraryView.count > 0
                     Layout.fillWidth: true
 
-                    // N cards + (N-1) gaps: floor((w + gap) / (min + gap)).
-                    // Integer cellW so columns * cellW never exceeds width
-                    // (float width/columns clipped the last poster under clip:true).
-                    readonly property int gap: page.gridSpacing
-                    readonly property int columns: {
-                        if (width <= 0)
-                            return 2
-                        return Math.max(
-                            2,
-                            Math.floor((width + gap) / (page.minCardWidth + gap)))
-                    }
-                    readonly property int cellW: columns > 0
-                        ? Math.floor(width / columns)
-                        : page.minCardWidth + gap
-                    readonly property int cardWidth: Math.max(1, cellW - gap)
-                    readonly property int cardHeight: Math.ceil(cardWidth * 4 / 3) + page.metaHeight
-                    readonly property int cellH: cardHeight + MD.Token.spacing.small
-                    readonly property int rows: Math.max(
-                        1, Math.ceil(Core.libraryView.count / Math.max(1, columns)))
-                    // Full cell rows so GridView never clips the next line.
-                    Layout.preferredHeight: rows * cellH
+                    readonly property int cardHeight: Math.ceil(libraryGrid.posterWidth * 4 / 3) + page.metaHeight
+                    Layout.preferredHeight: Math.ceil(Core.libraryView.count / libraryGrid.columns) * libraryGrid.cellHeight
 
-                    GridView {
-                        // Exact tile width - leftover pixels stay empty on the right.
-                        width: gridHost.cellW * gridHost.columns
+                    PosterGridView {
+                        id: libraryGrid
+                        availableWidth: gridHost.width
+                        minimumPosterWidth: page.minCardWidth
                         height: parent.height
                         clip: false
                         interactive: false
                         model: Core.libraryView
-                        cellWidth: gridHost.cellW
-                        cellHeight: gridHost.cellH
+                        cellHeight: gridHost.cardHeight + MD.Token.spacing.small
                         cacheBuffer: 0
-                        populate: StaggerEnterTransition {}
                         add: StaggerEnterTransition { staggered: false }
                         delegate: LibraryGameCard {
                             id: gameCard
                             listName: cardMenu.nameForStatus(playStatus)
-                            width: gridHost.cardWidth
+                            width: libraryGrid.posterWidth
                             height: gridHost.cardHeight
                             onOpenDetails: function (id) { page.openGame(id) }
                             onContextMenuRequested: function (position) {

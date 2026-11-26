@@ -153,7 +153,7 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.leftMargin: page.pageMargin
-            anchors.rightMargin: page.pageMargin
+            anchors.rightMargin: page.pageMargin + catalogScrollViews.scrubberWidth
             anchors.topMargin: MD.Token.spacing.medium
             z: 4
             layer.enabled: true
