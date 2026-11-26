@@ -56,6 +56,7 @@ public:
     bool isEntryDownloadComplete(const QString& entryId) const;
     bool entryDownloadFilesExist(const QString& entryId) const;
     QVariantMap entryDetails(const QString& entryId) const;
+    void invalidateInstallProbe(const QString& entryId) { m_fsProbe.remove(entryId); }
     void setGameAutoUpdate(const QString& entryId, bool enabled);
     void setGameLaunchArgs(const QString& entryId, const QString& args);
     void setGameExecutableOverride(const QString& entryId, const QString& path);

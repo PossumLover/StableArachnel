@@ -14,6 +14,7 @@
 #include "library_store.h"
 #include "launch_resolver.h"
 #include "online_fix_overlay.h"
+#include "online_fix_package.h"
 #include "unsteam_overlay.h"
 #include <QRegularExpression>
 #include "plugin_host.h"
@@ -225,6 +226,7 @@ const LibraryController::FsProbe& LibraryController::fsProbeFor(const QString& e
     probe.key = key;
     probe.atMs = now;
     probe.fixInfo = onlineFixOverlayInfo(installPath);
+    probe.fixInfo.insert(QStringLiteral("onlineFixPackageBackup"), hasOnlineFixPackageBackup(installPath));
     probe.unsteamInfo = unsteamOverlayInfo(installPath);
     probe.steamlessInfo = SteamlessService::installInfo(installPath);
     if (game && !game->installPath.isEmpty() && QFileInfo::exists(game->installPath))

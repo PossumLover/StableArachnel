@@ -2,6 +2,7 @@
 #include "content_rating_store.h"
 
 #include "install_heuristics.h"
+#include "online_fix_package.h"
 
 #include <QFileInfo>
 #include <QRegularExpression>
@@ -484,6 +485,42 @@ void CoreController::setGameOnlineFixEnabled(const QString& entryId, bool enable
         m_libraryController->setGameOnlineFixEnabled(entryId, enabled);
         queueLibraryHealthRefresh(entryId);
     }
+}
+
+void CoreController::importGameOnlineFixPackage(const QString& entryId, const QUrl& folder)
+{
+    if (!folder.isLocalFile()) {
+        showNotice(tr("Choose a local folder containing the extracted package."));
+        return;
+    }
+    changeGameOnlineFixPackage(entryId, folder.toLocalFile(), false);
+}
+
+void CoreController::restoreGameOnlineFixPackage(const QString& entryId)
+{
+    changeGameOnlineFixPackage(entryId, {}, true);
+}
+
+void CoreController::changeGameOnlineFixPackage(const QString& entryId, const QString& folder,
+                                               bool restore)
+{
+    const LibraryGame* game = m_libraryStore.gameById(entryId);
+    if (!game || game->installPath.isEmpty() || !QFileInfo(game->installPath).isDir()) {
+        showNotice(tr("The game installation is unavailable."));
+        return;
+    }
+    if (runningGameId() == entryId || (m_runtimeSetupInProgress && runtimeSetupGameId() == entryId)
+        || entryHasActiveJob(entryId)) {
+        showNotice(tr("Close the game and wait for its current task to finish."));
+        return;
+    }
+    const QString result = restore ? restoreOnlineFixPackage(game->installPath)
+        : importOnlineFixPackage(game->installPath, realSteamAppId(*game), folder);
+    m_libraryController->invalidateInstallProbe(entryId);
+    queueLibraryHealthRefresh(entryId);
+    showNotice(result.isEmpty() ? (restore ? tr("Restored the files from before the import.")
+                                           : tr("Imported the Online Fix package."))
+                                : result);
 }
 
 void CoreController::switchGameToSteamFix(const QString& entryId)

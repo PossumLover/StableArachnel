@@ -58,6 +58,8 @@
     Q_INVOKABLE void setGameExecutableOverride(const QString&, const QString&);
     Q_INVOKABLE void setGameProtonId(const QString&, const QString&);
     Q_INVOKABLE void setGameOnlineFixEnabled(const QString&, bool);
+    Q_INVOKABLE void importGameOnlineFixPackage(const QString& entryId, const QUrl& folder);
+    Q_INVOKABLE void restoreGameOnlineFixPackage(const QString& entryId);
     /** Force Valve's shift+tab overlay on for an Online Fix game (SOFL-style). */
     Q_INVOKABLE void setGameSteamOverlayForced(const QString&, bool);
     Q_INVOKABLE void switchGameToSteamFix(const QString&);

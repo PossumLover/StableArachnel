@@ -13,6 +13,7 @@
     void onCatalogReady();
     void runAutoInstallUpdates();
     void syncLibraryFromStore();
+    void changeGameOnlineFixPackage(const QString& entryId, const QString& folder, bool restore);
     void syncLibraryHealth();
     void queueLibraryHealthRefresh(const QString& gameId);
     void startLibraryHealthCheck();

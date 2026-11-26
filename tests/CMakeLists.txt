@@ -73,6 +73,12 @@ target_include_directories(library_health_tests PRIVATE
 target_link_libraries(library_health_tests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME library_health_tests COMMAND library_health_tests)
 
+add_executable(online_fix_package_tests online_fix_package_tests.cpp
+    ${core}/install/online_fix_package.cpp)
+target_include_directories(online_fix_package_tests PRIVATE ${core}/install)
+target_link_libraries(online_fix_package_tests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME online_fix_package_tests COMMAND online_fix_package_tests)
+
 if(WIN32)
     target_sources(reliability_tests PRIVATE
         ${core}/launch/process_launcher.cpp ${core}/launch/process_tracker.cpp)

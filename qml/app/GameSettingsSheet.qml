@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Dialogs as Dialogs
 
 import Arachnel.Core 1.0
 import Qcm.Material as MD
@@ -317,6 +318,22 @@ MD.BottomSheet {
                         Core.switchGameToSteamFix(root.gameId)
                         root.detailsRevision++
                     }
+                }
+            }
+
+            MD.Button {
+                mdState.type: MD.Enum.BtFilledTonal
+                enabled: !root.gameBusy && !root.verifyingFiles && !root.info.installUnavailable
+                text: root.info.onlineFixPackageBackup ? qsTr("Restore pre-import files")
+                                                       : qsTr("Import Online Fix package…")
+                onClicked: {
+                    packageDialog.entryId = root.gameId
+                    packageDialog.gameTitle = root.info.title ?? root.gameId
+                    packageDialog.restore = !!root.info.onlineFixPackageBackup
+                    if (packageDialog.restore)
+                        packageDialog.open()
+                    else
+                        packagePicker.open()
                 }
             }
 
@@ -850,6 +867,54 @@ MD.BottomSheet {
             mdState.type: MD.Enum.BtFilled
             text: qsTr("Done")
             onClicked: root.close()
+        }
+    }
+
+    Dialogs.FolderDialog {
+        id: packagePicker
+        title: qsTr("Choose the extracted Online Fix package folder")
+        onAccepted: {
+            packageDialog.folder = selectedFolder
+            packageDialog.open()
+        }
+    }
+
+    MD.Dialog {
+        id: packageDialog
+        parent: Overlay.overlay
+        modal: true
+        width: Math.min(440, Overlay.overlay ? Overlay.overlay.width - 48 : 440)
+        property string entryId
+        property string gameTitle
+        property bool restore
+        property url folder
+        title: restore ? qsTr("Restore pre-import files?") : qsTr("Import package for %1?").arg(gameTitle)
+        contentItem: MD.Label {
+            wrapMode: Text.WrapAnywhere
+            text: packageDialog.restore
+                  ? qsTr("Restore the previous files for %1 and remove files added by the import. This replaces later edits to those files.").arg(packageDialog.gameTitle)
+                  : qsTr("Sprout will copy the contents of this folder into %1 and back up files it replaces.\n\n%2").arg(packageDialog.gameTitle).arg(packageDialog.folder.toString())
+        }
+        footer: MD.DialogButtonBox {
+            MD.Button {
+                text: qsTr("Cancel")
+                mdState.type: MD.Enum.BtText
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+                onClicked: packageDialog.close()
+            }
+            MD.Button {
+                text: packageDialog.restore ? qsTr("Restore") : qsTr("Import")
+                mdState.type: MD.Enum.BtFilled
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                onClicked: {
+                    packageDialog.close()
+                    if (packageDialog.restore)
+                        Core.restoreGameOnlineFixPackage(packageDialog.entryId)
+                    else
+                        Core.importGameOnlineFixPackage(packageDialog.entryId, packageDialog.folder)
+                    root.detailsRevision++
+                }
+            }
         }
     }
 
