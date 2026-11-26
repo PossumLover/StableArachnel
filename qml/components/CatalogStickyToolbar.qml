@@ -32,25 +32,20 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        spacing: MD.Token.spacing.small
+        spacing: MD.Token.spacing.medium
 
-        // v2: the page title and the search share one row.
+        DisplayTitle {
+            Layout.fillWidth: true
+            text: qsTr("Browse")
+        }
         RowLayout {
             Layout.fillWidth: true
-            spacing: MD.Token.spacing.large
-
-            DisplayTitle {
-                text: qsTr("Browse")
-            }
-
-            Item { Layout.fillWidth: true }
+            spacing: MD.Token.spacing.small
 
             LauncherSearchField {
                 id: catalogSearch
                 placeholderText: qsTr("Search games")
                 Layout.fillWidth: true
-                Layout.maximumWidth: 560
-                Layout.alignment: Qt.AlignVCenter
 
                 // Keep results in sync with the field. Enter used to be required, so
                 // typing a new query over a failed search left "Found: 0" on screen.

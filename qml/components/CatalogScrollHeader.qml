@@ -12,7 +12,7 @@ Item {
     required property bool showPanelButton
     property var sortOptions: []
 
-    signal filterRequested()
+    signal filterRequested(Item button)
     signal viewModeChangeRequested(int mode)
     signal refreshRequested()
     signal sortModeRequested(int mode)
@@ -71,16 +71,18 @@ Item {
             }
 
             CatalogSortButton {
+                compact: root.width < 620
                 sortOptions: root.sortOptions
                 onSortModeChosen: function (mode) { root.sortModeRequested(mode) }
             }
 
             MD.Button {
+                id: filterButton
                 visible: root.showPanelButton
                 text: qsTr("Filters")
                 icon.name: MD.Token.icon.filter_list
                 mdState.type: Core.catalogActiveFilterCount > 0 ? MD.Enum.BtFilledTonal : MD.Enum.BtText
-                onClicked: root.filterRequested()
+                onClicked: root.filterRequested(filterButton)
             }
 
             ConnectedIconToggle {
@@ -92,7 +94,9 @@ Item {
 
             MD.IconButton {
                 mdState.type: MD.Enum.IBtStandard
-                Accessible.name: qsTr("Refresh")
+                id: refresh
+                Accessible.name: qsTr("Refresh catalogs")
+                MD.ToolTip { visible: refresh.hovered; text: refresh.Accessible.name }
                 icon.name: MD.Token.icon.refresh
                 enabled: !Core.catalogLoading && root.hasSelection
                 onClicked: root.refreshRequested()

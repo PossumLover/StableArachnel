@@ -118,6 +118,7 @@ class CoreController : public QObject
     Q_PROPERTY(int catalogPlayModeFilter READ catalogPlayModeFilter WRITE setCatalogPlayModeFilter NOTIFY catalogFiltersChanged)
     Q_PROPERTY(int catalogActiveFilterCount READ catalogActiveFilterCount NOTIFY catalogFiltersChanged)
     Q_PROPERTY(QStringList availableCatalogGenres READ availableCatalogGenres NOTIFY availableCatalogGenresChanged)
+    Q_PROPERTY(QVariantMap catalogGenreCounts READ catalogGenreCounts NOTIFY availableCatalogGenresChanged)
     Q_PROPERTY(QStringList hiddenCatalogSourceIds READ hiddenCatalogSourceIds NOTIFY catalogFiltersChanged)
     Q_PROPERTY(CatalogDiscoveryService* catalogDiscovery READ catalogDiscovery CONSTANT)
     Q_PROPERTY(QObject* social READ social CONSTANT)
@@ -193,6 +194,7 @@ public:
     void setCatalogPlayModeFilter(int);
     int catalogActiveFilterCount() const;
     QStringList availableCatalogGenres() const;
+    QVariantMap catalogGenreCounts() const;
     QString pendingDeepLinkGameId() const;
     QStringList hiddenCatalogSourceIds() const;
 

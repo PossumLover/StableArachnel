@@ -471,9 +471,29 @@ QStringList CoreController::availableCatalogGenres() const
     return {};
 }
 
+QVariantMap CoreController::catalogGenreCounts() const
+{
+    return m_catalogFilters ? m_catalogFilters->genreCounts() : QVariantMap{};
+}
+
 QString CoreController::catalogGenreLabel(const QString& canonicalKey) const
 {
     return genreDisplayLabel(canonicalKey);
+}
+
+QStringList CoreController::displayGenreTokens(const QString& genres) const
+{
+    QStringList labels;
+    for (const QString& raw : genres.split(QLatin1Char(','), Qt::SkipEmptyParts)) {
+        const QString label = raw.trimmed();
+        const QString key = canonicalizeGenreToken(label);
+        if (!label.isEmpty() && label.compare(QLatin1String("DRM"), Qt::CaseInsensitive) != 0
+            && key != QLatin1String("Early Access") && key != QLatin1String("Free to Play")
+            && label != genreDisplayLabel(QStringLiteral("Early Access"))
+            && label != genreDisplayLabel(QStringLiteral("Free to Play")))
+            labels.append(label);
+    }
+    return labels;
 }
 
 QStringList CoreController::hiddenCatalogSourceIds() const
@@ -533,9 +553,9 @@ void CoreController::scheduleCatalogRefilter()
 
 void CoreController::rebuildAvailableCatalogGenres()
 {
-    // Genre chips only. Full search SoA rebuilds off-thread inside applyFilter.
+    // Keep the previous counts during a merge; the filter worker publishes the replacement.
     if (m_catalogFilters)
-        m_catalogFilters->rebuildPresentGenresOnly();
+        m_catalogFilters->invalidateGenreCounts();
 }
 
 void CoreController::warmActiveCatalogCovers()

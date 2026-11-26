@@ -11,6 +11,7 @@
 #include <QTimer>
 #include <QVector>
 
+#include <array>
 #include <atomic>
 #include <cstdint>
 
@@ -54,6 +55,7 @@ public:
 
     int activeFilterCount() const;
     QStringList availableGenres() const { return m_availableGenres; }
+    QVariantMap genreCounts() const { return m_genreCounts; } // Empty key: all games.
 
     void clearFilters();
     void setFilters(int typeFilter, int sizeFilter, int recencyFilter, bool hasAddonsFilter,
@@ -63,7 +65,7 @@ public:
                            int playModeFilter = 0);
 
     void applyFilter(const QString& query);
-    /** Rebuild SoA + present-genre bits from the merged cache (sync; prefer applyFilter). */
+    /** Rebuild SoA from the merged cache (sync; prefer applyFilter). */
     void rebuildFilterTable();
     /**
      * The cache was replaced (new merge result). The filter table is only rebuilt when its size
@@ -72,8 +74,8 @@ public:
      * score the old titles and then show whatever sits at those indices in the new cache.
      */
     void invalidateTable();
-    /** Cheap genre chips only - no search SoA (merge path). */
-    void rebuildPresentGenresOnly();
+    /** Invalidate navigation counts; nonempty replacements are counted by applyFilter. */
+    void invalidateGenreCounts();
     /** Patch one SoA row after metadata enrich (no 100k rescan). */
     void syncFilterRow(int cacheIndex);
     void scheduleRefilter();
@@ -96,13 +98,11 @@ private:
         bool checkSource = false;
         int sortMode = 0;
         bool hideAdult = false;
-        bool anySideFilter = false;
     };
 
     static int normalizePlayModeFilter(int filter);
-    quint32 genreBitForFilter(const QString& genre) const;
     quint8 internSourceSlot(const QString& sourceId);
-    void refreshAvailableGenres();
+    void publishGenreCounts(const std::array<int, 32>& counts, int total);
     static bool rowMatches(const CatalogFilterRow& row, const FilterSnapshot& snap);
     void notifyFiltersChanged();
     void applyFilterResult(quint64 generation, QVector<int> indices, qint64 elapsedMs, int cacheSize,
@@ -116,7 +116,11 @@ private:
     QVector<CatalogFilterRow> m_rows;
     QVector<CatalogSearchEntry> m_searchEntries;
     QStringList m_sourceIdsBySlot;
-    quint32 m_presentGenreBits = 0;
+    QVariantMap m_genreCounts;
+    std::array<int, 32> m_bitCounts{};
+    int m_gameTotal = 0;
+    quint64 m_facetRevision = 1;
+    quint64 m_publishedRevision = 0;
     QString m_activeQuery;
     qint64 m_filterCutoffDay = 0;
     QStringList m_availableGenres;

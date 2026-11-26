@@ -86,9 +86,12 @@ bool catalogEntryLess(const CatalogEntry& a, const CatalogEntry& b, CatalogModel
     default:
         if (a.uploadDay != b.uploadDay)
             return a.uploadDay > b.uploadDay;
-        if (a.uploadDate != b.uploadDate)
-            return a.uploadDate > b.uploadDate;
-        break;
+        if (qMax(0, a.recommendationsTotal) != qMax(0, b.recommendationsTotal))
+            return a.recommendationsTotal > b.recommendationsTotal;
+        {
+            const auto ah = qHash(a.id, 0), bh = qHash(b.id, 0);
+            return ah != bh ? ah < bh : a.id < b.id;
+        }
     }
     return a.titleLower < b.titleLower;
 }
@@ -641,23 +644,21 @@ QVariantList CatalogModel::buildScrubStops() const
     case SortOldest:
     default: {
         struct Boundary {
-            QString ym;
+            QDate month;
             int row = 0;
         };
         QVector<Boundary> boundaries;
         boundaries.reserve(64);
-        QString lastYm;
+        qint64 lastDay = -1;
         for (int row = 0; row < m_indices.size(); ++row) {
             const CatalogEntry* entry = entryAtRow(row);
-            if (!entry)
+            if (!entry || entry->uploadDay == lastDay)
                 continue;
-            QString ym = entry->uploadDate.left(7);
-            if (ym.size() < 7)
-                ym = QStringLiteral("?");
-            if (ym == lastYm)
-                continue;
-            lastYm = ym;
-            boundaries.push_back({ym, row});
+            lastDay = entry->uploadDay;
+            const QDate date = lastDay > 0 ? QDate::fromJulianDay(lastDay) : QDate();
+            const QDate month(date.year(), date.month(), 1);
+            if (boundaries.isEmpty() || month != boundaries.last().month)
+                boundaries.push_back({month, row});
         }
 
         QVector<Boundary> picked;
@@ -674,12 +675,8 @@ QVariantList CatalogModel::buildScrubStops() const
         const int currentYear = QDate::currentDate().year();
         QString lastLabel;
         for (const Boundary& b : picked) {
-            QString label = b.ym;
-            const QDate day = QDate::fromString(b.ym + QStringLiteral("-01"), Qt::ISODate);
-            if (day.isValid())
-                label = monthScrubLabel(day, currentYear);
-            else if (b.ym == QLatin1String("?"))
-                label = QCoreApplication::translate("Core", "Unknown");
+            const QString label = b.month.isValid() ? monthScrubLabel(b.month, currentYear)
+                                                    : QCoreApplication::translate("Core", "Unknown");
             if (label == lastLabel)
                 continue;
             lastLabel = label;

@@ -32,7 +32,14 @@ QtObject {
     property string catalogGenreFilter: ""
     property int catalogPlayModeFilter: 0
     property var hiddenCatalogSourceIds: []
-    property var availableCatalogGenres: ["Action", "Adventure", "Strategy"]
+    property var availableCatalogGenres: ["Action", "Strategy", "Platformer"]
+    property var catalogGenreCounts: ({"": 1200, Action: 900, Strategy: 30, Platformer: 2})
+    property bool catalogLoading: false
+    property bool catalogPartial: false
+    property QtObject catalog: QtObject {
+        property int sortMode: 0
+        property int count: 100
+    }
     property var sources: []
     function catalogGenreLabel(genre) { return genre }
     property QtObject settings: QtObject {

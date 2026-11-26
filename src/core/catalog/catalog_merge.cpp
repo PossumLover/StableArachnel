@@ -2,6 +2,7 @@
 
 #include "catalog_identity.h"
 
+#include <QDate>
 #include <QVarLengthArray>
 
 #include <deque>
@@ -89,7 +90,13 @@ CatalogMergeResult mergeCatalogSources(const QHash<QString, QVector<CatalogEntry
             if (offer->sourceId != row->sourceId)
                 continue;
             sameSource = true;
-            if (row->uploadDate > offer->uploadDate)
+            const auto uploadDay = [](const CatalogEntry& e) -> qint64 {
+                if (e.uploadDay > 0 || e.uploadDate.isEmpty())
+                    return e.uploadDay;
+                const QDate day = QDate::fromString(e.uploadDate.left(10), Qt::ISODate);
+                return day.isValid() ? day.toJulianDay() : 0;
+            };
+            if (uploadDay(*row) > uploadDay(*offer))
                 offer = row;
             break;
         }

@@ -17,14 +17,13 @@ Item {
     /** Rail width forwarded so screenshot peeks don't render over the nav rail. */
     property real peekLeftEdge: 0
     readonly property bool noSources: Core.sources.enabledCount === 0
-    readonly property bool noSourceSelected: Core.activeCatalogSourceIds.length === 0
-    readonly property bool catalogEmpty: !Core.catalogLoading
-                                         && (root.noSourceSelected
-                                             || (!root.noSourceSelected && Core.catalog.count === 0))
+    readonly property bool noSourceSelected: Array.from(Core.activeCatalogSourceIds)
+                                               .every(id => Core.hiddenCatalogSourceIds.includes(id))
+    readonly property bool catalogEmpty: root.noSourceSelected || Core.catalog.count === 0
     readonly property bool listViewMode: catalogPrefs.viewMode === 1
 
     readonly property var sortOptions: [
-        { mode: 0, label: qsTr("Newest first") },
+        { mode: 0, label: qsTr("Recently uploaded") },
         { mode: 1, label: qsTr("Oldest first") },
         { mode: 2, label: qsTr("Title A-Z") },
         { mode: 3, label: qsTr("Title Z-A") },
@@ -100,10 +99,14 @@ Item {
     }
 
     function applySortMode(mode) {
-        // Persist only - Core.applyCatalogPresentation already applied sort quietly.
+        if (Core.catalog.sortMode === mode)
+            return
         catalogPrefs.sortMode = mode
-        if (Core.catalog.sortMode !== mode)
-            Core.catalog.sortMode = mode
+        root.resetScrollOnResults = true
+        Core.applyCatalogPresentation(mode, Core.catalogTypeFilter, Core.catalogSizeFilter,
+                                      Core.catalogRecencyFilter, Core.catalogHasAddonsFilter,
+                                      Core.catalogGenreFilter, Core.catalogPlayModeFilter)
+        resetScroll()
     }
 
     function persistCatalogFilters() {
@@ -119,9 +122,10 @@ Item {
 
     function restoreCatalogFilters() {
         root.restoringFilters = true
-        Core.setCatalogFilters(catalogPrefs.typeFilter, catalogPrefs.sizeFilter,
-                               catalogPrefs.recencyFilter, catalogPrefs.hasAddonsFilter,
-                               catalogPrefs.genreFilter, catalogPrefs.playModeFilter)
+        Core.applyCatalogPresentation(catalogPrefs.sortMode, catalogPrefs.typeFilter, catalogPrefs.sizeFilter,
+                                      catalogPrefs.recencyFilter, catalogPrefs.hasAddonsFilter,
+                                      catalogPrefs.genreFilter, catalogPrefs.playModeFilter)
+        catalogPrefs.genreFilter = Core.catalogGenreFilter
         root.restoringFilters = false
     }
 
@@ -236,11 +240,11 @@ Item {
     }
 
     Component.onCompleted: {
-        Core.catalog.sortMode = catalogPrefs.sortMode
         if (root.browseOnly) {
             root.restoreCatalogFilters()
             root.browseAllMode = true
-        }
+        } else if (Core.catalog.sortMode !== catalogPrefs.sortMode)
+            root.applySortMode(catalogPrefs.sortMode)
         Core.prefetchCatalogCounts()
         if (Core.activeCatalogSourceIds.length === 0)
             root.ensureValidSource()

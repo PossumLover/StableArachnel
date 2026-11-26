@@ -36,7 +36,8 @@ void prepareCatalogEntry(CatalogEntry& entry)
     entry.titleLower = entry.title.trimmed().toLower();
     entry.sizeBytes = parseSizeLabelBytes(entry.sizeLabel);
     const QDate day = QDate::fromString(entry.uploadDate.left(10), Qt::ISODate);
-    entry.uploadDay = day.isValid() ? day.toJulianDay() : 0;
+    if (day.isValid())
+        entry.uploadDay = day.toJulianDay();
 
     QStringList tokens;
     const QStringList raw = entry.genres.split(QLatin1Char(','), Qt::SkipEmptyParts);
@@ -50,8 +51,10 @@ void prepareCatalogEntry(CatalogEntry& entry)
             hasDrm = true;
         tokens.append(token);
     }
-    entry.genreBits = genreBitsFromTokens(tokens);
-    entry.playModeMask = playModeMaskFromEntry(tokens, entry.installKind);
+    if (!tokens.isEmpty()) {
+        entry.genreBits = genreBitsFromTokens(tokens);
+        entry.playModeMask = playModeMaskFromEntry(tokens, entry.installKind);
+    }
     if (entry.genreBits & curatedGenreBit(QStringLiteral("Massively Multiplayer")))
         entry.playModeMask |= kPlayModeMulti;
     entry.hasDrm = hasDrm;

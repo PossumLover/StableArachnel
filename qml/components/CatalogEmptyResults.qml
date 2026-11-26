@@ -9,6 +9,8 @@ Item {
 
     required property var page
     required property int pageMargin
+    signal chooseSources(Item button)
+    readonly property bool loading: !page.noSourceSelected && (Core.catalogLoading || Core.catalogPartial)
 
     Item {
         id: emptyResultsCard
@@ -50,14 +52,16 @@ Item {
                 Layout.fillWidth: true
                 text: page.noSourceSelected
                       ? qsTr("Select sources")
-                      : qsTr("Nothing found")
+                      : root.loading ? qsTr("Loading catalog…") : qsTr("Nothing found")
                 typescale: MD.Token.typescale.title_large
             }
 
             MD.Label {
                 Layout.fillWidth: true
+                visible: !root.loading
                 text: page.noSourceSelected
                       ? Messages.catalogEnableChipsHint
+                      : page.searchQuery ? qsTr("Try another search.")
                       : Core.catalogActiveFilterCount > 0 ? qsTr("Try a different genre or clear your filters.")
                       : qsTr("Try another search or refresh the catalog.")
                 color: MD.Token.color.on_surface_variant
@@ -66,11 +70,17 @@ Item {
             }
 
             MD.Button {
-                visible: !page.noSourceSelected
-                text: Core.catalogActiveFilterCount > 0 ? qsTr("Clear filters") : qsTr("Refresh")
-                icon.name: Core.catalogActiveFilterCount > 0 ? MD.Token.icon.filter_list : MD.Token.icon.refresh
+                id: recovery
+                visible: !root.loading
+                text: page.noSourceSelected ? qsTr("Choose sources") : page.searchQuery ? qsTr("Clear search")
+                      : Core.catalogActiveFilterCount > 0 ? qsTr("Clear filters") : qsTr("Refresh catalogs")
                 mdState.type: MD.Enum.BtFilledTonal
-                onClicked: Core.catalogActiveFilterCount > 0 ? Core.clearCatalogFilters() : Core.refreshSelectedCatalogs()
+                onClicked: {
+                    if (page.noSourceSelected) root.chooseSources(recovery)
+                    else if (page.searchQuery) page.applyCatalogSearch("")
+                    else if (Core.catalogActiveFilterCount > 0) Core.clearCatalogFilters()
+                    else Core.refreshSelectedCatalogs()
+                }
             }
         }
     }

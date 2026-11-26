@@ -342,8 +342,7 @@ Item {
                                     if ((page.info.version ?? "").length)
                                         out.push({ icon: MD.Token.icon.tag, text: "v" + page.info.version,
                                                    tip: qsTr("Build number of the game files. A higher number means a newer build.") })
-                                    const genres = (page.info.genres ?? "").toString().split(",")
-                                        .map(t => t.trim()).filter(t => t.length && t.toLowerCase() !== "drm")
+                                    const genres = Core.displayGenreTokens(page.info.genres ?? "")
                                     if (genres.length)
                                         out.push({ icon: MD.Token.icon.sports_esports,
                                                    text: genres.slice(0, 3).join(", ") + (genres.length > 3 ? "…" : ""),

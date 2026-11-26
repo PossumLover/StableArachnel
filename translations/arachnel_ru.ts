@@ -146,6 +146,95 @@
     </message>
 </context>
 <context>
+    <name>CatalogBrowsePanel</name>
+    <message>
+        <location filename="../qml/components/CatalogBrowsePanel.qml" line="+109"/>
+        <source>Genres</source>
+        <translation>Жанры</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Filters</source>
+        <translation>Фильтры</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Close</source>
+        <translation>Закрыть</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Find a genre</source>
+        <translation>Найти жанр</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Counts cover games in visible sources, before search and other filters.</source>
+        <translation>Учтены игры из выбранных источников до применения поиска и других фильтров.</translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>All games</source>
+        <translation>Все игры</translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>No matching genres</source>
+        <translation>Жанры не найдены</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Fewer genres</source>
+        <translation>Меньше жанров</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>More genres</source>
+        <translation>Больше жанров</translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Sources</source>
+        <translation>Источники</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Players</source>
+        <translation>Игроки</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Download size</source>
+        <translation>Размер загрузки</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Added</source>
+        <translation>Добавлено</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Package type</source>
+        <translation>Тип пакета</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Has add-ons</source>
+        <translation>Есть дополнения</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <location line="+4"/>
+        <source>Hide adult games</source>
+        <translation>Скрывать игры для взрослых</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Clear all filters</source>
+        <translation>Сбросить все фильтры</translation>
+    </message>
+</context>
+<context>
     <name>CatalogCompactBar</name>
     <message>
         <location filename="../qml/components/CatalogCompactBar.qml" line="+79"/>
@@ -227,7 +316,7 @@
 <context>
     <name>CatalogEmptyResults</name>
     <message>
-        <location filename="../qml/components/CatalogEmptyResults.qml" line="+52"/>
+        <location filename="../qml/components/CatalogEmptyResults.qml" line="+54"/>
         <source>Select sources</source>
         <translation>Выберите источники</translation>
     </message>
@@ -237,14 +326,44 @@
         <translation>Ничего не найдено</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+0"/>
+        <source>Loading catalog…</source>
+        <translation>Загрузка каталога…</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Try another search.</source>
+        <translation>Попробуйте другой запрос.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Try a different genre or clear your filters.</source>
+        <translation>Выберите другой жанр или сбросьте фильтры.</translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Try another search or refresh the catalog.</source>
         <translation>Попробуйте другой запрос или обновите каталог.</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Refresh</source>
-        <translation>Обновить</translation>
+        <location line="+9"/>
+        <source>Choose sources</source>
+        <translation>Выбрать источники</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Clear search</source>
+        <translation>Очистить поиск</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Clear filters</source>
+        <translation>Сбросить фильтры</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Refresh catalogs</source>
+        <translation>Обновить каталоги</translation>
     </message>
 </context>
 <context>
@@ -382,10 +501,8 @@
     <name>CatalogGameCard</name>
     <message>
         <location filename="../qml/components/CatalogGameCard.qml" line="+66"/>
-        <location line="+2"/>
-        <location line="+1"/>
-        <source>playing</source>
-        <translation>играют</translation>
+        <source>v%1</source>
+        <translation>v%1</translation>
     </message>
 </context>
 <context>
@@ -448,12 +565,7 @@
 <context>
     <name>CatalogPage</name>
     <message>
-        <location filename="../qml/app/CatalogPage.qml" line="+52"/>
-        <source>Newest first</source>
-        <translation>Сначала новые</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location filename="../qml/app/CatalogPage.qml" line="+27"/>
         <source>Oldest first</source>
         <translation>Сначала старые</translation>
     </message>
@@ -478,7 +590,12 @@
         <translation>Сначала большие</translation>
     </message>
     <message>
-        <location line="-4"/>
+        <location line="-6"/>
+        <source>Recently uploaded</source>
+        <translation>Недавно добавленные</translation>
+    </message>
+    <message>
+        <location line="+2"/>
         <source>Title A-Z</source>
         <translation>Название А-Я</translation>
     </message>
@@ -574,19 +691,37 @@
     </message>
 </context>
 <context>
+    <name>CatalogPageContent</name>
+    <message>
+        <location filename="../qml/app/CatalogPageContent.qml" line="+227"/>
+        <source>All genres</source>
+        <translation>Все жанры</translation>
+    </message>
+</context>
+<context>
     <name>CatalogScrollHeader</name>
     <message>
-        <location filename="../qml/components/CatalogScrollHeader.qml" line="+68"/>
+        <location filename="../qml/components/CatalogScrollHeader.qml" line="+62"/>
         <source>Loading catalog…</source>
         <translation>Загрузка каталога…</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Found: %1</source>
-        <translation>Найдено: %1</translation>
+        <location line="+2"/>
+        <source>1 game</source>
+        <translation>1 игра</translation>
     </message>
     <message>
-        <location line="+50"/>
+        <location line="+1"/>
+        <source>%1 games</source>
+        <translation>Игр: %1</translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Filters</source>
+        <translation>Фильтры</translation>
+    </message>
+    <message>
+        <location line="+8"/>
         <source>Grid</source>
         <translation>Сетка</translation>
     </message>
@@ -596,12 +731,9 @@
         <translation>Список</translation>
     </message>
     <message>
-        <source>Filter</source>
-        <translation>Фильтры</translation>
-    </message>
-    <message>
-        <source>Filter (%1)</source>
-        <translation>Фильтры (%1)</translation>
+        <location line="+8"/>
+        <source>Refresh catalogs</source>
+        <translation>Обновить каталоги</translation>
     </message>
 </context>
 <context>
@@ -615,7 +747,17 @@
 <context>
     <name>CatalogStickyToolbar</name>
     <message>
-        <location filename="../qml/components/CatalogStickyToolbar.qml" line="+115"/>
+        <location filename="../qml/components/CatalogStickyToolbar.qml" line="+39"/>
+        <source>Browse</source>
+        <translation>Обзор</translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Search games</source>
+        <translation>Поиск игр</translation>
+    </message>
+    <message>
+        <location line="+65"/>
         <source>Type</source>
         <translation>Тип</translation>
     </message>
@@ -640,13 +782,9 @@
         <translation>Игроки</translation>
     </message>
     <message>
-        <location line="-110"/>
-        <source>Catalog</source>
-        <translation>Каталог</translation>
-    </message>
-    <message>
-        <source>Search catalog</source>
-        <translation>Поиск по каталогу</translation>
+        <location line="+11"/>
+        <source>Hidden: %1</source>
+        <translation>Скрыто: %1</translation>
     </message>
 </context>
 <context>
@@ -5183,8 +5321,8 @@
     </message>
     <message>
         <location line="+34"/>
-        <source>Turn on one or more sources above - or leave them all off.</source>
-        <translation>Включите один или несколько источников выше - или оставьте все выключенными.</translation>
+        <source>Choose at least one source in Filters to see its games.</source>
+        <translation>Чтобы увидеть игры, выберите хотя бы один источник в разделе «Фильтры».</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -7193,8 +7331,14 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>CatalogSortButton</name>
     <message>
+        <location filename="../qml/components/CatalogSortButton.qml" line="+12"/>
         <source>Sort</source>
         <translation>Сортировка</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Sort: %1</source>
+        <translation>Сортировка: %1</translation>
     </message>
 </context>
 </TS>

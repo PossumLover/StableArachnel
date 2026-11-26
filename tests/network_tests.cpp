@@ -6,6 +6,7 @@
 #include "catalog_identity.h"
 #include "catalog_merge.h"
 #include "catalog_filter_service.h"
+#include "catalog_genre_normalize.h"
 #include "library_store.h"
 #include "library_snapshot.h"
 #include "achievement_service.h"
@@ -424,6 +425,114 @@ private slots:
         release.steamAppId = QStringLiteral("456");
         QCOMPARE(catalogOfferGroupKey(release, keys), QStringLiteral("steam:456"));
     }
+    void newestKeepsPreparedDayAndUsesTitleIndependentTies()
+    {
+        CatalogEntry a;
+        a.id = QStringLiteral("offer-781");
+        a.title = QStringLiteral("100 Cats");
+        a.uploadDate = QStringLiteral("2026-05-01");
+        a.genres = QStringLiteral("Action, Multiplayer");
+        prepareCatalogEntry(a);
+        const auto day = a.uploadDay;
+        const auto modes = a.playModeMask;
+        prepareCatalogEntry(a);
+        QVERIFY(day > 0 && modes != 0);
+        QCOMPARE(a.uploadDay, day);
+        QCOMPARE(a.playModeMask, modes);
+        QCOMPARE(a.genreBits, curatedGenreBit(QStringLiteral("Action")));
+
+        CatalogEntry b = a;
+        b.id = QStringLiteral("offer-015");
+        b.titleLower = QStringLiteral("zebra");
+        const auto newest = CatalogModel::SortNewest;
+        QVERIFY(catalogEntryLess(a, b, CatalogModel::SortTitleAsc));
+        const bool first = catalogEntryLess(a, b, newest);
+        std::swap(a.titleLower, b.titleLower);
+        QCOMPARE(catalogEntryLess(a, b, newest), first);
+        QCOMPARE(catalogEntryLess(b, a, newest), !first);
+        b.recommendationsTotal = 200;
+        QVERIFY(catalogEntryLess(b, a, newest));
+        b.uploadDay = 0;
+        QVERIFY(catalogEntryLess(a, b, newest));
+        QVector<CatalogEntry> rows{a, b};
+        CatalogModel model;
+        model.bindSource(&rows);
+        model.setVisibleIndices({0, 1});
+        QCOMPARE(model.scrubStops().size(), 2);
+
+        b.uploadDay = day + 1;
+        a.sourceId = b.sourceId = QStringLiteral("source");
+        const auto merged = mergeCatalogSources({{a.sourceId, {a, b}}}, {a.sourceId}, {a.sourceId});
+        QCOMPARE(merged.merged.size(), 1);
+        QCOMPARE(merged.merged.first().id, b.id);
+    }
+
+    void genreCountsFollowMergedScopeNotSearchOrRefinements()
+    {
+        CatalogEntry game;
+        game.id = game.title = QStringLiteral("game");
+        game.sourceId = QStringLiteral("first");
+        game.genres = QStringLiteral("Action, RPG, Free to Play, Early Access");
+        prepareCatalogEntry(game);
+        CatalogEntry otherOffer = game;
+        otherOffer.sourceId = QStringLiteral("second");
+        CatalogEntry untagged;
+        untagged.id = untagged.title = QStringLiteral("untagged");
+        untagged.sourceId = otherOffer.sourceId;
+        auto cache = mergeCatalogSources({{game.sourceId, {game}}, {otherOffer.sourceId, {otherOffer, untagged}}},
+                                         {game.sourceId, otherOffer.sourceId},
+                                         {game.sourceId, otherOffer.sourceId}).merged;
+        CatalogModel model;
+        CatalogFilterService filters(&model);
+        filters.setCache(&cache);
+        QCOMPARE(browseGenreKey(QStringLiteral("JRPG")), QStringLiteral("RPG"));
+        QCOMPARE(browseGenreKey(QStringLiteral("FPS")), QStringLiteral("Shooter"));
+        QVERIFY(browseGenreKey(QStringLiteral("Free to Play")).isEmpty());
+        QVERIFY(!genreLabelsFromBits(game.genreBits).contains(QStringLiteral("Free to Play")));
+        filters.setFilters(-1, 2, 0, false, QStringLiteral("Early Access"));
+        QVERIFY(filters.genreFilter().isEmpty());
+        QCOMPARE(filters.sizeFilter(), 2);
+        filters.applyFilter(QStringLiteral("nonexistent"));
+        QTRY_COMPARE(filters.genreCounts().value(QString()).toInt(), 2);
+        QCOMPARE(model.count(), 0);
+        const QString action = QStringLiteral("Action");
+        QCOMPARE(filters.availableGenres(), QStringList({action, QStringLiteral("RPG")}));
+        QCOMPARE(filters.genreCounts().value(action).toInt(), 1);
+        // Enrich the untagged row without rerunning the search or changing its scroll order.
+        const auto untaggedRow = std::find_if(cache.begin(), cache.end(), [&](const auto& entry) {
+            return entry.id == untagged.id;
+        });
+        QVERIFY(untaggedRow != cache.end());
+        untaggedRow->genreBits = curatedGenreBit(action);
+        filters.syncFilterRow(int(untaggedRow - cache.begin()));
+        QCOMPARE(filters.genreCounts().value(action).toInt(), 2);
+        QCOMPARE(model.count(), 0);
+        filters.setSourceHidden(otherOffer.sourceId, true);
+        QTRY_COMPARE(filters.genreCounts().value(QString()).toInt(), 1);
+        QCOMPARE(filters.genreCounts().value(action).toInt(), 1);
+        QThreadPool::globalInstance()->waitForDone();
+    }
+    void catalogSearchUsesSortOnlyForTiedScores()
+    {
+        QVector<CatalogEntry> cache;
+        for (const auto* title : {"Cats Forever", "Cats", "Cats"}) {
+            CatalogEntry row;
+            row.id = QString::number(cache.size());
+            row.title = QString::fromLatin1(title);
+            row.uploadDay = 3000 - cache.size();
+            prepareCatalogEntry(row);
+            cache.append(row);
+        }
+        CatalogModel model;
+        CatalogFilterService filters(&model);
+        filters.setCache(&cache);
+        filters.applyFilter(QStringLiteral("cats"));
+        QTRY_COMPARE(model.count(), 3);
+        QCOMPARE(model.data(model.index(0), CatalogModel::EntryIdRole).toString(), QStringLiteral("1"));
+        QCOMPARE(model.data(model.index(1), CatalogModel::EntryIdRole).toString(), QStringLiteral("2"));
+        QCOMPARE(model.data(model.index(2), CatalogModel::EntryIdRole).toString(), QStringLiteral("0"));
+    }
+
     void catalogSearchKeepsLatestQueryDuringReload()
     {
         QVector<CatalogEntry> cache;

@@ -145,6 +145,95 @@
     </message>
 </context>
 <context>
+    <name>CatalogBrowsePanel</name>
+    <message>
+        <location filename="../qml/components/CatalogBrowsePanel.qml" line="+109"/>
+        <source>Genres</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Filters</source>
+        <translation type="unfinished">Filters</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Close</source>
+        <translation type="unfinished">Close</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Find a genre</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Counts cover games in visible sources, before search and other filters.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>All games</source>
+        <translation type="unfinished">All games</translation>
+    </message>
+    <message>
+        <location line="+25"/>
+        <source>No matching genres</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Fewer genres</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>More genres</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+20"/>
+        <source>Sources</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Players</source>
+        <translation type="unfinished">Players</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Download size</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Added</source>
+        <translation type="unfinished">Added</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Package type</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Has add-ons</source>
+        <translation type="unfinished">Has add-ons</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <location line="+4"/>
+        <source>Hide adult games</source>
+        <translation type="unfinished">Hide adult games</translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Clear all filters</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>CatalogCompactBar</name>
     <message>
         <location filename="../qml/components/CatalogCompactBar.qml" line="+79"/>
@@ -226,7 +315,7 @@
 <context>
     <name>CatalogEmptyResults</name>
     <message>
-        <location filename="../qml/components/CatalogEmptyResults.qml" line="+52"/>
+        <location filename="../qml/components/CatalogEmptyResults.qml" line="+54"/>
         <source>Select sources</source>
         <translation>Select sources</translation>
     </message>
@@ -236,14 +325,44 @@
         <translation>Nothing found</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+0"/>
+        <source>Loading catalog…</source>
+        <translation type="unfinished">Loading catalog…</translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Try another search.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Try a different genre or clear your filters.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Try another search or refresh the catalog.</source>
         <translation>Try another search or refresh the catalog.</translation>
     </message>
     <message>
-        <location line="+8"/>
-        <source>Refresh</source>
-        <translation>Refresh</translation>
+        <location line="+9"/>
+        <source>Choose sources</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Clear search</source>
+        <translation type="unfinished">Clear search</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Clear filters</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Refresh catalogs</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -381,10 +500,8 @@
     <name>CatalogGameCard</name>
     <message>
         <location filename="../qml/components/CatalogGameCard.qml" line="+66"/>
-        <location line="+2"/>
-        <location line="+1"/>
-        <source>playing</source>
-        <translation>playing</translation>
+        <source>v%1</source>
+        <translation type="unfinished">v%1</translation>
     </message>
 </context>
 <context>
@@ -447,12 +564,7 @@
 <context>
     <name>CatalogPage</name>
     <message>
-        <location filename="../qml/app/CatalogPage.qml" line="+52"/>
-        <source>Newest first</source>
-        <translation>Newest first</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location filename="../qml/app/CatalogPage.qml" line="+27"/>
         <source>Oldest first</source>
         <translation>Oldest first</translation>
     </message>
@@ -557,7 +669,12 @@
         <translation>All</translation>
     </message>
     <message>
-        <location line="-9"/>
+        <location line="-11"/>
+        <source>Recently uploaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
         <source>Title A-Z</source>
         <translation>Title A-Z</translation>
     </message>
@@ -573,19 +690,37 @@
     </message>
 </context>
 <context>
+    <name>CatalogPageContent</name>
+    <message>
+        <location filename="../qml/app/CatalogPageContent.qml" line="+227"/>
+        <source>All genres</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>CatalogScrollHeader</name>
     <message>
-        <location filename="../qml/components/CatalogScrollHeader.qml" line="+68"/>
+        <location filename="../qml/components/CatalogScrollHeader.qml" line="+62"/>
         <source>Loading catalog…</source>
         <translation>Loading catalog…</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Found: %1</source>
-        <translation>Found: %1</translation>
+        <location line="+2"/>
+        <source>1 game</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+50"/>
+        <location line="+1"/>
+        <source>%1 games</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>Filters</source>
+        <translation type="unfinished">Filters</translation>
+    </message>
+    <message>
+        <location line="+8"/>
         <source>Grid</source>
         <translation>Grid</translation>
     </message>
@@ -595,12 +730,9 @@
         <translation>List</translation>
     </message>
     <message>
-        <source>Filter</source>
-        <translation>Filter</translation>
-    </message>
-    <message>
-        <source>Filter (%1)</source>
-        <translation>Filter (%1)</translation>
+        <location line="+8"/>
+        <source>Refresh catalogs</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -614,7 +746,17 @@
 <context>
     <name>CatalogStickyToolbar</name>
     <message>
-        <location filename="../qml/components/CatalogStickyToolbar.qml" line="+115"/>
+        <location filename="../qml/components/CatalogStickyToolbar.qml" line="+39"/>
+        <source>Browse</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>Search games</source>
+        <translation type="unfinished">Search games</translation>
+    </message>
+    <message>
+        <location line="+65"/>
         <source>Type</source>
         <translation>Type</translation>
     </message>
@@ -639,13 +781,9 @@
         <translation>Players</translation>
     </message>
     <message>
-        <location line="-110"/>
-        <source>Catalog</source>
-        <translation>Catalog</translation>
-    </message>
-    <message>
-        <source>Search catalog</source>
-        <translation>Search catalog</translation>
+        <location line="+11"/>
+        <source>Hidden: %1</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -4997,8 +5135,8 @@
     </message>
     <message>
         <location line="+34"/>
-        <source>Turn on one or more sources above - or leave them all off.</source>
-        <translation>Turn on one or more sources above - or leave them all off.</translation>
+        <source>Choose at least one source in Filters to see its games.</source>
+        <translation>Choose at least one source in Filters to see its games.</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -7003,8 +7141,14 @@ Many multiplayer titles need an **Online Fix** (Steam API shim). The Steam plugi
 <context>
     <name>CatalogSortButton</name>
     <message>
+        <location filename="../qml/components/CatalogSortButton.qml" line="+12"/>
         <source>Sort</source>
         <translation>Sort</translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Sort: %1</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

@@ -252,13 +252,32 @@ QStringList curatedGenreKeysFromBits(quint32 bits)
     return keys;
 }
 
+const QStringList& browseGenreKeys()
+{
+    static const QStringList keys{
+        QStringLiteral("Action"), QStringLiteral("Adventure"), QStringLiteral("RPG"),
+        QStringLiteral("Strategy"), QStringLiteral("Simulation"), QStringLiteral("Shooter"),
+        QStringLiteral("Horror"), QStringLiteral("Casual"), QStringLiteral("Sports"),
+        QStringLiteral("Racing"), QStringLiteral("Puzzle"), QStringLiteral("Platformer"),
+        QStringLiteral("Fighting"), QStringLiteral("Survival"), QStringLiteral("Roguelike"),
+        QStringLiteral("Visual Novel"), QStringLiteral("Card")};
+    return keys;
+}
+
+QString browseGenreKey(const QString& token)
+{
+    const QString key = canonicalizeGenreToken(token);
+    return browseGenreKeys().contains(key) ? key : QString();
+}
+
 QString genreLabelsFromBits(quint32 bits)
 {
     QStringList labels;
     const QStringList& keys = curatedGenreKeys();
     labels.reserve(keys.size());
     for (int i = 0; i < keys.size(); ++i) {
-        if (bits & (quint32(1) << i))
+        if ((bits & (quint32(1) << i)) && keys.at(i) != QLatin1String("Free to Play")
+            && keys.at(i) != QLatin1String("Early Access"))
             labels.append(genreDisplayLabel(keys.at(i)));
     }
     return labels.join(QLatin1String(", "));

@@ -18,7 +18,6 @@
 
 #include <algorithm>
 #include <limits>
-#include <numeric>
 
 namespace arachnel::core {
 
@@ -41,17 +40,6 @@ int CatalogFilterService::normalizePlayModeFilter(int filter)
     return 2;
 }
 
-quint32 CatalogFilterService::genreBitForFilter(const QString& genre) const
-{
-    const QString trimmed = genre.trimmed();
-    if (trimmed.isEmpty())
-        return 0;
-    quint32 bit = curatedGenreBit(trimmed);
-    if (bit)
-        return bit;
-    return curatedGenreBit(canonicalizeGenreToken(trimmed));
-}
-
 quint8 CatalogFilterService::internSourceSlot(const QString& sourceId)
 {
     for (int i = 0; i < m_sourceIdsBySlot.size(); ++i) {
@@ -64,29 +52,31 @@ quint8 CatalogFilterService::internSourceSlot(const QString& sourceId)
     return static_cast<quint8>(m_sourceIdsBySlot.size() - 1);
 }
 
-void CatalogFilterService::refreshAvailableGenres()
+void CatalogFilterService::publishGenreCounts(const std::array<int, 32>& counts, int total)
 {
-    QStringList genres = curatedGenreKeysFromBits(m_presentGenreBits);
-    const QString current = m_genreFilter.trimmed();
-    if (!current.isEmpty() && !genres.contains(current))
-        genres.prepend(current);
-    if (genres == m_availableGenres)
+    m_bitCounts = counts;
+    m_gameTotal = total;
+    QVariantMap values{{QString(), total}};
+    QStringList genres;
+    for (const QString& key : browseGenreKeys()) {
+        const int n = counts[curatedGenreBitIndex(key)];
+        if (n > 0) {
+            values.insert(key, n);
+            genres.append(key);
+        }
+    }
+    if (values == m_genreCounts)
         return;
+    std::stable_sort(genres.begin(), genres.end(), [&](const QString& a, const QString& b) {
+        return counts[curatedGenreBitIndex(a)] > counts[curatedGenreBitIndex(b)];
+    });
+    m_genreCounts = std::move(values);
     m_availableGenres = std::move(genres);
     emit availableGenresChanged();
 }
 
 bool CatalogFilterService::rowMatches(const CatalogFilterRow& row, const FilterSnapshot& snap)
 {
-    if ((row.flags & kFilterFlagGame) == 0)
-        return false;
-
-    if (snap.hideAdult && (row.flags & kFilterFlagAdult) != 0)
-        return false;
-
-    if (snap.checkSource && (snap.sourceMask & (quint32(1) << row.sourceSlot)) == 0)
-        return false;
-
     if (snap.typeFilter >= 0) {
         const int kind = static_cast<int>(row.installKind);
         if (snap.typeFilter == 2) {
@@ -162,6 +152,7 @@ void CatalogFilterService::setHideAdult(bool hide)
     if (m_hideAdult == hide)
         return;
     m_hideAdult = hide;
+    ++m_facetRevision;
     scheduleRefilter();
 }
 
@@ -186,7 +177,6 @@ struct FilterSoA {
     QVector<CatalogFilterRow> rows;
     QVector<CatalogSearchEntry> searchEntries;
     QStringList sourceIdsBySlot;
-    quint32 presentGenreBits = 0;
 };
 
 // `adult` is a copy of ContentRatingStore's set taken on the GUI thread: the store mutates it
@@ -222,7 +212,6 @@ FilterSoA buildFilterSoA(const QVector<CatalogEntry>* cachePtr, const QSet<quint
             slot = 31;
         }
         sourceSlotByRow[i] = slot;
-        out.presentGenreBits |= entry.genreBits;
     }
 
     // Row + search-entry construction (tokenizing every title) is independent per entry.
@@ -267,35 +256,24 @@ void CatalogFilterService::rebuildFilterTable()
     m_rows = std::move(built.rows);
     m_searchEntries = std::move(built.searchEntries);
     m_sourceIdsBySlot = std::move(built.sourceIdsBySlot);
-    m_presentGenreBits = built.presentGenreBits;
+    ++m_facetRevision;
     m_builtEpoch = m_tableEpoch;
-    refreshAvailableGenres();
 }
 
 void CatalogFilterService::invalidateTable()
 {
     ++m_tableEpoch;
+    ++m_facetRevision;
 }
 
-void CatalogFilterService::rebuildPresentGenresOnly()
+void CatalogFilterService::invalidateGenreCounts()
 {
-    quint32 bits = 0;
-    auto scan = [&](QVector<CatalogEntry>* cachePtr) {
-        if (!cachePtr)
-            return;
-        for (const CatalogEntry& entry : std::as_const(*cachePtr))
-            bits |= entry.genreBits;
-    };
-    if (m_cacheLock) {
-        QReadLocker locker(m_cacheLock);
-        scan(m_cache);
-    } else {
-        scan(m_cache);
+    ++m_facetRevision;
+    if ((!m_cache || m_cache->isEmpty()) && !m_genreCounts.isEmpty()) {
+        m_genreCounts.clear();
+        m_availableGenres.clear();
+        emit availableGenresChanged();
     }
-    if (bits == m_presentGenreBits)
-        return;
-    m_presentGenreBits = bits;
-    refreshAvailableGenres();
 }
 
 void CatalogFilterService::syncFilterRow(int cacheIndex)
@@ -303,9 +281,8 @@ void CatalogFilterService::syncFilterRow(int cacheIndex)
     if (!m_cache || cacheIndex < 0)
         return;
     CatalogFilterRow row;
+    CatalogFilterRow previous;
     CatalogSearchEntry searchEntry;
-    quint32 bits = 0;
-    bool inRange = false;
     if (m_cacheLock) {
         QWriteLocker locker(m_cacheLock);
         if (cacheIndex >= m_cache->size())
@@ -320,10 +297,9 @@ void CatalogFilterService::syncFilterRow(int cacheIndex)
         const quint8 slot = internSourceSlot(entry.sourceId);
         row = rowForEntry(entry, slot);
         searchEntry = CatalogSearchEntry::fromEntry(entry);
-        bits = entry.genreBits;
+        previous = m_rows.at(cacheIndex);
         m_rows[cacheIndex] = row;
         m_searchEntries[cacheIndex] = std::move(searchEntry);
-        inRange = true;
     } else {
         if (cacheIndex >= m_cache->size())
             return;
@@ -335,17 +311,33 @@ void CatalogFilterService::syncFilterRow(int cacheIndex)
         const quint8 slot = internSourceSlot(entry.sourceId);
         row = rowForEntry(entry, slot);
         searchEntry = CatalogSearchEntry::fromEntry(entry);
+        previous = m_rows.at(cacheIndex);
         m_rows[cacheIndex] = row;
         m_searchEntries[cacheIndex] = std::move(searchEntry);
-        bits = entry.genreBits;
-        inRange = true;
     }
-    if (!inRange)
+    const auto visible = [this](const CatalogFilterRow& r) {
+        return (r.flags & kFilterFlagGame) && !(m_hideAdult && (r.flags & kFilterFlagAdult))
+            && !m_hiddenSourceIds.contains(m_sourceIdsBySlot.at(r.sourceSlot));
+    };
+    const int oldGame = visible(previous), newGame = visible(row);
+    const auto oldBits = oldGame ? previous.genreBits : 0u;
+    const auto newBits = newGame ? row.genreBits : 0u;
+    if (oldGame == newGame && oldBits == newBits)
         return;
-    const quint32 before = m_presentGenreBits;
-    m_presentGenreBits |= bits;
-    if (m_presentGenreBits != before)
-        refreshAvailableGenres();
+    const bool current = m_publishedRevision == m_facetRevision;
+    ++m_facetRevision;
+    if (current) {
+        // Enrichment changes the facets, not the scroll position or current sort.
+        auto counts = m_bitCounts;
+        for (quint32 bits = oldBits ^ newBits; bits; bits &= bits - 1) {
+            const auto i = qCountTrailingZeroBits(bits);
+            counts[i] += (newBits & (quint32(1) << i)) ? 1 : -1;
+        }
+        m_publishedRevision = m_facetRevision;
+        publishGenreCounts(counts, m_gameTotal + newGame - oldGame);
+    } else {
+        scheduleRefilter();
+    }
 }
 
 void CatalogFilterService::applyFilterResult(quint64 generation, QVector<int> indices,
@@ -411,24 +403,24 @@ void CatalogFilterService::applyFilter(const QString& query)
     snap.sizeFilter = m_sizeFilter;
     snap.recencyFilter = m_recencyFilter;
     snap.hasAddonsFilter = m_hasAddonsFilter;
-    snap.genreBit = genreBitForFilter(m_genreFilter);
+    snap.genreBit = curatedGenreBit(m_genreFilter);
     snap.playModeFilter = m_playModeFilter;
     snap.hideAdult = m_hideAdult;
     snap.sortMode = m_model->sortMode();
     // Source mask is resolved on the worker after SoA slots are known.
     snap.sourceMask = 0;
     snap.checkSource = !m_hiddenSourceIds.isEmpty();
-    snap.anySideFilter = m_typeFilter >= 0 || m_sizeFilter > 0 || m_recencyFilter > 0
-        || m_hasAddonsFilter || snap.genreBit != 0 || m_playModeFilter > 0 || snap.checkSource
-        || snap.hideAdult;
 
     QVector<CatalogEntry>* cachePtr = m_cache;
     QReadWriteLock* lock = m_cacheLock;
     const QStringList hiddenIds = m_hiddenSourceIds;
     const QSet<quint32> adult = adultSnapshot();
+    const auto revision = m_facetRevision;
+    const bool countGenres = needRebuild || revision != m_publishedRevision;
 
     QThreadPool::globalInstance()->start(
-        [this, generation, snap, cachePtr, lock, needRebuild, hiddenIds, adult, tableEpoch]() {
+        [this, generation, snap, cachePtr, lock, needRebuild, hiddenIds, adult, tableEpoch,
+         revision, countGenres]() {
             QElapsedTimer timer;
             timer.start();
 
@@ -485,10 +477,6 @@ void CatalogFilterService::applyFilter(const QString& query)
                     if (sourceMask == all)
                         localSnap.checkSource = false;
                 }
-                localSnap.anySideFilter = localSnap.typeFilter >= 0 || localSnap.sizeFilter > 0
-                    || localSnap.recencyFilter > 0 || localSnap.hasAddonsFilter
-                    || localSnap.genreBit != 0 || localSnap.playModeFilter > 0
-                    || localSnap.checkSource || localSnap.hideAdult;
             }
 
             struct ScoredIndex {
@@ -500,6 +488,20 @@ void CatalogFilterService::applyFilter(const QString& query)
             int cacheSize = 0;
             CatalogModel::SortMode mode = CatalogModel::SortNewest;
             const bool hasSearch = !localSnap.query.isEmpty;
+            std::array<int, 32> counts{};
+            int total = 0;
+            auto inScope = [&](const CatalogFilterRow& row, bool accumulate) {
+                if (!(row.flags & kFilterFlagGame)
+                    || (localSnap.hideAdult && (row.flags & kFilterFlagAdult))
+                    || (localSnap.checkSource && !(localSnap.sourceMask & (quint32(1) << row.sourceSlot))))
+                    return false;
+                if (accumulate && countGenres) {
+                    ++total;
+                    for (quint32 bits = row.genreBits; bits; bits &= bits - 1)
+                        ++counts[qCountTrailingZeroBits(bits)];
+                }
+                return true;
+            };
 
             auto scanCache = [&]() -> bool {
                 if (!cachePtr || !rowsPtr || !searchPtr)
@@ -508,17 +510,14 @@ void CatalogFilterService::applyFilter(const QString& query)
                 if (rowsPtr->size() != cacheSize || searchPtr->size() != cacheSize)
                     return false;
 
-                if (!hasSearch && !localSnap.anySideFilter) {
-                    indices.resize(cacheSize);
-                    std::iota(indices.begin(), indices.end(), 0);
-                } else if (!hasSearch) {
+                if (!hasSearch) {
                     indices.reserve(qMin(cacheSize, kMaxVisibleBrowse));
                     for (int i = 0; i < cacheSize; ++i) {
                         if ((i & 0x3FF) == 0
                             && generation != m_filterGeneration.load(std::memory_order_relaxed)) {
                             return false;
                         }
-                        if (!rowMatches(rowsPtr->at(i), localSnap))
+                        if (!inScope(rowsPtr->at(i), true) || !rowMatches(rowsPtr->at(i), localSnap))
                             continue;
                         indices.append(i);
                     }
@@ -537,7 +536,7 @@ void CatalogFilterService::applyFilter(const QString& query)
                                        != m_filterGeneration.load(std::memory_order_relaxed)) {
                                 return false;
                             }
-                            if (!rowMatches(rowsPtr->at(i), localSnap))
+                            if (!inScope(rowsPtr->at(i), level == 0) || !rowMatches(rowsPtr->at(i), localSnap))
                                 continue;
 
                             const int score = scoreCatalogMatch(searchPtr->at(i), cachePtr->at(i),
@@ -658,16 +657,19 @@ void CatalogFilterService::applyFilter(const QString& query)
             QTimer::singleShot(
                 0, this,
                 [this, generation, indices = std::move(indices), ms, cacheSize, queryStr, commitSoA,
-                 rebuilt = std::move(rebuilt), tableEpoch]() mutable {
-                    if (generation != m_filterGeneration.load(std::memory_order_relaxed))
+                 rebuilt = std::move(rebuilt), tableEpoch, revision, countGenres, counts, total]() mutable {
+                    if (generation != m_filterGeneration.load(std::memory_order_relaxed)
+                        || tableEpoch != m_tableEpoch || cacheSize != m_cache->size())
                         return;
                     if (commitSoA) {
                         m_rows = std::move(rebuilt.rows);
                         m_searchEntries = std::move(rebuilt.searchEntries);
                         m_sourceIdsBySlot = std::move(rebuilt.sourceIdsBySlot);
-                        m_presentGenreBits = rebuilt.presentGenreBits;
                         m_builtEpoch = tableEpoch;
-                        refreshAvailableGenres();
+                    }
+                    if (countGenres && revision == m_facetRevision) {
+                        m_publishedRevision = revision;
+                        publishGenreCounts(counts, total);
                     }
                     applyFilterResult(generation, std::move(indices), ms, cacheSize, queryStr);
                 });
@@ -723,9 +725,7 @@ void CatalogFilterService::setHasAddonsFilter(bool enabled)
 
 void CatalogFilterService::setGenreFilter(const QString& genre)
 {
-    QString next = genre.trimmed();
-    if (!next.isEmpty() && genreBitForFilter(next) == 0)
-        next.clear();
+    const QString next = browseGenreKey(genre);
     if (m_genreFilter == next)
         return;
     m_genreFilter = next;
@@ -748,6 +748,7 @@ void CatalogFilterService::setHiddenSourceIds(QStringList ids)
     if (ids == m_hiddenSourceIds)
         return;
     m_hiddenSourceIds = std::move(ids);
+    ++m_facetRevision;
     notifyFiltersChanged();
 }
 
@@ -766,6 +767,7 @@ void CatalogFilterService::setSourceHidden(const QString& sourceId, bool hidden)
             return;
         m_hiddenSourceIds.removeAt(at);
     }
+    ++m_facetRevision;
     notifyFiltersChanged();
 }
 
@@ -791,6 +793,8 @@ int CatalogFilterService::activeFilterCount() const
 void CatalogFilterService::clearFilters()
 {
     const bool hiddenChanged = !m_hiddenSourceIds.isEmpty();
+    if (hiddenChanged)
+        ++m_facetRevision;
     m_hiddenSourceIds.clear();
     setFilters(-1, 0, 0, false, {}, 0);
     if (hiddenChanged && m_typeFilter == -1 && m_sizeFilter == 0 && m_recencyFilter == 0
@@ -807,9 +811,7 @@ void CatalogFilterService::setFilters(int typeFilter, int sizeFilter, int recenc
     const int nextType = (typeFilter < -1 || typeFilter > 2) ? -1 : typeFilter;
     const int nextSize = qBound(0, sizeFilter, 4);
     const int nextRecency = qBound(0, recencyFilter, 4);
-    QString nextGenre = genreFilter.trimmed();
-    if (!nextGenre.isEmpty() && genreBitForFilter(nextGenre) == 0)
-        nextGenre.clear();
+    const QString nextGenre = browseGenreKey(genreFilter);
     const int nextPlay = normalizePlayModeFilter(playModeFilter);
     if (m_typeFilter == nextType && m_sizeFilter == nextSize && m_recencyFilter == nextRecency
         && m_hasAddonsFilter == hasAddonsFilter && m_genreFilter == nextGenre
@@ -835,9 +837,7 @@ void CatalogFilterService::applyPresentation(int sortMode, int typeFilter, int s
     const int nextType = (typeFilter < -1 || typeFilter > 2) ? -1 : typeFilter;
     const int nextSize = qBound(0, sizeFilter, 4);
     const int nextRecency = qBound(0, recencyFilter, 4);
-    QString nextGenre = genreFilter.trimmed();
-    if (!nextGenre.isEmpty() && genreBitForFilter(nextGenre) == 0)
-        nextGenre.clear();
+    const QString nextGenre = browseGenreKey(genreFilter);
     const int nextPlay = normalizePlayModeFilter(playModeFilter);
     const bool changed = m_typeFilter != nextType || m_sizeFilter != nextSize
         || m_recencyFilter != nextRecency || m_hasAddonsFilter != hasAddonsFilter

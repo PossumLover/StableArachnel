@@ -59,24 +59,11 @@ Item {
         }
     }
 
-    readonly property string playersLabel: {
-        if (root.currentPlayers < 0)
-            return ""
-        if (root.currentPlayers >= 1000000)
-            return (root.currentPlayers / 1000000).toFixed(1) + "M " + qsTr("playing")
-        if (root.currentPlayers >= 1000)
-            return (root.currentPlayers / 1000).toFixed(1) + "K " + qsTr("playing")
-        return root.currentPlayers + " " + qsTr("playing")
-    }
-
     readonly property string metaLine: {
         const parts = []
-        if (root.playersLabel.length > 0)
-            parts.push(root.playersLabel)
-        if ((root.version || "").length > 0)
-            parts.push("v" + root.version)
-        else if ((root.uploadDate || "").length >= 10)
-            parts.push(root.uploadDate.substring(0, 10))
+        const release = /^v?(\d{1,3}(?:\.\d{1,3}){1,3})$/i.exec(root.version.trim())
+        if (release)
+            parts.push(qsTr("v%1").arg(release[1]))
         if ((root.sizeLabel || "").length > 0)
             parts.push(root.sizeLabel)
         return parts.join(" · ")
@@ -382,6 +369,7 @@ Item {
             MD.Label {
                 Layout.fillWidth: true
                 text: root.metaLine
+                visible: !!text
                 color: MD.Token.color.on_surface_variant
                 typescale: MD.Token.typescale.label_medium
                 elide: Text.ElideRight
@@ -543,13 +531,18 @@ Item {
             }
         }
 
-        MD.Label {
+        Item {
             Layout.fillWidth: true
-            text: root.metaLine
-            color: MD.Token.color.on_surface_variant
-            typescale: MD.Token.typescale.label_medium
-            elide: Text.ElideRight
-            maximumLineCount: 1
+            implicitHeight: MD.Token.typescale.label_medium.line_height
+            MD.Label {
+                anchors.fill: parent
+                text: root.metaLine
+                visible: !!text
+                color: MD.Token.color.on_surface_variant
+                typescale: MD.Token.typescale.label_medium
+                elide: Text.ElideRight
+                maximumLineCount: 1
+            }
         }
     }
 

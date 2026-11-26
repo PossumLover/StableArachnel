@@ -4,6 +4,7 @@
     Q_INVOKABLE void setCatalogFilters(int, int, int, bool, const QString&, int = 0);
     Q_INVOKABLE void applyCatalogPresentation(int, int, int, int, bool, const QString&, int = 0);
     Q_INVOKABLE QString catalogGenreLabel(const QString& canonicalKey) const;
+    Q_INVOKABLE QStringList displayGenreTokens(const QString& genres) const;
     Q_INVOKABLE void setHiddenCatalogSourceIds(const QStringList& ids);
     Q_INVOKABLE void setCatalogSourceHidden(const QString& sourceId, bool hidden);
     Q_INVOKABLE QVariantList pluginEntries() const;

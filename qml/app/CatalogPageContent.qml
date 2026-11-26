@@ -134,6 +134,16 @@ Item {
                                                   && !Core.catalogLoading
 
     readonly property bool docked: width >= 920
+    CatalogGenreNavigation { id: genreNavigation }
+
+    // An opaque reading surface under the rail and results, so the window's meadow
+    // illustration never shows through beside the genre panel or behind card captions.
+    Rectangle {
+        anchors.fill: parent
+        radius: MD.Token.shape.corner.extra_large
+        color: MD.Token.color.surface
+        visible: !page.discoveryMode && !page.catalogEmpty
+    }
 
     Item {
         anchors.fill: parent
@@ -143,23 +153,25 @@ Item {
             id: rail
             anchors.left: parent.left
             anchors.leftMargin: page.pageMargin
-            anchors.top: catalogStickyToolbar.bottom
-            anchors.topMargin: MD.Token.spacing.medium
+            anchors.top: catalogStickyToolbar.top
             anchors.bottom: parent.bottom
             anchors.bottomMargin: page.pageMargin
-            width: 236
+            width: 256
             active: content.docked && !page.discoveryMode
             visible: active
-            sourceComponent: CatalogBrowsePanel { page: content.page }
+            sourceComponent: CatalogBrowsePanel { page: content.page; navigation: genreNavigation }
         }
 
         Popup {
             id: chooser
             property bool startWithFilters: false
-            function showFilters(refine) {
+            property Item opener
+            function showFilters(refine, button) {
+                opener = button
                 startWithFilters = refine
                 open()
             }
+            onClosed: if (opener && opener.visible) opener.forceActiveFocus()
             anchors.centerIn: parent
             width: Math.min(400, parent.width - 32)
             height: Math.min(660, parent.height - 32)
@@ -173,6 +185,7 @@ Item {
                 active: chooser.visible
                 sourceComponent: CatalogBrowsePanel {
                     page: content.page
+                    navigation: genreNavigation
                     compact: true
                     refining: chooser.startWithFilters
                     onDismissed: chooser.close()
@@ -187,11 +200,11 @@ Item {
         CatalogStickyToolbar {
             id: catalogStickyToolbar
             anchors.top: parent.top
-            anchors.left: parent.left
+            anchors.left: rail.visible ? rail.right : parent.left
             anchors.right: parent.right
             anchors.leftMargin: page.pageMargin
             anchors.rightMargin: page.pageMargin + catalogScrollViews.scrubberWidth
-            anchors.topMargin: MD.Token.spacing.medium
+            anchors.topMargin: page.pageMargin
             z: 4
             layer.enabled: true
             visible: !page.discoveryMode
@@ -205,11 +218,11 @@ Item {
             anchors.left: catalogStickyToolbar.left
             anchors.right: catalogStickyToolbar.right
             anchors.top: catalogStickyToolbar.bottom
-            visible: !content.docked && !page.discoveryMode && Core.availableCatalogGenres.length > 0
+            visible: !content.docked && !page.discoveryMode
             height: visible ? implicitHeight : 0
             spacing: MD.Token.spacing.small
             Repeater {
-                model: shortcuts.visible ? Array.from(Core.availableCatalogGenres).slice(0, 3) : []
+                model: shortcuts.visible ? genreNavigation.primary.slice(0, 3) : []
                 MD.FilterChip {
                     required property string modelData
                     text: Core.catalogGenreLabel(modelData)
@@ -222,7 +235,7 @@ Item {
                 id: allGenresButton
                 text: qsTr("All genres")
                 mdState.type: MD.Enum.BtText
-                onClicked: chooser.showFilters(false)
+                onClicked: chooser.showFilters(false, allGenresButton)
             }
         }
 
@@ -238,7 +251,7 @@ Item {
             hasSelection: !page.noSourceSelected
             listViewMode: page.listViewMode
             sortOptions: page.sortOptions
-            onFilterRequested: chooser.showFilters(true)
+            onFilterRequested: button => chooser.showFilters(true, button)
             onViewModeChangeRequested: mode => content.prefs.viewMode = mode
             onRefreshRequested: Core.refreshSelectedCatalogs()
             onSortModeRequested: mode => page.applySortMode(mode)
@@ -307,13 +320,19 @@ Item {
 
         Item {
             anchors.fill: catalogScrollClip
-            visible: page.catalogEmpty && !Core.catalogLoading && !page.discoveryMode
+            visible: page.catalogEmpty && !page.discoveryMode
             z: 1
 
             CatalogEmptyResults {
                 anchors.fill: parent
                 page: content.page
                 pageMargin: page.pageMargin
+                onChooseSources: button => {
+                    if (rail.item)
+                        rail.item.refining = true
+                    else
+                        chooser.showFilters(true, button)
+                }
             }
         }
     }

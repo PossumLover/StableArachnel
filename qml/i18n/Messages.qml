@@ -46,7 +46,7 @@ QtObject {
 
     readonly property string catalogConnectHint: qsTr("Add a game source in Settings → Plugins to see games here.")
 
-    readonly property string catalogEnableChipsHint: qsTr("Turn on one or more sources above - or leave them all off.")
+    readonly property string catalogEnableChipsHint: qsTr("Choose at least one source in Filters to see its games.")
 
     readonly property string storageLibrariesDesc: qsTr("Libraries on disk, like Steam. You can add other drives.")
 

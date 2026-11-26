@@ -296,8 +296,7 @@ FocusScope {
                         const hero = Core.catalogHeroCoverUrl(card.entryId)
                         return hero && hero.length ? hero : (shots.length ? shots[0] : (info.coverUrl ?? ""))
                     }
-                    readonly property var genres: String(info.genres ?? "").split(",")
-                        .map(t => t.trim()).filter(t => t.length && t.toLowerCase() !== "drm").slice(0, 3)
+                    readonly property var genres: Core.displayGenreTokens(info.genres ?? "").slice(0, 3)
                     readonly property bool favorited: Core.settings.bookmarkedEntryIds.indexOf(card.entryId) >= 0
 
                     width: view.width

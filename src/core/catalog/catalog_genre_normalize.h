@@ -23,6 +23,8 @@ QStringList canonicalizeGenreTokens(const QStringList& rawTokens);
 
 /** Curated genre keys in bit-index order (Action = bit 0). */
 const QStringList& curatedGenreKeys();
+const QStringList& browseGenreKeys();
+QString browseGenreKey(const QString& token);
 
 /** Bit index for a canonical key, or -1. */
 int curatedGenreBitIndex(const QString& canonicalKey);

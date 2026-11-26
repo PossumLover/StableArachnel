@@ -9,9 +9,16 @@ Rectangle {
     id: root
 
     required property var page
+    required property CatalogGenreNavigation navigation
+    property bool expanded: false
     property bool compact: false
     property bool refining: false
     signal dismissed()
+    function pickGenre(key) {
+        Core.catalogGenreFilter = key
+        if (compact)
+            dismissed()
+    }
 
     color: MD.Token.color.surface_container_low
     radius: MD.Token.shape.corner.large
@@ -19,55 +26,41 @@ Rectangle {
     function genreIcon(key) {
         switch (key) {
         case "Action":
-            return MD.Token.icon.sports_esports
+            return MD.Token.icon.bolt
         case "Adventure":
             return MD.Token.icon.explore
         case "RPG":
             return MD.Token.icon.swords
         case "Strategy":
-            return MD.Token.icon.psychology
+            return MD.Token.icon.chess_pawn
         case "Simulation":
-            return MD.Token.icon.precision_manufacturing
+            return MD.Token.icon.tune
         case "Shooter":
-            return MD.Token.icon.ads_click
+            return MD.Token.icon.target
         case "Horror":
-            return MD.Token.icon.dark_mode
-        case "Indie":
-            return MD.Token.icon.extension
+            return MD.Token.icon.skull
         case "Casual":
-            return MD.Token.icon.mood
+            return MD.Token.icon.weekend
         case "Sports":
-            return MD.Token.icon.sports
+            return MD.Token.icon.sports_soccer
         case "Racing":
-            return MD.Token.icon.directions_car
+            return MD.Token.icon.sports_motorsports
         case "Puzzle":
-            return MD.Token.icon.grid_4x4
+            return MD.Token.icon.extension
         case "Platformer":
-            return MD.Token.icon.stairs
+            return MD.Token.icon.sports_gymnastics
         case "Fighting":
             return MD.Token.icon.sports_mma
         case "Survival":
             return MD.Token.icon.forest
-        case "Open World":
-            return MD.Token.icon.landscape
         case "Roguelike":
-            return MD.Token.icon.replay
+            return MD.Token.icon.casino
         case "Visual Novel":
             return MD.Token.icon.menu_book
         case "Card":
             return MD.Token.icon.style
-        case "Early Access":
-            return MD.Token.icon.rocket_launch
-        case "Free to Play":
-            return MD.Token.icon.money_off
-        case "Massively Multiplayer":
-            // `public` is a reserved word the Qt 6.8 QML parser refuses as a
-            // member name; bracket access reads the same icon on every version.
-            return MD.Token.icon["public"]
-        case "VR":
-            return MD.Token.icon.view_in_ar
         default:
-            return MD.Token.icon.sports_esports
+            return MD.Token.icon.category
         }
     }
 
@@ -110,21 +103,13 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
-            MD.Button {
-                Accessible.checkable: true
-                Accessible.checked: !root.refining
-                text: qsTr("Genres")
-                mdState.type: root.refining ? MD.Enum.BtText : MD.Enum.BtFilledTonal
-                onClicked: root.refining = false
+            ConnectedIconToggle {
+                Layout.fillWidth: true
+                segmentWidth: (width - spacing) / 2
+                labels: [qsTr("Genres"), qsTr("Filters")]
+                currentIndex: root.refining ? 1 : 0
+                onPicked: index => root.refining = index === 1
             }
-            MD.Button {
-                Accessible.checkable: true
-                Accessible.checked: root.refining
-                text: qsTr("Filters")
-                mdState.type: root.refining ? MD.Enum.BtFilledTonal : MD.Enum.BtText
-                onClicked: root.refining = true
-            }
-            Item { Layout.fillWidth: true }
             MD.IconButton {
                 visible: root.compact
                 icon.name: MD.Token.icon.close
@@ -133,18 +118,18 @@ Rectangle {
             }
         }
 
-        AppTextField {
+        LauncherSearchField {
             id: genreSearch
             objectName: "genreSearch"
             visible: !root.refining && Core.availableCatalogGenres.length > 0
             Layout.fillWidth: true
             placeholderText: qsTr("Find a genre")
-            leadingIcon: MD.Token.icon.search
         }
 
         ListView {
             id: genres
             objectName: "genreList"
+            Accessible.description: qsTr("Counts cover games in visible sources, before search and other filters.")
             visible: !root.refining
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -154,14 +139,20 @@ Rectangle {
             ScrollBar.vertical: MD.ScrollBar {}
             model: {
                 const query = genreSearch.text.trim().toLocaleLowerCase()
-                const keys = Core.availableCatalogGenres
                 if (!query)
-                    return [""].concat(Array.from(keys))
-                return Array.from(keys).filter(key => Core.catalogGenreLabel(key).toLocaleLowerCase().includes(query))
+                    return [""].concat(root.navigation.withSelection(root.expanded ? root.navigation.ranked : root.navigation.primary))
+                return root.navigation.ranked.filter(key => Core.catalogGenreLabel(key).toLocaleLowerCase().includes(query))
             }
             delegate: MD.Button {
                 id: genreButton
                 required property string modelData
+                readonly property string countLabel: {
+                    const count = Core.catalogGenreCounts[modelData] ?? 0
+                    if (root.navigation.total < 0 || (!count && (Core.catalogPartial || Core.catalogLoading)))
+                        return ""
+                    return count.toLocaleString(Qt.locale(), "f", 0)
+                }
+                Accessible.name: text + " " + countLabel
                 Accessible.checkable: true
                 Accessible.checked: Core.catalogGenreFilter === modelData
                 width: genres.width - MD.Token.spacing.small
@@ -171,19 +162,23 @@ Rectangle {
                 // Keep the icon and label aligned down the entire list.
                 contentItem: RowLayout {
                     spacing: MD.Token.spacing.medium
-                    MD.Icon { name: genreButton.icon.name }
+                    MD.Icon { name: genreButton.icon.name; Accessible.ignored: true }
                     MD.Label {
                         Layout.fillWidth: true
                         text: genreButton.text
                         elide: Text.ElideRight
+                        wrapMode: Text.NoWrap
+                        maximumLineCount: 1
                         typescale: MD.Token.typescale.label_large
                     }
+                    MD.Label {
+                        text: genreButton.countLabel
+                        typescale: MD.Token.typescale.label_medium
+                        color: MD.Token.color.on_surface_variant
+                        Accessible.ignored: true
+                    }
                 }
-                onClicked: {
-                    Core.catalogGenreFilter = modelData
-                    if (root.compact)
-                        root.dismissed()
-                }
+                onClicked: root.pickGenre(modelData)
             }
             MD.Label {
                 anchors.centerIn: parent
@@ -191,6 +186,15 @@ Rectangle {
                 text: qsTr("No matching genres")
                 color: MD.Token.color.on_surface_variant
             }
+        }
+
+        MD.Button {
+            objectName: "moreGenres"
+            visible: !root.refining && !genreSearch.text.trim()
+                     && root.navigation.ranked.length > root.navigation.primary.length
+            text: root.expanded ? qsTr("Fewer genres") : qsTr("More genres")
+            mdState.type: MD.Enum.BtText
+            onClicked: root.expanded = !root.expanded
         }
 
         Flickable {
