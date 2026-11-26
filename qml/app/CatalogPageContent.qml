@@ -132,20 +132,56 @@ Item {
                                                   && !Core.catalogDiscovery.loading
                                                   && !Core.catalogLoading
 
-    Loader {
-        id: catalogIntroHeightProbe
-        visible: false
-        width: Math.max(0, page.width - page.pageMargin * 2)
-        sourceComponent: CatalogIntroHeader {}
-    }
-
-    readonly property real catalogIntroHeaderHeight: catalogIntroHeightProbe.item
-                                                     ? catalogIntroHeightProbe.item.implicitHeight
-                                                     : 160
+    readonly property bool docked: width >= 920
 
     Item {
         anchors.fill: parent
         visible: !page.noSources
+
+        Loader {
+            id: rail
+            anchors.left: parent.left
+            anchors.leftMargin: page.pageMargin
+            anchors.top: catalogStickyToolbar.bottom
+            anchors.topMargin: MD.Token.spacing.medium
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: page.pageMargin
+            width: 236
+            active: content.docked && !page.discoveryMode
+            visible: active
+            sourceComponent: CatalogBrowsePanel { page: content.page }
+        }
+
+        Popup {
+            id: chooser
+            property bool startWithFilters: false
+            function showFilters(refine) {
+                startWithFilters = refine
+                open()
+            }
+            anchors.centerIn: parent
+            width: Math.min(400, parent.width - 32)
+            height: Math.min(660, parent.height - 32)
+            font.family: allGenresButton.font.family
+            modal: true
+            focus: true
+            padding: 0
+            background: Item {}
+            closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+            contentItem: Loader {
+                active: chooser.visible
+                sourceComponent: CatalogBrowsePanel {
+                    page: content.page
+                    compact: true
+                    refining: chooser.startWithFilters
+                    onDismissed: chooser.close()
+                }
+            }
+            Connections {
+                target: content
+                function onDockedChanged() { if (content.docked) chooser.close() }
+            }
+        }
 
         CatalogStickyToolbar {
             id: catalogStickyToolbar
@@ -163,14 +199,59 @@ Item {
             pageMargin: page.pageMargin
         }
 
+        Flow {
+            id: shortcuts
+            anchors.left: catalogStickyToolbar.left
+            anchors.right: catalogStickyToolbar.right
+            anchors.top: catalogStickyToolbar.bottom
+            visible: !content.docked && !page.discoveryMode && Core.availableCatalogGenres.length > 0
+            height: visible ? implicitHeight : 0
+            spacing: MD.Token.spacing.small
+            Repeater {
+                model: shortcuts.visible ? Array.from(Core.availableCatalogGenres).slice(0, 3) : []
+                MD.FilterChip {
+                    required property string modelData
+                    text: Core.catalogGenreLabel(modelData)
+                    checked: Core.catalogGenreFilter === modelData
+                    checkable: false
+                    onClicked: Core.catalogGenreFilter = checked ? "" : modelData
+                }
+            }
+            MD.Button {
+                id: allGenresButton
+                text: qsTr("All genres")
+                mdState.type: MD.Enum.BtText
+                onClicked: chooser.showFilters(false)
+            }
+        }
+
+        CatalogScrollHeader {
+            id: tools
+            visible: !page.discoveryMode
+            anchors.left: rail.visible ? rail.right : parent.left
+            anchors.leftMargin: page.pageMargin
+            anchors.right: parent.right
+            anchors.rightMargin: page.pageMargin
+            anchors.top: shortcuts.bottom
+            showPanelButton: !content.docked
+            hasSelection: !page.noSourceSelected
+            listViewMode: page.listViewMode
+            sortOptions: page.sortOptions
+            onFilterRequested: chooser.showFilters(true)
+            onViewModeChangeRequested: mode => content.prefs.viewMode = mode
+            onRefreshRequested: Core.refreshSelectedCatalogs()
+            onSortModeRequested: mode => page.applySortMode(mode)
+        }
+
         Item {
             id: catalogScrollClip
-            anchors.top: page.discoveryMode ? parent.top : catalogStickyToolbar.bottom
+            anchors.top: page.discoveryMode ? parent.top : tools.bottom
             anchors.topMargin: page.discoveryMode ? page.pageMargin
                                                  : MD.Token.spacing.small
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
+            anchors.leftMargin: rail.visible ? rail.x + rail.width : 0
             clip: true
 
             // Plain Flickable + Column (not ListView). ListView + JS-array model
@@ -219,29 +300,12 @@ Item {
                 anchors.fill: parent
                 visible: !page.discoveryMode
                 page: content.page
-                prefs: content.prefs
                 pageMargin: page.pageMargin
             }
         }
 
-        CatalogCompactBar {
-            id: compactBar
-            anchors.top: catalogStickyToolbar.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            // Leave the alphabet scrubber uncovered on the right.
-            anchors.rightMargin: catalogScrollViews.scrubberWidth
-            z: 5
-            visible: !page.discoveryMode
-            page: content.page
-            prefs: content.prefs
-            pageMargin: page.pageMargin
-            barOpacity: page.compactBarOpacity
-        }
-
         Item {
-            anchors.fill: parent
-            anchors.topMargin: 200
+            anchors.fill: catalogScrollClip
             visible: page.catalogEmpty && !Core.catalogLoading && !page.discoveryMode
             z: 1
 

@@ -97,10 +97,10 @@ Item {
 
                         MD.Button {
                             text: Core.sources.enabledCount > 0
-                                  ? qsTr("Open catalog")
+                                  ? qsTr("Browse games")
                                   : qsTr("Add game source")
                             icon.name: Core.sources.enabledCount > 0
-                                       ? MD.Token.icon.storefront
+                                       ? MD.Token.icon.explore
                                        : MD.Token.icon.add
                             mdState.type: MD.Enum.BtFilled
                             onClicked: {
@@ -142,9 +142,9 @@ Item {
                             body: Core.sources.enabledCount > 0 ? Messages.libraryStep1DoneBody : Messages.libraryStep1Body
                         },
                         {
-                            icon: MD.Token.icon.storefront,
+                            icon: MD.Token.icon.explore,
                             step: qsTr("Step 2"),
-                            title: qsTr("Catalog"),
+                            title: qsTr("Browse"),
                             body: Messages.libraryStep2Body
                         },
                         {

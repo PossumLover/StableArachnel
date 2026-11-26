@@ -23,29 +23,6 @@ Item {
                                              || (!root.noSourceSelected && Core.catalog.count === 0))
     readonly property bool listViewMode: catalogPrefs.viewMode === 1
 
-    // Land the compact bar slightly before the true top so a resting
-    // contentY of ~0 still keeps the mini catalog chrome visible.
-    readonly property int compactRevealRange: 8
-    readonly property real scrollContentY: root.listViewMode ? catalogContent.listContentY : catalogContent.gridContentY
-    readonly property real compactRevealStart: -10
-    readonly property real compactBarOpacity: {
-        if (!catalogContent.visible)
-            return 0
-        const y = catalogContent.currentContentY
-        if (y <= root.compactRevealStart)
-            return 0
-        return Math.min(1, (y - root.compactRevealStart) / root.compactRevealRange)
-    }
-    readonly property real introCollapseProgress: {
-        if (!catalogContent.visible)
-            return 0
-        const y = catalogContent.currentContentY
-        const span = 12
-        if (y <= root.compactRevealStart)
-            return 0
-        return Math.min(1, (y - root.compactRevealStart) / span)
-    }
-
     readonly property var sortOptions: [
         { mode: 0, label: qsTr("Newest first") },
         { mode: 1, label: qsTr("Oldest first") },
@@ -153,10 +130,6 @@ Item {
         Core.pruneDisabledCatalogSources()
     }
 
-    function openFilterSheet() {
-        catalogFilterSheet.openSheet()
-    }
-
     function resetScroll() { catalogContent.resetScroll() }
 
     function focusSearch() { catalogContent.focusSearch() }
@@ -251,6 +224,8 @@ Item {
     function showBrowseAll(query) {
         root.browseAllMode = true
         const q = query || ""
+        if (!q && Core.catalogActiveFilterCount > 0)
+            Core.clearCatalogFilters()
         root.searchQuery = q
         catalogContent.searchText = q
         Core.applyCatalogSearch(q)
@@ -260,9 +235,10 @@ Item {
 
     Component.onCompleted: {
         Core.catalog.sortMode = catalogPrefs.sortMode
-        root.restoreCatalogFilters()
-        if (root.browseOnly || Core.catalogActiveFilterCount > 0)
+        if (root.browseOnly) {
+            root.restoreCatalogFilters()
             root.browseAllMode = true
+        }
         Core.prefetchCatalogCounts()
         if (Core.activeCatalogSourceIds.length === 0)
             root.ensureValidSource()
@@ -277,18 +253,11 @@ Item {
             catalogContent.resetScroll()
         }
         function onCatalogFiltersChanged() {
+            if (!root.browseOnly)
+                return
             root.persistCatalogFilters()
-            if (root.browseOnly) {
-                root.browseAllMode = true
-                return
-            }
-            // Discover tab: filters belong on the Catalog tab.
-            if (Core.catalogActiveFilterCount > 0) {
-                root.openFullCatalog(root.searchQuery)
-                return
-            }
-            if (root.searchQuery.length === 0)
-                root.browseAllMode = false
+            root.resetScrollOnResults = true
+            catalogContent.resetScroll()
         }
     }
 
@@ -313,11 +282,6 @@ Item {
         saveAndResetScroll()
         restoreScroll()
     }
-
-    CatalogFilterSheet {
-        id: catalogFilterSheet
-    }
-
 
     CatalogPageContent {
         id: catalogContent

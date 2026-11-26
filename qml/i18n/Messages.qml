@@ -6,9 +6,9 @@ import QtQuick
 QtObject {
     readonly property string helpCatalogIntro: qsTr("Install a plugin in Settings → Plugins to browse games, or add a catalog.")
 
-    readonly property string helpHydraCatalogBody: qsTr("Paste a catalog link in Settings → Hydra catalogs. Games show up in Catalog.")
+    readonly property string helpHydraCatalogBody: qsTr("Paste a catalog link in Settings → Hydra catalogs. Games show up in Browse.")
 
-    readonly property string helpCatalogBody: qsTr("Pick a game in Catalog to start a download.")
+    readonly property string helpCatalogBody: qsTr("Pick a game in Browse to start a download.")
 
     readonly property string helpLibraryBody: qsTr("After download and install, the game appears here - launch, updates, and details.")
 
@@ -24,17 +24,17 @@ QtObject {
 
     readonly property string settingsPluginsInstallHint: qsTr("Use Install plugin below and pick a .arach file.")
 
-    readonly property string settingsPluginsDesc: qsTr("A plugin is a game source: it fills Catalog and handles download, install, and Play. Install at least one to see games.")
+    readonly property string settingsPluginsDesc: qsTr("A plugin is a game source: it fills Browse and handles download, install, and Play. Install at least one to see games.")
 
-    readonly property string libraryEmptySubtitle: qsTr("Your library is empty. Add a game source, pick a game in Catalog, and it will appear here.")
+    readonly property string libraryEmptySubtitle: qsTr("Your library is empty. Add a game source, pick a game in Browse, and it will appear here.")
 
-    readonly property string libraryEmptySubtitleReady: qsTr("Your library is empty. Open Catalog, pick a game and press Download - it will appear here when it is ready.")
+    readonly property string libraryEmptySubtitleReady: qsTr("Your library is empty. Open Browse, pick a game and press Download - it will appear here when it is ready.")
 
     readonly property string libraryStep1DoneBody: qsTr("Source added. See Settings → Plugins.")
 
     readonly property string libraryStep1Body: qsTr("Add a game source in Settings → Plugins.")
 
-    readonly property string libraryStep2Body: qsTr("Pick a game in Catalog and start the download.")
+    readonly property string libraryStep2Body: qsTr("Pick a game in Browse and start the download.")
 
     readonly property string libraryStep3Body: qsTr("Installed games live here: launch, updates, and details.")
 
@@ -56,7 +56,7 @@ QtObject {
 
     readonly property string favoritesEmptyHint: qsTr("Save games from the catalog - download them here later.")
 
-    readonly property string onboardingNextCatalog: qsTr("Open Catalog and pick a game.")
+    readonly property string onboardingNextCatalog: qsTr("Open Browse and pick a game.")
 
     readonly property string onboardingNextDownload: qsTr("Press Download. Progress shows in the Downloads tab.")
 

@@ -391,6 +391,6 @@ Item {
         }
     }
 
-    Accessible.name: qsTr("Catalog navigator")
+    Accessible.name: qsTr("Browse navigator")
     Accessible.role: Accessible.ScrollBar
 }

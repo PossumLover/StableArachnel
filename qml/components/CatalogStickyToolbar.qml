@@ -40,14 +40,14 @@ Item {
             spacing: MD.Token.spacing.large
 
             DisplayTitle {
-                text: qsTr("Catalog")
+                text: qsTr("Browse")
             }
 
             Item { Layout.fillWidth: true }
 
             LauncherSearchField {
                 id: catalogSearch
-                placeholderText: qsTr("Search catalog")
+                placeholderText: qsTr("Search games")
                 Layout.fillWidth: true
                 Layout.maximumWidth: 560
                 Layout.alignment: Qt.AlignVCenter
@@ -163,7 +163,7 @@ Item {
 
                 MD.FilterChip {
                     required property string modelData
-                    text: (Core.sources.nameForId(modelData) || modelData) + " ×"
+                    text: qsTr("Hidden: %1").arg(Core.sources.nameForId(modelData) || modelData) + " ×"
                     checked: true
                     onClicked: Core.setCatalogSourceHidden(modelData, false)
                 }

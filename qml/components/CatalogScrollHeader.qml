@@ -7,10 +7,9 @@ import Qcm.Material as MD
 Item {
     id: root
 
-    required property int contentWidth
     required property bool hasSelection
     required property bool listViewMode
-    property real collapseProgress: 0
+    required property bool showPanelButton
     property var sortOptions: []
 
     signal filterRequested()
@@ -18,16 +17,10 @@ Item {
     signal refreshRequested()
     signal sortModeRequested(int mode)
 
-    width: contentWidth
-    height: col.implicitHeight
-    // Fade only - shrinking height fights Flickable contentY and can zero the
-    // scroll offset so the compact bar never lands.
-    opacity: 1 - root.collapseProgress
-    enabled: root.collapseProgress < 0.85
-
+    implicitHeight: col.implicitHeight
     ColumnLayout {
         id: col
-        width: root.contentWidth
+        width: root.width
         spacing: MD.Token.spacing.small
 
         RowLayout {
@@ -64,9 +57,13 @@ Item {
 
             MD.Label {
                 Layout.fillWidth: true
-                text: Core.catalogPartial || (Core.catalogLoading && Core.catalog.count === 0)
-                    ? qsTr("Loading catalog…")
-                    : qsTr("Found: %1").arg(Core.catalog.count)
+                text: {
+                    if (Core.catalogPartial || (Core.catalogLoading && Core.catalog.count === 0))
+                        return qsTr("Loading catalog…")
+                    if (Core.catalog.count === 1)
+                        return qsTr("1 game")
+                    return qsTr("%1 games").arg(Core.catalog.count.toLocaleString(Qt.locale(), "f", 0))
+                }
                 color: MD.Token.color.on_surface_variant
                 typescale: MD.Token.typescale.label_large
                 elide: Text.ElideRight
@@ -79,7 +76,8 @@ Item {
             }
 
             MD.Button {
-                text: Core.catalogActiveFilterCount > 0 ? qsTr("Filter (%1)").arg(Core.catalogActiveFilterCount) : qsTr("Filter")
+                visible: root.showPanelButton
+                text: qsTr("Filters")
                 icon.name: MD.Token.icon.filter_list
                 mdState.type: Core.catalogActiveFilterCount > 0 ? MD.Enum.BtFilledTonal : MD.Enum.BtText
                 onClicked: root.filterRequested()
@@ -94,6 +92,7 @@ Item {
 
             MD.IconButton {
                 mdState.type: MD.Enum.IBtStandard
+                Accessible.name: qsTr("Refresh")
                 icon.name: MD.Token.icon.refresh
                 enabled: !Core.catalogLoading && root.hasSelection
                 onClicked: root.refreshRequested()

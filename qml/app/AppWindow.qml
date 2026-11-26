@@ -336,8 +336,8 @@ MD.ApplicationWindow {
             icon: MD.Token.icon.auto_awesome
         },
         {
-            name: qsTr("Catalog"),
-            icon: MD.Token.icon.storefront
+            name: qsTr("Browse"),
+            icon: MD.Token.icon.explore
         },
         {
             name: qsTr("Friends"),

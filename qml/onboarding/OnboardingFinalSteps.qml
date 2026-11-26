@@ -203,7 +203,7 @@ ColumnLayout {
         MD.Label {
             Layout.fillWidth: true
             visible: !root.hasSource
-            text: qsTr("You have no game source yet, so Catalog will be empty. Add one in Settings → Plugins to see games.")
+            text: qsTr("You have no game source yet, so Browse will be empty. Add one in Settings → Plugins to see games.")
             wrapMode: Text.WordWrap
             color: MD.Token.color.on_surface_variant
             typescale: MD.Token.typescale.body_medium

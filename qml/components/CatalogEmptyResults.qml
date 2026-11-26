@@ -58,6 +58,7 @@ Item {
                 Layout.fillWidth: true
                 text: page.noSourceSelected
                       ? Messages.catalogEnableChipsHint
+                      : Core.catalogActiveFilterCount > 0 ? qsTr("Try a different genre or clear your filters.")
                       : qsTr("Try another search or refresh the catalog.")
                 color: MD.Token.color.on_surface_variant
                 typescale: MD.Token.typescale.body_medium
@@ -66,10 +67,10 @@ Item {
 
             MD.Button {
                 visible: !page.noSourceSelected
-                text: qsTr("Refresh")
-                icon.name: MD.Token.icon.refresh
+                text: Core.catalogActiveFilterCount > 0 ? qsTr("Clear filters") : qsTr("Refresh")
+                icon.name: Core.catalogActiveFilterCount > 0 ? MD.Token.icon.filter_list : MD.Token.icon.refresh
                 mdState.type: MD.Enum.BtFilledTonal
-                onClicked: Core.refreshSelectedCatalogs()
+                onClicked: Core.catalogActiveFilterCount > 0 ? Core.clearCatalogFilters() : Core.refreshSelectedCatalogs()
             }
         }
     }

@@ -8,7 +8,6 @@ Item {
     id: root
 
     required property var page
-    required property var prefs
     required property int pageMargin
 
     property alias gridContentY: grid.contentY
@@ -20,56 +19,20 @@ Item {
 
     readonly property int scrubberWidth: catalogNavigator.visible
         ? Math.max(0, catalogNavigator.width + catalogNavigator.anchors.rightMargin + MD.Token.spacing.extra_small - pageMargin) : 0
-    readonly property real compactBarHeight: 56
     readonly property bool catalogBound: page.catalogModelReady && page.enabled
                                          && !page.discoveryMode && !Core.catalog.bulkUpdating
 
-    // Discrete chrome mode with hysteresis - avoids per-pixel bounce while flicking.
-    property bool scrubberExpanded: true
-    property real expandedHeaderHeight: 140
     property int navigatorRow: 0
     property real navigatorViewportFraction: 0.02
-
-    readonly property real scrubberTopClearance: {
-        if (root.scrubberExpanded && page.compactBarOpacity < 0.25)
-            return root.expandedHeaderHeight
-        return root.compactBarHeight * page.compactBarOpacity
-    }
-
-    property real scrubberTopMargin: MD.Token.spacing.small + scrubberTopClearance
-
-    Behavior on scrubberTopMargin {
-        NumberAnimation {
-            duration: AppMotion.medium
-            easing: AppMotion.standardDecelerate
-        }
-    }
 
     function activeView() {
         return page.listViewMode ? list : grid
     }
 
-    function syncHeaderHeight() {
-        const header = activeView().headerItem
-        if (header && header.height > 40)
-            root.expandedHeaderHeight = header.height
-    }
-
-    function updateScrubberMode() {
-        const y = activeView().contentY
-        // Match early compact-bar reveal, with hysteresis to avoid bounce.
-        if (root.scrubberExpanded && y > 10)
-            root.scrubberExpanded = false
-        else if (!root.scrubberExpanded && y < 10)
-            root.scrubberExpanded = true
-        root.syncNavigatorPosition()
-    }
-
     function firstVisibleRow(view) {
         if (!view)
             return 0
-        const headerH = view.headerItem ? view.headerItem.height : 0
-        const y = view.contentY + headerH + 8
+        const y = view.contentY + 8
         const idx = view.indexAt(Math.min(24, view.width * 0.5), y)
         if (idx >= 0)
             return idx
@@ -77,7 +40,7 @@ Item {
         const count = Core.catalog.count
         if (count <= 0)
             return 0
-        const body = Math.max(1, view.contentHeight - headerH)
+        const body = Math.max(1, view.contentHeight)
         const t = Math.max(0, Math.min(1, (view.contentY) / Math.max(1, body - view.height)))
         return Math.round(t * (count - 1))
     }
@@ -93,8 +56,7 @@ Item {
             return
         }
         root.navigatorRow = Math.max(0, Math.min(count - 1, root.firstVisibleRow(view)))
-        const headerH = view.headerItem ? view.headerItem.height : 0
-        const body = Math.max(1, view.contentHeight - headerH)
+        const body = Math.max(1, view.contentHeight)
         root.navigatorViewportFraction = Math.max(0.02, Math.min(1, view.height / body))
     }
 
@@ -115,7 +77,6 @@ Item {
             return false
 
         let toY = 0
-        // Row 0 must reveal the catalog header (true top), not just the first cell.
         if (row > 0) {
             view.positionViewAtIndex(row, mode)
             const newMax = Math.max(0, view.contentHeight - view.height)
@@ -134,7 +95,7 @@ Item {
         scrubLerp.running = false
         if (animated === false) {
             view.contentY = toY
-            root.updateScrubberMode()
+            root.syncNavigatorPosition()
             return true
         }
 
@@ -147,8 +108,6 @@ Item {
         return true
     }
 
-    // The true top of a view with a header is a negative contentY (minus the header height), so
-    // "contentY = 0" leaves the header scrolled away.
     function scrollToTop() {
         indexScrollAnim.stop()
         scrubLerp.running = false
@@ -165,7 +124,7 @@ Item {
         if (y > 8 && maxY + 1 < y)
             return false
         view.contentY = Math.min(Math.max(0, y), maxY)
-        root.updateScrubberMode()
+        root.syncNavigatorPosition()
         return Math.abs(view.contentY - Math.min(y, maxY)) < 2
     }
 
@@ -205,7 +164,7 @@ Item {
             if (Math.abs(d) < 0.75) {
                 view.contentY = goal
                 running = false
-                root.updateScrubberMode()
+                root.syncNavigatorPosition()
                 return
             }
             view.contentY = cur + d * (catalogNavigator.precision ? 0.22 : 0.32)
@@ -216,14 +175,9 @@ Item {
         id: indexScrollAnim
         property: "contentY"
         easing: AppMotion.standardDecelerate
-        onStopped: root.updateScrubberMode()
+        onStopped: root.syncNavigatorPosition()
     }
 
-    Timer {
-        id: headerMeasureTimer
-        interval: 0
-        onTriggered: root.syncHeaderHeight()
-    }
 
     Timer {
         id: navigatorSyncTimer
@@ -252,31 +206,6 @@ Item {
         pixelAligned: true
         interactive: true
 
-        header: Column {
-            width: grid.availableWidth
-            spacing: MD.Token.spacing.small
-
-            CatalogIntroHeader {
-                width: parent.width
-                collapseProgress: page.introCollapseProgress
-            }
-
-            CatalogScrollHeader {
-                contentWidth: grid.availableWidth
-                hasSelection: Core.activeCatalogSourceIds.length > 0
-                listViewMode: page.listViewMode
-                collapseProgress: page.compactBarOpacity
-                sortOptions: page.sortOptions
-                onFilterRequested: page.openFilterSheet()
-                onViewModeChangeRequested: function (mode) { prefs.viewMode = mode }
-                onRefreshRequested: Core.refreshSelectedCatalogs()
-                onSortModeRequested: function (mode) { page.applySortMode(mode) }
-            }
-
-            Component.onCompleted: headerMeasureTimer.start()
-            onHeightChanged: headerMeasureTimer.restart()
-        }
-
         // Small catalogs keep a normal bar; huge lists use CatalogNavigator.
         ScrollBar.vertical: MD.ScrollBar {
             policy: catalogNavigator.visible ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
@@ -284,14 +213,13 @@ Item {
         }
 
         onContentYChanged: {
-            root.updateScrubberMode()
             navigatorSyncTimer.restart()
         }
         onMovementStarted: root.stopProgrammaticScroll()
         onFlickStarted: root.stopProgrammaticScroll()
         onMovingChanged: {
             if (!moving)
-                root.updateScrubberMode()
+                root.syncNavigatorPosition()
         }
 
         delegate: CatalogGameCard {
@@ -316,45 +244,19 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         interactive: true
 
-        header: Column {
-            width: list.width
-            spacing: MD.Token.spacing.small
-
-            CatalogIntroHeader {
-                width: parent.width
-                collapseProgress: page.introCollapseProgress
-            }
-
-            CatalogScrollHeader {
-                contentWidth: list.width
-                hasSelection: Core.activeCatalogSourceIds.length > 0
-                listViewMode: page.listViewMode
-                collapseProgress: page.compactBarOpacity
-                sortOptions: page.sortOptions
-                onFilterRequested: page.openFilterSheet()
-                onViewModeChangeRequested: function (mode) { prefs.viewMode = mode }
-                onRefreshRequested: Core.refreshSelectedCatalogs()
-                onSortModeRequested: function (mode) { page.applySortMode(mode) }
-            }
-
-            Component.onCompleted: headerMeasureTimer.start()
-            onHeightChanged: headerMeasureTimer.restart()
-        }
-
         ScrollBar.vertical: MD.ScrollBar {
             policy: catalogNavigator.visible ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
             interactive: true
         }
 
         onContentYChanged: {
-            root.updateScrubberMode()
             navigatorSyncTimer.restart()
         }
         onMovementStarted: root.stopProgrammaticScroll()
         onFlickStarted: root.stopProgrammaticScroll()
         onMovingChanged: {
             if (!moving)
-                root.updateScrubberMode()
+                root.syncNavigatorPosition()
         }
 
         delegate: CatalogGameCard {
@@ -371,7 +273,7 @@ Item {
         anchors.rightMargin: Math.max(2, pageMargin * 0.2)
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        anchors.topMargin: root.scrubberTopMargin
+        anchors.topMargin: MD.Token.spacing.small
         anchors.bottomMargin: MD.Token.spacing.medium
         catalogCount: Core.catalog.count
         stops: Core.catalog.count >= 32 ? Core.catalog.scrubStops : []
@@ -389,7 +291,7 @@ Item {
                 if (view)
                     view.contentY = root.scrubGoalY
                 scrubLerp.running = false
-                root.updateScrubberMode()
+                root.syncNavigatorPosition()
             }
         }
     }

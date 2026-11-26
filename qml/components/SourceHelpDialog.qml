@@ -23,7 +23,7 @@ MD.Dialog {
         {
             icon: MD.Token.icon.storefront,
             step: qsTr("Step 2"),
-            title: qsTr("Catalog"),
+            title: qsTr("Browse"),
             body: Messages.helpCatalogBody
         },
         {

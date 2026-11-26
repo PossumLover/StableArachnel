@@ -32,8 +32,11 @@ QtObject {
     property string catalogGenreFilter: ""
     property int catalogPlayModeFilter: 0
     property var hiddenCatalogSourceIds: []
+    property var availableCatalogGenres: ["Action", "Adventure", "Strategy"]
+    property var sources: []
     function catalogGenreLabel(genre) { return genre }
     property QtObject settings: QtObject {
+        property bool hideAdultGames: true
         signal debridChanged()
         property string torboxApiKey: ""
         property bool torboxEnabled: false

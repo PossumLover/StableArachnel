@@ -27,7 +27,7 @@ Flow {
         const count = Core.catalogEntryCount(sourceId)
         if (count < 0)
             return sourceName
-        return qsTr("%1 · %2").arg(sourceName).arg(count)
+        return qsTr("%1 · %2").arg(sourceName).arg(count.toLocaleString(Qt.locale(), 'f', 0))
     }
 
     Repeater {
@@ -51,12 +51,6 @@ Flow {
                 checkable: false
                 checked: parent.selected
                 elevated: !parent.selected
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                z: 1
-                cursorShape: Qt.PointingHandCursor
                 onClicked: root.sourceToggled(pluginId)
             }
         }
